@@ -69,8 +69,11 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
-    // QRose (barcode/QR code generation)
+    // QRose (QR code generation)
     implementation(libs.qrose)
+
+    // ZXing (barcode generation for PDF417, Code128, etc.)
+    implementation(libs.zxing.core)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

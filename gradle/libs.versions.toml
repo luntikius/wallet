@@ -9,12 +9,13 @@ lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.2"
 composeBom = "2024.09.00"
 room = "2.6.1"
-ksp = "2.0.21-1.0.29"
+ksp = "2.0.21-1.0.28"
 gson = "2.10.1"
 navigationCompose = "2.8.5"
 coil = "2.5.0"
 coroutines = "1.8.0"
 qrose = "1.0.1"
+zxing = "3.5.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -39,6 +40,7 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 qrose = { group = "io.github.alexzhirkevich", name = "qrose", version.ref = "qrose" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
