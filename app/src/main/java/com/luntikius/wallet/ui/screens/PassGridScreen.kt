@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -34,8 +35,10 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntRect
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.ui.components.DeleteZone
+import com.luntikius.wallet.ui.components.PassCardExpansion
 import com.luntikius.wallet.ui.components.PassGridSkeleton
 import com.luntikius.wallet.ui.utils.ensureContrast
 import com.luntikius.wallet.ui.utils.parseColor
@@ -62,6 +65,8 @@ fun PassGridScreen(
     val importStatus by viewModel.importStatus.collectAsState()
     val isInitialLoading by viewModel.isInitialLoading.collectAsState()
     var selectedPassId by remember { mutableStateOf<String?>(null) }
+    var tilePositionCache by remember { mutableStateOf<IntRect?>(null) }
+    var hideTileId by remember { mutableStateOf<String?>(null) }
     val haptic = LocalHapticFeedback.current
 
     // Local state for optimistic UI updates during drag
@@ -108,15 +113,6 @@ fun PassGridScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { viewModel.importPass(it) }
-    }
-
-    // Show dialog if a pass is selected
-    selectedPassId?.let { passId ->
-        PassCardDialog(
-            passId = passId,
-            viewModel = viewModel,
-            onDismiss = { selectedPassId = null }
-        )
     }
 
     Scaffold(
@@ -230,6 +226,7 @@ fun PassGridScreen(
                         PassTile(
                             pass = pass,
                             isDragging = itemIsDragging,
+                            isExpanded = hideTileId == pass.id,
                             modifier = Modifier
                                 .longPressDraggableHandle(
                                     onDragStarted = {
@@ -240,6 +237,7 @@ fun PassGridScreen(
                                     }
                                 ),
                             onClick = { selectedPassId = pass.id },
+                            onPositioned = { rect -> tilePositionCache = rect },
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope
                         )
@@ -279,6 +277,23 @@ fun PassGridScreen(
             }
         }
     }
+
+    // Show expansion overlay if a pass is selected (rendered on top of Scaffold)
+    selectedPassId?.let { passId ->
+        PassCardExpansion(
+            passId = passId,
+            tilePosition = tilePositionCache,
+            viewModel = viewModel,
+            onTileVisibilityChange = { visible ->
+                // Animation controls tile visibility timing
+                hideTileId = if (visible) null else passId
+            },
+            onDismiss = {
+                selectedPassId = null
+                tilePositionCache = null
+            }
+        )
+    }
 }
 
 /**
@@ -289,8 +304,10 @@ fun PassGridScreen(
 fun PassTile(
     pass: Pass,
     isDragging: Boolean,
+    isExpanded: Boolean = false,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
+    onPositioned: (IntRect) -> Unit = {},
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -306,12 +323,29 @@ fun PassTile(
         darkFallback = MaterialTheme.colorScheme.onSurface
     )
 
+    // Track this tile's position
+    var currentPosition by remember { mutableStateOf<IntRect?>(null) }
+
     with(sharedTransitionScope) {
         Card(
             modifier = modifier
                 .fillMaxWidth()
                 .aspectRatio(0.70f) // Vertical rectangle (card-like proportions)
                 .scale(if (isDragging) 1.05f else 1f)
+                .graphicsLayer {
+                    // Hide entire card when expanded to create placeholder effect
+                    alpha = if (isExpanded) 0f else 1f
+                }
+                .onGloballyPositioned { coordinates ->
+                    val position = coordinates.positionInWindow()
+                    val size = coordinates.size
+                    currentPosition = IntRect(
+                        left = position.x.toInt(),
+                        top = position.y.toInt(),
+                        right = (position.x + size.width).toInt(),
+                        bottom = (position.y + size.height).toInt()
+                    )
+                }
                 .sharedElement(
                     rememberSharedContentState(key = "card-${pass.id}"),
                     animatedVisibilityScope = animatedVisibilityScope
@@ -323,7 +357,11 @@ fun PassTile(
                 defaultElevation = if (isDragging) 16.dp else 4.dp
             ),
             shape = RoundedCornerShape(12.dp),
-            onClick = onClick,
+            onClick = {
+                // Pass the current position when clicked
+                currentPosition?.let { onPositioned(it) }
+                onClick()
+            },
         ) {
             Column(
                 modifier = Modifier
