@@ -75,6 +75,9 @@ dependencies {
     // ZXing (barcode generation for PDF417, Code128, etc.)
     implementation(libs.zxing.core)
 
+    // Reorderable (drag and drop reordering)
+    implementation(libs.reorderable)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

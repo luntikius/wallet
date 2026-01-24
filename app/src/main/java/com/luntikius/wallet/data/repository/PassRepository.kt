@@ -35,6 +35,11 @@ interface PassRepository {
      * Delete a pass and its associated files.
      */
     suspend fun deletePass(pass: Pass): Result<Unit>
+
+    /**
+     * Update display orders for multiple passes.
+     */
+    suspend fun updateDisplayOrders(passOrderMap: Map<String, Int>): Result<Unit>
 }
 
 /**
@@ -69,10 +74,14 @@ class PassRepositoryImpl(
                     Exception("Failed to parse pass file")
                 )
 
-            // Save to database
-            passDao.insertPass(result.pass)
+            // Assign displayOrder to put new pass at end
+            val maxOrder = passDao.getMaxDisplayOrder() ?: -1
+            val passWithOrder = result.pass.copy(displayOrder = maxOrder + 1)
 
-            Result.success(result.pass)
+            // Save to database
+            passDao.insertPass(passWithOrder)
+
+            Result.success(passWithOrder)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -94,4 +103,15 @@ class PassRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun updateDisplayOrders(passOrderMap: Map<String, Int>): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val updates = passOrderMap.map { (passId, order) -> passId to order }
+                passDao.updateDisplayOrders(updates)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
 }

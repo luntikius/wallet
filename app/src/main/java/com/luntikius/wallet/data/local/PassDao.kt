@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.luntikius.wallet.data.model.Pass
 import kotlinx.coroutines.flow.Flow
 
@@ -16,9 +17,9 @@ import kotlinx.coroutines.flow.Flow
 interface PassDao {
     /**
      * Get all passes as a Flow for reactive updates.
-     * Ordered by imported date (newest first).
+     * Ordered by display order (custom sort), then imported date as fallback.
      */
-    @Query("SELECT * FROM passes ORDER BY importedDate DESC")
+    @Query("SELECT * FROM passes ORDER BY displayOrder ASC, importedDate DESC")
     fun getAllPasses(): Flow<List<Pass>>
 
     /**
@@ -44,4 +45,26 @@ interface PassDao {
      */
     @Query("DELETE FROM passes WHERE id = :passId")
     suspend fun deletePassById(passId: String)
+
+    /**
+     * Update the display order of a specific pass.
+     */
+    @Query("UPDATE passes SET displayOrder = :order WHERE id = :passId")
+    suspend fun updateDisplayOrder(passId: String, order: Int)
+
+    /**
+     * Update display orders for multiple passes in a transaction.
+     */
+    @Transaction
+    suspend fun updateDisplayOrders(updates: List<Pair<String, Int>>) {
+        updates.forEach { (passId, order) ->
+            updateDisplayOrder(passId, order)
+        }
+    }
+
+    /**
+     * Get the maximum display order value (for assigning new passes to end).
+     */
+    @Query("SELECT MAX(displayOrder) FROM passes")
+    suspend fun getMaxDisplayOrder(): Int?
 }

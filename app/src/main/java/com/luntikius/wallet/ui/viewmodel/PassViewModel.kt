@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -21,14 +23,28 @@ class PassViewModel(
 ) : ViewModel() {
 
     /**
+     * Loading state for initial data load.
+     */
+    private val _isInitialLoading = MutableStateFlow(true)
+    val isInitialLoading: StateFlow<Boolean> = _isInitialLoading.asStateFlow()
+
+    /**
      * All passes from the repository.
      */
     val passes: StateFlow<List<Pass>> = repository.getAllPasses()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly,
             initialValue = emptyList()
         )
+
+    init {
+        // Mark loading as complete after first emission from repository
+        viewModelScope.launch {
+            repository.getAllPasses().first()
+            _isInitialLoading.value = false
+        }
+    }
 
     /**
      * Import status for showing loading/error states.
@@ -61,6 +77,15 @@ class PassViewModel(
     fun deletePass(pass: Pass) {
         viewModelScope.launch {
             repository.deletePass(pass)
+        }
+    }
+
+    /**
+     * Update the display order of passes.
+     */
+    fun updatePassOrder(passOrderMap: Map<String, Int>) {
+        viewModelScope.launch {
+            repository.updateDisplayOrders(passOrderMap)
         }
     }
 

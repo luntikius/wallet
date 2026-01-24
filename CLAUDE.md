@@ -59,13 +59,53 @@ This project uses Gradle with Kotlin DSL and the Version Catalog feature for dep
 
 ## Architecture
 
+### Multimodal Pass Format Support
+
+The app is architected to support multiple pass formats (PKPass, Google Wallet, etc.) through a **Parser Registry pattern**:
+
+- **PassParser Interface** (`data/parser/PassParser.kt`): Defines contract for parsing different pass formats
+- **ParserRegistry** (`data/parser/ParserRegistry.kt`): Factory that resolves the correct parser based on file type/MIME type
+- **Format-Agnostic Storage**: The `Pass` entity (`data/model/Pass.kt`) abstracts away format differences, storing common fields (organization, colors, images) while preserving format-specific data in a `rawData` JSON blob
+
+To add a new pass format:
+1. Implement the `PassParser` interface
+2. Register the parser in `ParserRegistry`
+3. Add the new `PassFormat` enum value in `data/model/PassFormat.kt`
+
+Currently implemented: PKPass (Apple Wallet) format via `PKPassParser`
+
+### Data Layer
+
+- **Room Database**: Single-source-of-truth for passes (`PassDatabase`)
+- **Repository Pattern**: `PassRepository` interface with `PassRepositoryImpl` handles pass import/export/deletion
+- **DAO**: `PassDao` provides reactive Flow-based queries
+- **Type Converters**: `PassTypeConverters` handles enum serialization for Room
+
+**Key flows:**
+- Pass import: URI → ParserRegistry → Parser → Pass entity → Room database
+- Pass deletion: Database removal + cleanup of internal storage files (assets directory)
+
 ### UI Layer
+
 - **Compose-based UI**: All UI components built with Jetpack Compose
 - **Single Activity**: `MainActivity` serves as the entry point, using Compose for all screens
+- **Navigation**: Jetpack Compose Navigation with shared element transitions between grid and detail screens
 - **Material 3**: Uses Material Design 3 with dynamic color support (Android 12+)
 - **Edge-to-Edge**: App uses edge-to-edge display with proper inset handling via Scaffold
 
+**Navigation Structure:**
+- Grid Screen (`PassGridScreen`): Displays all passes in a grid layout
+- Detail Screen (`PassDetailScreen`): Shows expanded pass with barcode/QR code
+- Routes defined in `ui/navigation/NavGraph.kt`
+
+### ViewModel Layer
+
+- **PassViewModel**: Single ViewModel manages all pass state using StateFlow
+- **Import Status**: Tracks import operations with sealed class pattern (`ImportStatus`)
+- **Reactive Updates**: Exposes `Flow<List<Pass>>` from repository for automatic UI updates
+
 ### Theme System
+
 Located in `app/src/main/java/com/luntikius/wallet/ui/theme/`:
 - `Theme.kt`: Contains `WalletTheme` composable that handles dark/light mode and dynamic colors
 - `Color.kt`: Color definitions for the app
@@ -75,6 +115,13 @@ The theme supports:
 - Dark and light color schemes
 - Dynamic color extraction from system (Android 12+)
 - System theme following via `isSystemInDarkTheme()`
+
+### Key Architectural Decisions
+
+1. **Manual Dependency Injection**: Database, repository, and ViewModel are manually instantiated in `MainActivity`. No DI framework (Hilt/Koin) is used.
+2. **Coroutines & Flow**: All async operations use Kotlin coroutines; reactive data uses Flow
+3. **Internal Storage**: Pass assets (images, raw files) stored in app's internal storage directory, referenced by path in Room database
+4. **Intent Handling**: App handles `ACTION_VIEW` intents for `.pkpass` files via `MainActivity.onNewIntent()`
 
 ## Dependency Management
 

@@ -15,7 +15,7 @@ import com.luntikius.wallet.data.model.Pass
  */
 @Database(
     entities = [Pass::class],
-    version = 2,
+     version = 3,
     exportSchema = false
 )
 @TypeConverters(PassTypeConverters::class)
@@ -35,6 +35,24 @@ abstract class PassDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add displayOrder column with default value 0
+                database.execSQL("ALTER TABLE passes ADD COLUMN displayOrder INTEGER NOT NULL DEFAULT 0")
+
+                // Assign sequential order based on existing importedDate DESC to preserve current order
+                // Using a temporary table approach for reliable ordering
+                database.execSQL("""
+                    UPDATE passes
+                    SET displayOrder = (
+                        SELECT COUNT(*)
+                        FROM passes AS p2
+                        WHERE p2.importedDate > passes.importedDate
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun getInstance(context: Context): PassDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -42,7 +60,7 @@ abstract class PassDatabase : RoomDatabase() {
                     PassDatabase::class.java,
                     "pass_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance

@@ -51,6 +51,9 @@ data class Pass(
     /** Timestamp when pass was imported */
     val importedDate: Long,
 
+    /** Display order for grid arrangement (lower values appear first) */
+    val displayOrder: Int = 0,
+
     /** Category of the pass */
     val category: PassCategory
 )
