@@ -49,7 +49,6 @@
 
 # Keep Gson classes
 -keep class com.google.gson.** { *; }
--keep class sun.misc.Unsafe { *; }
 
 # Keep fields for Gson serialization - DO NOT allow obfuscation
 -keepclassmembers class * {
@@ -164,9 +163,6 @@
     <init>(android.app.Application);
 }
 
-# Keep Navigation arguments
--keepnames class androidx.navigation.fragment.NavHostFragment
-
 # =========================
 # WorkManager
 # =========================
@@ -236,11 +232,6 @@
     public static *** d(...);
     public static *** v(...);
     public static *** i(...);
-}
-
-# Remove debug print statements
--assumenosideeffects class kotlin.io.ConsoleKt {
-    public static *** println(...);
 }
 
 # Optimize
