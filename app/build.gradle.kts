@@ -78,6 +78,15 @@ dependencies {
     // Reorderable (drag and drop reordering)
     implementation(libs.reorderable)
 
+    // Retrofit (HTTP client)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+
+    // WorkManager (background tasks)
+    implementation(libs.androidx.work.runtime.ktx)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

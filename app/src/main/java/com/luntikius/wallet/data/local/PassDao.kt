@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import com.luntikius.wallet.data.model.Pass
 import kotlinx.coroutines.flow.Flow
 
@@ -23,6 +24,13 @@ interface PassDao {
     fun getAllPasses(): Flow<List<Pass>>
 
     /**
+     * Get all passes as a list (non-reactive).
+     * Ordered by display order (custom sort), then imported date as fallback.
+     */
+    @Query("SELECT * FROM passes ORDER BY displayOrder ASC, importedDate DESC")
+    suspend fun getAllPassesList(): List<Pass>
+
+    /**
      * Get a specific pass by ID.
      */
     @Query("SELECT * FROM passes WHERE id = :passId")
@@ -33,6 +41,12 @@ interface PassDao {
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPass(pass: Pass)
+
+    /**
+     * Update an existing pass.
+     */
+    @Update
+    suspend fun updatePass(pass: Pass)
 
     /**
      * Delete a pass.
@@ -67,4 +81,10 @@ interface PassDao {
      */
     @Query("SELECT MAX(displayOrder) FROM passes")
     suspend fun getMaxDisplayOrder(): Int?
+
+    /**
+     * Update the autoRefreshEnabled setting for a specific pass.
+     */
+    @Query("UPDATE passes SET autoRefreshEnabled = :enabled WHERE id = :passId")
+    suspend fun updateAutoRefreshEnabled(passId: String, enabled: Boolean)
 }

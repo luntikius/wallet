@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.RefreshStatus
+import com.luntikius.wallet.data.network.PKPassUpdateService
 import com.luntikius.wallet.data.repository.PassRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -53,6 +55,12 @@ class PassViewModel(
     val importStatus: StateFlow<ImportStatus> = _importStatus.asStateFlow()
 
     /**
+     * Refresh status for showing refresh loading/success/error states.
+     */
+    private val _refreshStatus = MutableStateFlow<RefreshStatus>(RefreshStatus.Idle)
+    val refreshStatus: StateFlow<RefreshStatus> = _refreshStatus.asStateFlow()
+
+    /**
      * Import a pass from a URI.
      */
     fun importPass(uri: Uri) {
@@ -68,6 +76,80 @@ class PassViewModel(
             // Reset status after a delay
             kotlinx.coroutines.delay(2000)
             _importStatus.value = ImportStatus.Idle
+        }
+    }
+
+    /**
+     * Refresh a single pass by fetching updated data from its web service.
+     */
+    fun refreshPass(passId: String) {
+        viewModelScope.launch {
+            _refreshStatus.value = RefreshStatus.Loading(passId)
+            val result = repository.refreshPass(passId)
+
+            if (result.isSuccess) {
+                val updateResult = result.getOrThrow()
+                _refreshStatus.value = when (updateResult) {
+                    is PKPassUpdateService.UpdateResult.Updated -> {
+                        RefreshStatus.Success(1)
+                    }
+                    is PKPassUpdateService.UpdateResult.NotModified -> {
+                        RefreshStatus.Success(0)
+                    }
+                    is PKPassUpdateService.UpdateResult.Deleted -> {
+                        RefreshStatus.Error("Pass was deleted", passId)
+                    }
+                    is PKPassUpdateService.UpdateResult.Unauthorized -> {
+                        RefreshStatus.Error("Update authorization failed", passId)
+                    }
+                    is PKPassUpdateService.UpdateResult.NetworkError -> {
+                        RefreshStatus.Error(updateResult.message, passId)
+                    }
+                    is PKPassUpdateService.UpdateResult.NoWebService -> {
+                        RefreshStatus.Error("This pass does not support updates", passId)
+                    }
+                }
+            } else {
+                _refreshStatus.value = RefreshStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Unknown error",
+                    passId
+                )
+            }
+
+            // Reset status after a delay
+            kotlinx.coroutines.delay(2000)
+            _refreshStatus.value = RefreshStatus.Idle
+        }
+    }
+
+    /**
+     * Refresh all passes by fetching updated data from their web services.
+     */
+    fun refreshAllPasses() {
+        viewModelScope.launch {
+            _refreshStatus.value = RefreshStatus.Loading(null) // null = all passes
+            val result = repository.refreshAllPasses()
+
+            if (result.isSuccess) {
+                val results = result.getOrThrow()
+                val updatedCount = results.values.count { it is PKPassUpdateService.UpdateResult.Updated }
+                val errorResults = results.values.filterIsInstance<PKPassUpdateService.UpdateResult.NetworkError>()
+
+                _refreshStatus.value = if (errorResults.isNotEmpty()) {
+                    RefreshStatus.Error(errorResults.first().message, null)
+                } else {
+                    RefreshStatus.Success(updatedCount)
+                }
+            } else {
+                _refreshStatus.value = RefreshStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Unknown error",
+                    null
+                )
+            }
+
+            // Reset status after a delay
+            kotlinx.coroutines.delay(2000)
+            _refreshStatus.value = RefreshStatus.Idle
         }
     }
 
@@ -94,6 +176,15 @@ class PassViewModel(
      */
     suspend fun getPassById(passId: String): Pass? {
         return repository.getPassById(passId)
+    }
+
+    /**
+     * Toggle automatic background refresh for a pass.
+     */
+    fun setAutoRefreshEnabled(passId: String, enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setAutoRefreshEnabled(passId, enabled)
+        }
     }
 }
 

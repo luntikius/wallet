@@ -51,6 +51,12 @@ data class Pass(
     /** Timestamp when pass was imported */
     val importedDate: Long,
 
+    /** Timestamp of last successful refresh (null if never refreshed) */
+    val lastRefreshDate: Long? = null,
+
+    /** Whether automatic background refresh is enabled for this pass */
+    val autoRefreshEnabled: Boolean = true,
+
     /** Display order for grid arrangement (lower values appear first) */
     val displayOrder: Int = 0,
 

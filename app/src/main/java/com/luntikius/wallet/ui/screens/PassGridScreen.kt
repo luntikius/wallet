@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,9 +38,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntRect
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.ui.components.DeleteZone
 import com.luntikius.wallet.ui.components.PassCardExpansion
 import com.luntikius.wallet.ui.components.PassGridSkeleton
+import com.luntikius.wallet.ui.components.RefreshLoadingSnackbar
 import com.luntikius.wallet.ui.utils.ensureContrast
 import com.luntikius.wallet.ui.utils.parseColor
 import com.luntikius.wallet.ui.utils.stripHtml
@@ -63,6 +66,7 @@ fun PassGridScreen(
 ) {
     val passes by viewModel.passes.collectAsState()
     val importStatus by viewModel.importStatus.collectAsState()
+    val refreshStatus by viewModel.refreshStatus.collectAsState()
     val isInitialLoading by viewModel.isInitialLoading.collectAsState()
     var selectedPassId by remember { mutableStateOf<String?>(null) }
     var tilePositionCache by remember { mutableStateOf<IntRect?>(null) }
@@ -115,39 +119,45 @@ fun PassGridScreen(
         uri?.let { viewModel.importPass(it) }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("wallet") },
-                actions = {
-                    IconButton(onClick = { pickFileLauncher.launch("*/*") }) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Add Pass"
-                        )
+    Box(modifier = modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = refreshStatus is RefreshStatus.Loading && (refreshStatus as? RefreshStatus.Loading)?.passId == null,
+            onRefresh = { viewModel.refreshAllPasses() },
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("wallet") },
+                    actions = {
+                        IconButton(onClick = { pickFileLauncher.launch("*/*") }) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Add Pass"
+                            )
+                        }
                     }
-                }
-            )
-        },
-        modifier = modifier.fillMaxSize()
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                            // Track finger position without consuming events
-                            event.changes.firstOrNull()?.let { change ->
-                                fingerPositionX = change.position.x
-                                fingerPositionY = change.position.y + paddingValues.calculateTopPadding().toPx()
+                )
+            },
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = paddingValues.calculateTopPadding())
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                // Track finger position without consuming events
+                                event.changes.firstOrNull()?.let { change ->
+                                    fingerPositionX = change.position.x
+                                    fingerPositionY = change.position.y + paddingValues.calculateTopPadding().toPx()
+                                }
                             }
                         }
                     }
-                }
-        ) {
+            ) {
             if (isInitialLoading) {
                 // Loading skeleton while fetching initial data
                 PassGridSkeleton()
@@ -275,23 +285,34 @@ fun PassGridScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
-        }
-    }
 
-    // Show expansion overlay if a pass is selected (rendered on top of Scaffold)
-    selectedPassId?.let { passId ->
-        PassCardExpansion(
-            passId = passId,
-            tilePosition = tilePositionCache,
-            viewModel = viewModel,
-            onTileVisibilityChange = { visible ->
-                // Animation controls tile visibility timing
-                hideTileId = if (visible) null else passId
-            },
-            onDismiss = {
-                selectedPassId = null
-                tilePositionCache = null
             }
+        }
+        }
+
+        // Show expansion overlay if a pass is selected (rendered on top of Scaffold)
+        selectedPassId?.let { passId ->
+            PassCardExpansion(
+                passId = passId,
+                tilePosition = tilePositionCache,
+                viewModel = viewModel,
+                onTileVisibilityChange = { visible ->
+                    // Animation controls tile visibility timing
+                    hideTileId = if (visible) null else passId
+                },
+                onDismiss = {
+                    selectedPassId = null
+                    tilePositionCache = null
+                }
+            )
+        }
+
+        // Refresh status snackbar (rendered on top of everything)
+        RefreshLoadingSnackbar(
+            refreshStatus = refreshStatus,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = if (importStatus is ImportStatus.Error) 80.dp else 16.dp)
         )
     }
 }

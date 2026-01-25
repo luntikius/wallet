@@ -7,10 +7,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +31,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.IntOffset
 import com.google.gson.Gson
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.ui.screens.PassCardFront
 import com.luntikius.wallet.ui.screens.PassCardBack
@@ -52,7 +59,8 @@ internal object AnimationConstants {
     // Dismissal timing (mirrors expansion: scale then fade)
     const val DISMISSAL_PHASE_1_DURATION_MS = 250 // Scale down to tile size
     const val DISMISSAL_PHASE_2_DURATION_MS = 100 // Fade out at tile size
-    const val DISMISSAL_TOTAL_MS = DISMISSAL_PHASE_1_DURATION_MS + INTER_PHASE_DELAY_MS + DISMISSAL_PHASE_2_DURATION_MS
+    const val DISMISSAL_TOTAL_MS =
+        DISMISSAL_PHASE_1_DURATION_MS + INTER_PHASE_DELAY_MS + DISMISSAL_PHASE_2_DURATION_MS
 
     // Card flip
     const val FLIP_DURATION_MS = 600
@@ -102,6 +110,7 @@ internal object AnimationConstants {
  * - Swipe-to-flip gesture
  * - Smooth dismissal animation
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PassCardExpansion(
     passId: String,
@@ -114,6 +123,7 @@ fun PassCardExpansion(
     var pass by remember { mutableStateOf<Pass?>(null) }
     var pkPassJson by remember { mutableStateOf<PKPassJson?>(null) }
     var isDismissing by remember { mutableStateOf(false) }
+    val refreshStatus by viewModel.refreshStatus.collectAsState()
 
     // Animation states
     val scale = remember { Animatable(0f) }
@@ -127,7 +137,10 @@ fun PassCardExpansion(
     var targetRotation by remember { mutableStateOf(0f) }
     val rotation by animateFloatAsState(
         targetValue = targetRotation,
-        animationSpec = tween(durationMillis = AnimationConstants.FLIP_DURATION_MS, easing = FastOutSlowInEasing),
+        animationSpec = tween(
+            durationMillis = AnimationConstants.FLIP_DURATION_MS,
+            easing = FastOutSlowInEasing
+        ),
         label = "card flip"
     )
 
@@ -236,7 +249,13 @@ fun PassCardExpansion(
                     scrimAlpha.animateTo(0f, AnimationConstants.dismissalPhaseOneScale)
                 }
                 launch {
-                    buttonSlide.animateTo(1f, tween(AnimationConstants.DISMISSAL_PHASE_1_DURATION_MS - 50, easing = FastOutSlowInEasing))
+                    buttonSlide.animateTo(
+                        1f,
+                        tween(
+                            AnimationConstants.DISMISSAL_PHASE_1_DURATION_MS - 50,
+                            easing = FastOutSlowInEasing
+                        )
+                    )
                 }
 
                 // Wait for Phase 1 to complete, then delay before Phase 2
@@ -290,140 +309,160 @@ fun PassCardExpansion(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // Expandable card container
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .aspectRatio(0.7f)
-                    .graphicsLayer {
-                        scaleX = scale.value
-                        scaleY = scale.value
-                        translationX = offsetX.value
-                        translationY = offsetY.value
-                    }
+            // Pull-to-refresh wrapping the card
+            PullToRefreshBox(
+                isRefreshing = refreshStatus is RefreshStatus.Loading && (refreshStatus as? RefreshStatus.Loading)?.passId == passId,
+                onRefresh = { viewModel.refreshPass(passId) },
+                modifier = Modifier.fillMaxSize()
             ) {
-                // Flippable card with swipe gesture
-                Card(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            rotationY = rotation
-                            cameraDistance = 12f * density.density
-                        }
-                        .pointerInput(targetRotation) {
-                            var dragOffset = 0f
-                            detectHorizontalDragGestures(
-                                onDragEnd = {
-                                    if (abs(dragOffset) > AnimationConstants.SWIPE_THRESHOLD_DP * density.density) {
-                                        // Check which side is currently showing
-                                        val normalizedRotation = ((targetRotation % 360) + 360) % 360
-                                        val isShowingFront = normalizedRotation < 90f || normalizedRotation >= 270f
-
-                                        // Flip in direction of swipe
-                                        // When on front: right = +180, left = -180
-                                        // When on back: reverse directions to match user expectation
-                                        val flipDirection = if (dragOffset > 0) 180f else -180f
-                                        targetRotation += if (isShowingFront) flipDirection else -flipDirection
-                                    }
-                                    dragOffset = 0f
-                                },
-                                onDragCancel = { dragOffset = 0f },
-                                onHorizontalDrag = { change, dragAmount ->
-                                    change.consume()
-                                    dragOffset += dragAmount
-                                }
-                            )
-                        }
-                        .clickable(enabled = false) { /* Prevent dismissing when clicking card */ },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.Transparent
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = null
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
+                    // Expandable card container
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer { alpha = contentAlpha.value }
+                            .fillMaxWidth(0.9f)
+                            .aspectRatio(0.7f)
+                            .graphicsLayer {
+                                scaleX = scale.value
+                                scaleY = scale.value
+                                translationX = offsetX.value
+                                translationY = offsetY.value
+                            }
                     ) {
-                        // Determine which side to show based on rotation
-                        // Normalize rotation to 0-360 range and check if we're on front or back
-                        val normalizedRotation = ((rotation % 360) + 360) % 360
-                        val showFront = normalizedRotation < 90f || normalizedRotation >= 270f
+                        // Flippable card with swipe gesture
+                        Card(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    rotationY = rotation
+                                    cameraDistance = 12f * density.density
+                                }
+                                .pointerInput(targetRotation) {
+                                    var dragOffset = 0f
+                                    detectHorizontalDragGestures(
+                                        onDragEnd = {
+                                            if (abs(dragOffset) > AnimationConstants.SWIPE_THRESHOLD_DP * density.density) {
+                                                // Check which side is currently showing
+                                                val normalizedRotation =
+                                                    ((targetRotation % 360) + 360) % 360
+                                                val isShowingFront =
+                                                    normalizedRotation < 90f || normalizedRotation >= 270f
 
-                        if (showFront) {
-                            // Front side
-                            PassCardFront(pass = currentPass, pkPassJson = pkPassJson)
-                        } else {
-                            // Back side (flip horizontally to correct orientation)
+                                                // Flip in direction of swipe
+                                                // When on front: right = +180, left = -180
+                                                // When on back: reverse directions to match user expectation
+                                                val flipDirection =
+                                                    if (dragOffset > 0) 180f else -180f
+                                                targetRotation += if (isShowingFront) flipDirection else -flipDirection
+                                            }
+                                            dragOffset = 0f
+                                        },
+                                        onDragCancel = { dragOffset = 0f },
+                                        onHorizontalDrag = { change, dragAmount ->
+                                            change.consume()
+                                            dragOffset += dragAmount
+                                        }
+                                    )
+                                }
+                                .clickable(enabled = false) { /* Prevent dismissing when clicking card */ },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.Transparent
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            border = null
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .graphicsLayer { rotationY = 180f }
+                                    .graphicsLayer { alpha = contentAlpha.value }
                             ) {
-                                PassCardBack(
-                                    pass = currentPass,
-                                    pkPassJson = pkPassJson,
-                                    viewModel = viewModel,
-                                    onDismiss = { dismiss() }
-                                )
+                                // Determine which side to show based on rotation
+                                // Normalize rotation to 0-360 range and check if we're on front or back
+                                val normalizedRotation = ((rotation % 360) + 360) % 360
+                                val showFront =
+                                    normalizedRotation < 90f || normalizedRotation >= 270f
+
+                                if (showFront) {
+                                    // Front side
+                                    PassCardFront(pass = currentPass, pkPassJson = pkPassJson)
+                                } else {
+                                    // Back side (flip horizontally to correct orientation)
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .graphicsLayer { rotationY = 180f }
+                                    ) {
+                                        PassCardBack(
+                                            pass = currentPass,
+                                            pkPassJson = pkPassJson,
+                                            viewModel = viewModel,
+                                            onDismiss = { dismiss() }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
 
-            // Buttons that slide up from bottom
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .align(Alignment.BottomCenter)
-                    .graphicsLayer {
-                        translationY = buttonSlide.value * 200f * density.density
-                        alpha = 1f - buttonSlide.value
+                    // Buttons that slide up from bottom
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .align(Alignment.BottomCenter)
+                            .graphicsLayer {
+                                translationY = buttonSlide.value * 200f * density.density
+                                alpha = 1f - buttonSlide.value
+                            }
+                            .padding(bottom = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Flip button
+                        OutlinedButton(
+                            onClick = { targetRotation += 180f },
+                            modifier = Modifier
+                                .fillMaxWidth(0.5f)
+                                .height(40.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = Color.White
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                Color.White.copy(alpha = 0.7f)
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Flip card",
+                                modifier = Modifier.size(16.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Flip",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Close button
+                        TextButton(
+                            onClick = { dismiss() },
+                            modifier = Modifier.fillMaxWidth(0.5f)
+                        ) {
+                            Text(
+                                text = "Close",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White
+                            )
+                        }
                     }
-                    .padding(bottom = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Flip button
-                OutlinedButton(
-                    onClick = { targetRotation += 180f },
-                    modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .height(40.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = Color.White
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.7f))
-                ) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = "Flip card",
-                        modifier = Modifier.size(16.dp),
-                        tint = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Flip",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White
-                    )
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Close button
-                TextButton(
-                    onClick = { dismiss() },
-                    modifier = Modifier.fillMaxWidth(0.5f)
-                ) {
-                    Text(
-                        text = "Close",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White
-                    )
                 }
             }
         }

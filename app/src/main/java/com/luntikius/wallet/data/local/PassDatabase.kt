@@ -15,7 +15,7 @@ import com.luntikius.wallet.data.model.Pass
  */
 @Database(
     entities = [Pass::class],
-     version = 3,
+     version = 5,
     exportSchema = false
 )
 @TypeConverters(PassTypeConverters::class)
@@ -53,6 +53,20 @@ abstract class PassDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add lastRefreshDate column (nullable, default null)
+                database.execSQL("ALTER TABLE passes ADD COLUMN lastRefreshDate INTEGER")
+            }
+        }
+
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add autoRefreshEnabled column (default true = 1)
+                database.execSQL("ALTER TABLE passes ADD COLUMN autoRefreshEnabled INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
         fun getInstance(context: Context): PassDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -60,7 +74,7 @@ abstract class PassDatabase : RoomDatabase() {
                     PassDatabase::class.java,
                     "pass_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance

@@ -13,10 +13,10 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +35,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.google.gson.Gson
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.PassFormat
 import com.luntikius.wallet.data.parser.pkpass.PKField
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.ui.components.HtmlText
@@ -45,6 +46,8 @@ import com.luntikius.wallet.ui.utils.generateBarcodeBitmap
 import com.luntikius.wallet.ui.utils.pkPassFormatToZXingFormat
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import io.github.alexzhirkevich.qrose.rememberQrCodePainter
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 
 /**
@@ -236,6 +239,7 @@ fun PassCardFront(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .background(backgroundColor, RoundedCornerShape(16.dp))
     ) {
         // 1. HEADER ROW: Logo (left) + Header Fields (right)
@@ -425,7 +429,7 @@ fun PassCardFront(
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(if (barcodeData.format == "PKBarcodeFormatQR") 140.dp else 100.dp),
+                                .height(if (barcodeData.format == "PKBarcodeFormatQR") 180.dp else 130.dp),
                             color = Color.White,
                             shape = RoundedCornerShape(12.dp)
                         ) {
@@ -483,14 +487,14 @@ fun PassCardBack(
         darkFallback = MaterialTheme.colorScheme.onSurface
     )
 
-    var showOptionsMenu by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(backgroundColor, RoundedCornerShape(16.dp))
     ) {
-        // 1. HEADER ROW: Logo (left) + Options Menu (right)
+        // 1. HEADER ROW: Logo (left) + Action Buttons (right)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -516,43 +520,28 @@ fun PassCardBack(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Options menu
-            Box {
-                IconButton(onClick = { showOptionsMenu = true }) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = "Options",
-                        tint = textColor
-                    )
+            // Share button
+            IconButton(
+                onClick = {
+                    // TODO: Implement share functionality
                 }
+            ) {
+                Icon(
+                    Icons.Outlined.Share,
+                    contentDescription = "Share",
+                    tint = textColor
+                )
+            }
 
-                DropdownMenu(
-                    expanded = showOptionsMenu,
-                    onDismissRequest = { showOptionsMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Delete") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Delete, contentDescription = null)
-                        },
-                        onClick = {
-                            viewModel.deletePass(pass)
-                            showOptionsMenu = false
-                            onDismiss()
-                        }
-                    )
-
-                    DropdownMenuItem(
-                        text = { Text("Share") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Share, contentDescription = null)
-                        },
-                        onClick = {
-                            // TODO: Implement share functionality
-                            showOptionsMenu = false
-                        }
-                    )
-                }
+            // Delete button
+            IconButton(
+                onClick = { showDeleteDialog = true }
+            ) {
+                Icon(
+                    Icons.Outlined.Delete,
+                    contentDescription = "Delete",
+                    tint = textColor
+                )
             }
         }
 
@@ -564,6 +553,62 @@ fun PassCardBack(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
         ) {
+            // Auto-refresh toggle (inside scrollable area)
+            val coroutineScope = rememberCoroutineScope()
+            val supportsAutoRefresh = remember(pkPassJson) {
+                pkPassJson?.webServiceURL != null
+            }
+
+            // Show OFF state when refresh is unavailable
+            var isEnabled by remember(pass.autoRefreshEnabled, supportsAutoRefresh) {
+                mutableStateOf(if (supportsAutoRefresh) pass.autoRefreshEnabled else false)
+            }
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Automatic Refresh",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (supportsAutoRefresh) {
+                                "Automatically check for updates daily"
+                            } else {
+                                "Not available for this pass"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
+                    Switch(
+                        checked = isEnabled,
+                        onCheckedChange = { newValue ->
+                            isEnabled = newValue
+                            coroutineScope.launch {
+                                viewModel.setAutoRefreshEnabled(pass.id, newValue)
+                            }
+                        },
+                        enabled = supportsAutoRefresh
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             pkPassJson?.let { json ->
                 val structure = json.boardingPass ?: json.eventTicket
                     ?: json.coupon ?: json.storeCard ?: json.generic
@@ -585,6 +630,37 @@ fun PassCardBack(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = {
+                Text("Delete Pass")
+            },
+            text = {
+                Text("Are you sure you want to delete this pass? This action cannot be undone.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deletePass(pass)
+                        showDeleteDialog = false
+                        onDismiss()
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

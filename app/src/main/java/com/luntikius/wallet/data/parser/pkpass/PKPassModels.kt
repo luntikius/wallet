@@ -35,7 +35,11 @@ data class PKPassJson(
     val locations: List<PKLocation>?,
     val relevantDate: String?,
     val expirationDate: String?,
-    val voided: Boolean?
+    val voided: Boolean?,
+
+    // Web service for updates
+    val webServiceURL: String?,
+    val authenticationToken: String?
 )
 
 /**

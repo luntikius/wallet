@@ -156,4 +156,51 @@ class PKPassParser(private val context: Context) : PassParser {
 
         return null
     }
+
+    /**
+     * Updates an existing pass with new pass.json data.
+     * Updates files in existing assetsDirectory and returns new Pass entity.
+     *
+     * @param existingPass The current pass to update
+     * @param newPassJson The new pass.json data from server
+     * @return Updated Pass entity with new data and updated timestamp
+     */
+    suspend fun updatePassFromJson(existingPass: Pass, newPassJson: PKPassJson): Pass = withContext(Dispatchers.IO) {
+        // Use existing assets directory
+        val passDir = File(existingPass.assetsDirectory)
+
+        // Note: In a full implementation, we would fetch new images from server if URLs changed
+        // For now, we keep existing images and only update the pass.json data
+
+        // Find best resolution for all images (use existing logic)
+        val iconPath = findBestImage(passDir, "icon") ?: existingPass.iconPath
+        val logoPath = findBestImage(passDir, "logo") ?: existingPass.logoPath
+        val stripPath = findBestImage(passDir, "strip") ?: existingPass.stripPath
+        val backgroundPath = findBestImage(passDir, "background") ?: existingPass.backgroundPath
+
+        // Determine pass category (may have changed)
+        val category = when {
+            newPassJson.boardingPass != null -> PassCategory.BOARDING_PASS
+            newPassJson.eventTicket != null -> PassCategory.EVENT_TICKET
+            newPassJson.coupon != null -> PassCategory.COUPON
+            newPassJson.storeCard != null -> PassCategory.STORE_CARD
+            else -> PassCategory.GENERIC
+        }
+
+        // Return updated Pass entity
+        existingPass.copy(
+            organizationName = newPassJson.organizationName,
+            description = newPassJson.description,
+            iconPath = iconPath,
+            logoPath = logoPath,
+            stripPath = stripPath,
+            backgroundPath = backgroundPath,
+            foregroundColor = normalizeColor(newPassJson.foregroundColor),
+            backgroundColor = normalizeColor(newPassJson.backgroundColor),
+            labelColor = normalizeColor(newPassJson.labelColor),
+            rawData = gson.toJson(newPassJson),
+            lastRefreshDate = System.currentTimeMillis(),
+            category = category
+        )
+    }
 }
