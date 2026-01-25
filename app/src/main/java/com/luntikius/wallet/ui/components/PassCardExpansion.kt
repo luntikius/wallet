@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -137,9 +138,9 @@ fun PassCardExpansion(
     passId: String,
     tilePosition: IntRect?,
     viewModel: PassViewModel,
-    onTileVisibilityChange: (visible: Boolean) -> Unit = {},
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    onTileVisibilityChange: (visible: Boolean) -> Unit = {},
 ) {
     var pass by remember { mutableStateOf<Pass?>(null) }
     var pkPassJson by remember { mutableStateOf<PKPassJson?>(null) }
@@ -155,7 +156,7 @@ fun PassCardExpansion(
     val contentAlpha = remember { Animatable(0f) } // Card content fade-in
 
     // Card flip rotation - tracks cumulative rotation in degrees
-    var targetRotation by remember { mutableStateOf(0f) }
+    var targetRotation by remember { mutableFloatStateOf(0f) }
     val rotation by animateFloatAsState(
         targetValue = targetRotation,
         animationSpec = tween(

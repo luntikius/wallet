@@ -44,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -110,12 +111,12 @@ fun PassGridScreen(
     val gridState = rememberLazyGridState()
 
     // Delete zone state
-    var deleteZoneTop by remember { mutableStateOf(0f) }
-    var deleteZoneBottom by remember { mutableStateOf(0f) }
-    var deleteZoneLeft by remember { mutableStateOf(0f) }
-    var deleteZoneRight by remember { mutableStateOf(0f) }
-    var fingerPositionY by remember { mutableStateOf(0f) }
-    var fingerPositionX by remember { mutableStateOf(0f) }
+    var deleteZoneTop by remember { mutableFloatStateOf(0f) }
+    var deleteZoneBottom by remember { mutableFloatStateOf(0f) }
+    var deleteZoneLeft by remember { mutableFloatStateOf(0f) }
+    var deleteZoneRight by remember { mutableFloatStateOf(0f) }
+    var fingerPositionY by remember { mutableFloatStateOf(0f) }
+    var fingerPositionX by remember { mutableFloatStateOf(0f) }
     var passToDelete by remember { mutableStateOf<Pass?>(null) }
     var isDragging by remember { mutableStateOf(false) }
     var dragStartedPasses by remember { mutableStateOf<List<Pass>>(emptyList()) }
@@ -350,8 +351,8 @@ fun PassGridScreen(
 fun PassTile(
     pass: Pass,
     isDragging: Boolean,
-    isExpanded: Boolean = false,
     modifier: Modifier = Modifier,
+    isExpanded: Boolean = false,
     onClick: () -> Unit,
     onPositioned: (IntRect) -> Unit = {},
     sharedTransitionScope: SharedTransitionScope,
