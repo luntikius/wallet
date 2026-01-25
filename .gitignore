@@ -13,3 +13,10 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Keystores - NEVER commit signing keys
+*.jks
+*.keystore
+release.jks
+wallet-upload-key.jks
+keystore.properties

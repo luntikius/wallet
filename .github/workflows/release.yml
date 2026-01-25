@@ -1,0 +1,151 @@
+name: Release to Google Play
+
+on:
+  push:
+    branches:
+      - 'release/**'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - none
+      release_track:
+        description: 'Google Play release track'
+        required: false
+        default: 'internal'
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+
+# Prevent multiple releases from running simultaneously
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and Release AAB
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    env:
+      VERSION_BUMP: ${{ inputs.version_bump || 'patch' }}
+      RELEASE_TRACK: ${{ inputs.release_track || 'internal' }}
+
+    steps:
+      - name: Checkout code with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Grant execute permission for scripts
+        run: |
+          chmod +x gradlew
+          chmod +x .github/scripts/setup-keystore.sh
+          chmod +x .github/scripts/bump-version.sh
+
+      - name: Bump version
+        id: version
+        run: |
+          ./.github/scripts/bump-version.sh
+          echo "NEW_VERSION=$(grep '^VERSION_NAME=' gradle.properties | cut -d'=' -f2)" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION_CODE=$(grep '^VERSION_CODE=' gradle.properties | cut -d'=' -f2)" >> $GITHUB_OUTPUT
+
+      - name: Setup keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: ./.github/scripts/setup-keystore.sh
+
+      - name: Build signed AAB
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "Building release AAB..."
+          ./gradlew clean bundleRelease --no-daemon --stacktrace
+
+      - name: Verify AAB was created
+        run: |
+          if [ ! -f app/build/outputs/bundle/release/app-release.aab ]; then
+            echo "Error: AAB file not found"
+            exit 1
+          fi
+          echo "AAB build completed successfully:"
+          ls -lh app/build/outputs/bundle/release/
+
+      - name: Upload to Google Play Store
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.luntikius.wallet
+          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          track: ${{ env.RELEASE_TRACK }}
+          status: completed
+          inAppUpdatePriority: 2
+
+      - name: Commit version bump to main
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Bump version to ${{ steps.version.outputs.NEW_VERSION }} (code ${{ steps.version.outputs.NEW_VERSION_CODE }}) [skip ci]"
+          branch: main
+          file_pattern: gradle.properties
+          commit_user_name: GitHub Actions
+          commit_user_email: actions@github.com
+          commit_author: GitHub Actions <actions@github.com>
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "app/build/outputs/bundle/release/app-release.aab"
+          tag: "v${{ steps.version.outputs.NEW_VERSION }}"
+          name: "Release v${{ steps.version.outputs.NEW_VERSION }}"
+          body: |
+            ## Release v${{ steps.version.outputs.NEW_VERSION }} (Build ${{ steps.version.outputs.NEW_VERSION_CODE }})
+
+            ### What's New
+            This release has been published to Google Play Store (${{ env.RELEASE_TRACK }} track).
+
+            ### Build Information
+            - **Version:** ${{ steps.version.outputs.NEW_VERSION }}
+            - **Version Code:** ${{ steps.version.outputs.NEW_VERSION_CODE }}
+            - **Release Track:** ${{ env.RELEASE_TRACK }}
+            - **Build Date:** ${{ github.event.head_commit.timestamp }}
+            - **Commit:** ${{ github.sha }}
+
+            ### Download
+            The AAB file is attached to this release and has been uploaded to Google Play Console.
+
+            ---
+            *This release was automatically created by GitHub Actions.*
+          draft: false
+          prerelease: ${{ env.RELEASE_TRACK != 'production' }}
+          token: ${{ secrets.GITHUB_TOKEN }}

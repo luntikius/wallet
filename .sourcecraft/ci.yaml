@@ -1,0 +1,217 @@
+# Sourcecraft CI/CD Pipeline for Wallet App
+# Documentation: https://sourcecraft.dev/portal/docs/en/sourcecraft/ci-cd-ref/
+
+on:
+  # Manual trigger for releases (via Sourcecraft UI or release branches)
+  push:
+    - workflows: [release-internal]
+      filter:
+        branches: ["release/*"]
+
+  # Automatic validation on PRs
+  pull_request:
+    - workflows: [build-validation]
+      filter:
+        target_branches: ["main"]
+
+workflows:
+  # Main release workflow - builds, signs, and publishes to Google Play
+  release-internal:
+    tasks:
+      - build-and-publish
+
+  # PR validation workflow - runs tests and builds debug APK
+  build-validation:
+    tasks:
+      - validate-build
+
+tasks:
+  # =========================
+  # Task 1: Build and Publish to Google Play
+  # =========================
+  - name: build-and-publish
+    env:
+      VERSION_BUMP: patch  # Configure: major/minor/patch/none
+      RELEASE_TRACK: internal  # Configure: internal/alpha/beta/production
+    cubes:
+      # Cube 1: Build signed AAB with version management
+      - name: build-aab
+        image: docker.io/library/eclipse-temurin:17-jdk
+        env:
+          KEYSTORE_BASE64: ${{ secrets.keystore-base64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.keystore-password }}
+          KEY_ALIAS: ${{ secrets.key-alias }}
+          KEY_PASSWORD: ${{ secrets.key-password }}
+          WORKSPACE_DIR: /workspace
+        script:
+          # Setup keystore using script
+          - chmod +x .sourcecraft/scripts/setup-keystore.sh
+          - .sourcecraft/scripts/setup-keystore.sh
+
+          # Install Android SDK
+          - apt-get update && apt-get install -y wget unzip
+          - wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          - unzip -q commandlinetools-linux-9477386_latest.zip -d /opt/android-sdk
+          - mkdir -p /opt/android-sdk/cmdline-tools/latest
+          - mv /opt/android-sdk/cmdline-tools/bin /opt/android-sdk/cmdline-tools/latest/ || true
+          - mv /opt/android-sdk/cmdline-tools/lib /opt/android-sdk/cmdline-tools/latest/ || true
+          - export ANDROID_HOME=/opt/android-sdk
+          - export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+          # Accept licenses and install build tools
+          - yes | sdkmanager --licenses || true
+          - sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+          # Build AAB using script (run from current directory where code is checked out)
+          - chmod +x .sourcecraft/scripts/build-aab.sh
+          - .sourcecraft/scripts/build-aab.sh
+
+        artifacts:
+          paths:
+            - app/build/outputs/bundle/release/*.aab
+
+      # Cube 3: Upload to Google Play Store
+      - name: upload-to-play-store
+        image: docker.io/library/python:3.11-slim
+        env:
+          GOOGLE_PLAY_JSON: ${{ secrets.google-play-service-account-json }}
+        script:
+          # Install Google Play API client
+          - pip install --quiet google-auth google-auth-httplib2 google-api-python-client
+
+          # Save service account JSON from environment variable
+          - printf '%s' "$GOOGLE_PLAY_JSON" > service-account.json
+
+          # Upload AAB using Python script
+          - |
+            cat > upload_to_play.py << 'EOF'
+            import os
+            import glob
+            from google.oauth2 import service_account
+            from googleapiclient.discovery import build
+            from googleapiclient.http import MediaFileUpload
+
+            SCOPES = ['https://www.googleapis.com/auth/androidpublisher']
+            PACKAGE_NAME = 'com.luntikius.wallet'
+            TRACK = os.environ.get('RELEASE_TRACK', 'internal')
+
+            print(f"Authenticating with Google Play API...")
+            credentials = service_account.Credentials.from_service_account_file(
+                'service-account.json', scopes=SCOPES)
+            service = build('androidpublisher', 'v3', credentials=credentials)
+
+            # Find AAB file
+            aab_files = glob.glob('app/build/outputs/bundle/release/*.aab')
+            if not aab_files:
+                raise FileNotFoundError("No AAB file found in app/build/outputs/bundle/release/")
+
+            aab_file = aab_files[0]
+            print(f"Found AAB: {aab_file}")
+            print(f"Uploading to {TRACK} track...")
+
+            # Create edit
+            edit_request = service.edits().insert(body={}, packageName=PACKAGE_NAME)
+            result = edit_request.execute()
+            edit_id = result['id']
+            print(f"Created edit: {edit_id}")
+
+            # Upload AAB
+            upload = MediaFileUpload(aab_file, mimetype='application/octet-stream')
+            bundle_response = service.edits().bundles().upload(
+                editId=edit_id,
+                packageName=PACKAGE_NAME,
+                media_body=upload
+            ).execute()
+
+            version_code = bundle_response['versionCode']
+            print(f"Uploaded bundle with version code: {version_code}")
+
+            # Assign to track
+            track_response = service.edits().tracks().update(
+                editId=edit_id,
+                track=TRACK,
+                packageName=PACKAGE_NAME,
+                body={
+                    'releases': [{
+                        'versionCodes': [version_code],
+                        'status': 'completed',
+                    }]
+                }
+            ).execute()
+            print(f"Assigned to {TRACK} track")
+
+            # Commit edit
+            commit_request = service.edits().commit(
+                editId=edit_id,
+                packageName=PACKAGE_NAME
+            ).execute()
+            print(f"Published successfully to {TRACK} track!")
+            print(f"Version code {version_code} is now live on Google Play Console")
+            EOF
+
+          - python upload_to_play.py
+
+      # Cube 4: Commit version bump back to main branch
+      - name: commit-version
+        image: docker.io/library/alpine/git:latest
+        script:
+          - git config user.name "Sourcecraft CI"
+          - git config user.email "ci@sourcecraft.dev"
+          - git add gradle.properties
+          - |
+            VERSION_NAME=$(grep "^VERSION_NAME=" gradle.properties | cut -d'=' -f2)
+            VERSION_CODE=$(grep "^VERSION_CODE=" gradle.properties | cut -d'=' -f2)
+            if git diff --cached --quiet; then
+              echo "No version changes to commit"
+            else
+              git commit -m "Bump version to $VERSION_NAME (code $VERSION_CODE) [skip ci]"
+              git push origin main
+              echo "Version bump committed to main branch"
+            fi
+
+  # =========================
+  # Task 2: Build Validation (for Pull Requests)
+  # =========================
+  - name: validate-build
+    cubes:
+      # Cube 1: Setup Android SDK and build debug
+      - name: build-debug
+        image: docker.io/library/eclipse-temurin:17-jdk
+        script:
+          # Install Android SDK
+          - apt-get update && apt-get install -y wget unzip
+          - wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          - unzip -q commandlinetools-linux-9477386_latest.zip -d /opt/android-sdk
+          - mkdir -p /opt/android-sdk/cmdline-tools/latest
+          - mv /opt/android-sdk/cmdline-tools/bin /opt/android-sdk/cmdline-tools/latest/ || true
+          - mv /opt/android-sdk/cmdline-tools/lib /opt/android-sdk/cmdline-tools/latest/ || true
+          - export ANDROID_HOME=/opt/android-sdk
+          - export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+          # Accept licenses and install build tools
+          - yes | sdkmanager --licenses || true
+          - sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+          # Run lint checks
+          - cd /workspace
+          - chmod +x gradlew
+          - echo "Running lint checks..."
+          - ./gradlew lintDebug --no-daemon --stacktrace || true
+
+          # Run unit tests
+          - echo "Running unit tests..."
+          - ./gradlew testDebugUnitTest --no-daemon --stacktrace
+
+          # Build debug APK
+          - echo "Building debug APK..."
+          - ./gradlew assembleDebug --no-daemon --stacktrace
+
+          # Verify outputs
+          - ls -lh app/build/outputs/apk/debug/
+          - echo "Build validation completed successfully"
+
+        artifacts:
+          paths:
+            - app/build/outputs/apk/debug/*.apk
+            - app/build/test-results/testDebugUnitTest/
+            - app/build/reports/lint-results-debug.html
