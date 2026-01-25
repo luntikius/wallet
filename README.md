@@ -1,5 +1,7 @@
 # Wallet App
 
+[![CI](https://github.com/luntikius/wallet/actions/workflows/pr-validation.yml/badge.svg)](https://github.com/luntikius/wallet/actions/workflows/pr-validation.yml)
+
 An Android wallet application built with Kotlin and Jetpack Compose. Supports multiple pass formats including Apple Wallet (PKPass) with modern Material 3 design.
 
 ## Features
@@ -26,7 +28,7 @@ An Android wallet application built with Kotlin and Jetpack Compose. Supports mu
 
 1. Clone the repository:
    ```bash
-   git clone https://sourcecraft.dev/<your-username>/wallet.git
+   git clone https://github.com/luntikius/wallet.git
    cd wallet
    ```
 
