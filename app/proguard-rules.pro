@@ -18,6 +18,9 @@
 # Keep all data models - they're serialized/deserialized
 -keep class com.luntikius.wallet.data.model.** { *; }
 
+# Keep PKPass parser models for Gson deserialization
+-keep class com.luntikius.wallet.data.parser.pkpass.** { *; }
+
 # =========================
 # Kotlin
 # =========================

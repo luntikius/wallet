@@ -50,18 +50,39 @@ An Android wallet application built with Kotlin and Jetpack Compose. Supports mu
 ```
 
 #### Release Build (requires signing config)
+
+**Option 1: Using local.properties (recommended for local development)**
+
+Add the following to `local.properties` (this file is gitignored):
+```properties
+KEYSTORE_FILE=/absolute/path/to/your/wallet-upload-key.jks
+KEYSTORE_PASSWORD=your-password
+KEY_ALIAS=wallet-upload
+KEY_PASSWORD=your-password
+```
+
+Then build:
+```bash
+# Build signed AAB
+./gradlew bundleRelease
+
+# Build signed APK
+./gradlew assembleRelease
+
+# Verify signature
+jarsigner -verify -verbose -certs app/build/outputs/bundle/release/*.aab
+```
+
+**Option 2: Using environment variables (for CI/CD)**
 ```bash
 # Set environment variables for signing
-export KEYSTORE_FILE=./wallet-upload-key.jks
+export KEYSTORE_FILE=/absolute/path/to/your/wallet-upload-key.jks
 export KEYSTORE_PASSWORD=your-password
 export KEY_ALIAS=wallet-upload
 export KEY_PASSWORD=your-password
 
 # Build signed AAB
 ./gradlew bundleRelease
-
-# Verify signature
-jarsigner -verify -verbose -certs app/build/outputs/bundle/release/*.aab
 ```
 
 ### Running Tests
@@ -354,8 +375,8 @@ app/
 ### Common Issues
 
 #### Build fails with "Keystore not found"
-- **Cause**: Environment variables not set
-- **Fix**: Export `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`
+- **Cause**: Signing configuration not set
+- **Fix**: Add keystore properties to `local.properties` or export environment variables (`KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`)
 
 #### R8 compilation error
 - **Cause**: Missing ProGuard rules
