@@ -26,6 +26,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -546,75 +549,77 @@ fun PassCardBack(
         }
 
         // 2. INFO BLOCKS: Scrollable content with back fields
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
+                .fillMaxHeight()
+                .padding(start = 16.dp, end = 16.dp,  bottom = 16.dp)
+                .clip(RoundedCornerShape(12.dp))
         ) {
-            // Auto-refresh toggle (inside scrollable area)
-            val coroutineScope = rememberCoroutineScope()
-            val supportsAutoRefresh = remember(pkPassJson) {
-                pkPassJson?.webServiceURL != null
-            }
+            item {
+                val coroutineScope = rememberCoroutineScope()
+                val supportsAutoRefresh = remember(pkPassJson) {
+                    pkPassJson?.webServiceURL != null
+                }
 
-            // Show OFF state when refresh is unavailable
-            var isEnabled by remember(pass.autoRefreshEnabled, supportsAutoRefresh) {
-                mutableStateOf(if (supportsAutoRefresh) pass.autoRefreshEnabled else false)
-            }
+                var isEnabled by remember(pass.autoRefreshEnabled, supportsAutoRefresh) {
+                    mutableStateOf(if (supportsAutoRefresh) pass.autoRefreshEnabled else false)
+                }
 
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color.White,
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Automatic Refresh",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = if (supportsAutoRefresh) {
-                                "Automatically check for updates daily"
-                            } else {
-                                "Not available for this pass"
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Automatic Refresh",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (supportsAutoRefresh) {
+                                    "Automatically check for updates daily"
+                                } else {
+                                    "Not available for this pass"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+
+                        Switch(
+                            checked = isEnabled,
+                            onCheckedChange = { newValue ->
+                                isEnabled = newValue
+                                coroutineScope.launch {
+                                    viewModel.setAutoRefreshEnabled(pass.id, newValue)
+                                }
                             },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
+                            enabled = supportsAutoRefresh
                         )
                     }
-
-                    Switch(
-                        checked = isEnabled,
-                        onCheckedChange = { newValue ->
-                            isEnabled = newValue
-                            coroutineScope.launch {
-                                viewModel.setAutoRefreshEnabled(pass.id, newValue)
-                            }
-                        },
-                        enabled = supportsAutoRefresh
-                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             pkPassJson?.let { json ->
                 val structure = json.boardingPass ?: json.eventTicket
                     ?: json.coupon ?: json.storeCard ?: json.generic
 
                 structure?.backFields?.let { fields ->
-                    fields.forEach { field ->
+                    items(fields) { field ->
                         val content = field.value?.toString() ?: ""
                         if (content.isNotBlank()) {
                             InfoBlock(
@@ -627,8 +632,6 @@ fun PassCardBack(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
