@@ -10,10 +10,10 @@ import com.luntikius.wallet.data.network.PKPassUpdateService
 import com.luntikius.wallet.data.parser.ParserRegistry
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.data.parser.pkpass.PKPassParser
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import java.io.File
 
 /**
  * Repository interface for pass operations.
@@ -55,7 +55,9 @@ interface PassRepository {
      * Refresh all passes by fetching updated data from their web services.
      * Returns a map of pass IDs to their update results.
      */
-    suspend fun refreshAllPasses(): Result<Map<String, com.luntikius.wallet.data.network.PKPassUpdateService.UpdateResult>>
+    suspend fun refreshAllPasses(): Result<
+        Map<String, com.luntikius.wallet.data.network.PKPassUpdateService.UpdateResult>,
+        >
 
     /**
      * Toggle automatic background refresh for a pass.
@@ -69,20 +71,16 @@ interface PassRepository {
 class PassRepositoryImpl(
     private val passDao: PassDao,
     private val parserRegistry: ParserRegistry,
-    private val context: Context
+    private val context: Context,
 ) : PassRepository {
 
     private val pkPassParser = PKPassParser(context)
     private val updateService = PKPassUpdateService(context, pkPassParser)
     private val gson = Gson()
 
-    override fun getAllPasses(): Flow<List<Pass>> {
-        return passDao.getAllPasses()
-    }
+    override fun getAllPasses(): Flow<List<Pass>> = passDao.getAllPasses()
 
-    override suspend fun getPassById(passId: String): Pass? {
-        return passDao.getPassById(passId)
-    }
+    override suspend fun getPassById(passId: String): Pass? = passDao.getPassById(passId)
 
     override suspend fun importPass(uri: Uri): Result<Pass> = withContext(Dispatchers.IO) {
         try {
@@ -90,13 +88,13 @@ class PassRepositoryImpl(
             val mimeType = context.contentResolver.getType(uri)
             val parser = parserRegistry.resolveParser(uri, mimeType)
                 ?: return@withContext Result.failure(
-                    Exception("Unsupported pass format")
+                    Exception("Unsupported pass format"),
                 )
 
             // Parse the pass file
             val result = parser.parse(uri)
                 ?: return@withContext Result.failure(
-                    Exception("Failed to parse pass file")
+                    Exception("Failed to parse pass file"),
                 )
 
             // Assign displayOrder to put new pass at end
@@ -168,14 +166,14 @@ class PassRepositoryImpl(
                         val voidedPassJson = passJson.copy(voided = true)
                         val voidedPass = pass.copy(
                             rawData = gson.toJson(voidedPassJson),
-                            lastRefreshDate = System.currentTimeMillis()
+                            lastRefreshDate = System.currentTimeMillis(),
                         )
                         passDao.updatePass(voidedPass)
                     }
                     is PKPassUpdateService.UpdateResult.NotModified -> {
                         // Update lastRefreshDate even though data didn't change
                         val refreshedPass = pass.copy(
-                            lastRefreshDate = System.currentTimeMillis()
+                            lastRefreshDate = System.currentTimeMillis(),
                         )
                         passDao.updatePass(refreshedPass)
                     }

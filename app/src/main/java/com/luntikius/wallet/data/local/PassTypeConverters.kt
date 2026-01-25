@@ -9,22 +9,14 @@ import com.luntikius.wallet.data.model.PassFormat
  */
 class PassTypeConverters {
     @TypeConverter
-    fun fromPassFormat(value: PassFormat): String {
-        return value.name
-    }
+    fun fromPassFormat(value: PassFormat): String = value.name
 
     @TypeConverter
-    fun toPassFormat(value: String): PassFormat {
-        return PassFormat.valueOf(value)
-    }
+    fun toPassFormat(value: String): PassFormat = PassFormat.valueOf(value)
 
     @TypeConverter
-    fun fromPassCategory(value: PassCategory): String {
-        return value.name
-    }
+    fun fromPassCategory(value: PassCategory): String = value.name
 
     @TypeConverter
-    fun toPassCategory(value: String): PassCategory {
-        return PassCategory.valueOf(value)
-    }
+    fun toPassCategory(value: String): PassCategory = PassCategory.valueOf(value)
 }

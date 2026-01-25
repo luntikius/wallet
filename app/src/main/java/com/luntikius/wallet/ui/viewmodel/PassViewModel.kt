@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -20,9 +19,7 @@ import kotlinx.coroutines.launch
  * ViewModel for pass management.
  * Handles pass import, deletion, and state management.
  */
-class PassViewModel(
-    private val repository: PassRepository
-) : ViewModel() {
+class PassViewModel(private val repository: PassRepository) : ViewModel() {
 
     /**
      * Loading state for initial data load.
@@ -37,7 +34,7 @@ class PassViewModel(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
-            initialValue = emptyList()
+            initialValue = emptyList(),
         )
 
     init {
@@ -112,7 +109,7 @@ class PassViewModel(
             } else {
                 _refreshStatus.value = RefreshStatus.Error(
                     result.exceptionOrNull()?.message ?: "Unknown error",
-                    passId
+                    passId,
                 )
             }
 
@@ -143,7 +140,7 @@ class PassViewModel(
             } else {
                 _refreshStatus.value = RefreshStatus.Error(
                     result.exceptionOrNull()?.message ?: "Unknown error",
-                    null
+                    null,
                 )
             }
 
@@ -174,9 +171,7 @@ class PassViewModel(
     /**
      * Get a specific pass by ID.
      */
-    suspend fun getPassById(passId: String): Pass? {
-        return repository.getPassById(passId)
-    }
+    suspend fun getPassById(passId: String): Pass? = repository.getPassById(passId)
 
     /**
      * Toggle automatic background refresh for a pass.

@@ -1,23 +1,47 @@
 package com.luntikius.wallet.ui.components
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshState
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material3.pulltorefresh.pullToRefresh
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,18 +51,15 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntOffset
 import com.google.gson.Gson
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
-import com.luntikius.wallet.ui.screens.PassCardFront
 import com.luntikius.wallet.ui.screens.PassCardBack
+import com.luntikius.wallet.ui.screens.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 /**
  * Animation specifications and constants for the expansion effect.
@@ -71,32 +92,32 @@ internal object AnimationConstants {
     // Animation specs
     val phaseOneCardFadeIn = tween<Float>(
         durationMillis = PHASE_1_DURATION_MS,
-        easing = LinearEasing
+        easing = LinearEasing,
     )
 
     val phaseTwoScale = tween<Float>(
         durationMillis = PHASE_2_DURATION_MS,
-        easing = FastOutSlowInEasing
+        easing = FastOutSlowInEasing,
     )
 
     val phaseTwoScrim = tween<Float>(
         durationMillis = PHASE_2_DURATION_MS,
-        easing = LinearEasing
+        easing = LinearEasing,
     )
 
     val phaseTwoButtons = tween<Float>(
         durationMillis = PHASE_2_DURATION_MS,
-        easing = EaseOutCubic
+        easing = EaseOutCubic,
     )
 
     val dismissalPhaseOneScale = tween<Float>(
         durationMillis = DISMISSAL_PHASE_1_DURATION_MS,
-        easing = FastOutSlowInEasing
+        easing = FastOutSlowInEasing,
     )
 
     val dismissalPhaseTwoFade = tween<Float>(
         durationMillis = DISMISSAL_PHASE_2_DURATION_MS,
-        easing = LinearEasing
+        easing = LinearEasing,
     )
 }
 
@@ -118,7 +139,7 @@ fun PassCardExpansion(
     viewModel: PassViewModel,
     onTileVisibilityChange: (visible: Boolean) -> Unit = {},
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var pass by remember { mutableStateOf<Pass?>(null) }
     var pkPassJson by remember { mutableStateOf<PKPassJson?>(null) }
@@ -139,9 +160,9 @@ fun PassCardExpansion(
         targetValue = targetRotation,
         animationSpec = tween(
             durationMillis = AnimationConstants.FLIP_DURATION_MS,
-            easing = FastOutSlowInEasing
+            easing = FastOutSlowInEasing,
         ),
-        label = "card flip"
+        label = "card flip",
     )
 
     val density = LocalDensity.current
@@ -185,7 +206,9 @@ fun PassCardExpansion(
             }
 
             // Wait for phase 1 to complete, then delay before phase 2
-            kotlinx.coroutines.delay((AnimationConstants.PHASE_1_DURATION_MS + AnimationConstants.INTER_PHASE_DELAY_MS).toLong())
+            kotlinx.coroutines.delay(
+                (AnimationConstants.PHASE_1_DURATION_MS + AnimationConstants.INTER_PHASE_DELAY_MS).toLong(),
+            )
 
             // Hide tile before Phase 2 starts
             onTileVisibilityChange(false)
@@ -225,7 +248,6 @@ fun PassCardExpansion(
         coroutineScope.launch {
             if (tilePosition != null) {
                 val targetCardWidth = screenWidth * 0.9f
-                val targetCardHeight = targetCardWidth / 0.7f
 
                 val targetScale = tilePosition.width.toFloat() / targetCardWidth
                 val targetCenterX = screenWidth / 2f
@@ -253,14 +275,19 @@ fun PassCardExpansion(
                         1f,
                         tween(
                             AnimationConstants.DISMISSAL_PHASE_1_DURATION_MS - 50,
-                            easing = FastOutSlowInEasing
-                        )
+                            easing = FastOutSlowInEasing,
+                        ),
                     )
                 }
 
                 // Wait for Phase 1 to complete, then delay before Phase 2
                 launch {
-                    kotlinx.coroutines.delay((AnimationConstants.DISMISSAL_PHASE_1_DURATION_MS + AnimationConstants.INTER_PHASE_DELAY_MS).toLong())
+                    kotlinx.coroutines.delay(
+                        (
+                            AnimationConstants.DISMISSAL_PHASE_1_DURATION_MS +
+                                AnimationConstants.INTER_PHASE_DELAY_MS
+                            ).toLong(),
+                    )
 
                     // Show tile at start of Phase 2
                     onTileVisibilityChange(true)
@@ -280,7 +307,12 @@ fun PassCardExpansion(
                     scrimAlpha.animateTo(0f, AnimationConstants.dismissalPhaseOneScale)
                 }
                 launch {
-                    kotlinx.coroutines.delay((AnimationConstants.DISMISSAL_PHASE_1_DURATION_MS + AnimationConstants.INTER_PHASE_DELAY_MS).toLong())
+                    kotlinx.coroutines.delay(
+                        (
+                            AnimationConstants.DISMISSAL_PHASE_1_DURATION_MS +
+                                AnimationConstants.INTER_PHASE_DELAY_MS
+                            ).toLong(),
+                    )
                     onTileVisibilityChange(true)
                     contentAlpha.animateTo(0f, AnimationConstants.dismissalPhaseTwoFade)
                 }
@@ -305,19 +337,21 @@ fun PassCardExpansion(
                 .clickable(
                     onClick = { dismiss() },
                     indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
+                    interactionSource = remember { MutableInteractionSource() },
                 ),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             // Pull-to-refresh wrapping the card
             PullToRefreshBox(
-                isRefreshing = refreshStatus is RefreshStatus.Loading && (refreshStatus as? RefreshStatus.Loading)?.passId == passId,
+                isRefreshing =
+                refreshStatus is RefreshStatus.Loading &&
+                    (refreshStatus as? RefreshStatus.Loading)?.passId == passId,
                 onRefresh = { viewModel.refreshPass(passId) },
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     // Expandable card container
                     Box(
@@ -329,7 +363,7 @@ fun PassCardExpansion(
                                 scaleY = scale.value
                                 translationX = offsetX.value
                                 translationY = offsetY.value
-                            }
+                            },
                     ) {
                         // Flippable card with swipe gesture
                         Card(
@@ -343,7 +377,9 @@ fun PassCardExpansion(
                                     var dragOffset = 0f
                                     detectHorizontalDragGestures(
                                         onDragEnd = {
-                                            if (abs(dragOffset) > AnimationConstants.SWIPE_THRESHOLD_DP * density.density) {
+                                            if (abs(dragOffset) >
+                                                AnimationConstants.SWIPE_THRESHOLD_DP * density.density
+                                            ) {
                                                 // Check which side is currently showing
                                                 val normalizedRotation =
                                                     ((targetRotation % 360) + 360) % 360
@@ -363,21 +399,21 @@ fun PassCardExpansion(
                                         onHorizontalDrag = { change, dragAmount ->
                                             change.consume()
                                             dragOffset += dragAmount
-                                        }
+                                        },
                                     )
                                 }
                                 .clickable(enabled = false) { /* Prevent dismissing when clicking card */ },
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color.Transparent
+                                containerColor = Color.Transparent,
                             ),
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                            border = null
+                            border = null,
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .graphicsLayer { alpha = contentAlpha.value }
+                                    .graphicsLayer { alpha = contentAlpha.value },
                             ) {
                                 // Determine which side to show based on rotation
                                 // Normalize rotation to 0-360 range and check if we're on front or back
@@ -393,13 +429,13 @@ fun PassCardExpansion(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .graphicsLayer { rotationY = 180f }
+                                            .graphicsLayer { rotationY = 180f },
                                     ) {
                                         PassCardBack(
                                             pass = currentPass,
                                             pkPassJson = pkPassJson,
                                             viewModel = viewModel,
-                                            onDismiss = { dismiss() }
+                                            onDismiss = { dismiss() },
                                         )
                                     }
                                 }
@@ -417,7 +453,7 @@ fun PassCardExpansion(
                                 alpha = 1f - buttonSlide.value
                             }
                             .padding(bottom = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         // Flip button
                         OutlinedButton(
@@ -427,24 +463,24 @@ fun PassCardExpansion(
                                 .height(40.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = Color.Transparent,
-                                contentColor = Color.White
+                                contentColor = Color.White,
                             ),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                Color.White.copy(alpha = 0.7f)
-                            )
+                                Color.White.copy(alpha = 0.7f),
+                            ),
                         ) {
                             Icon(
                                 Icons.Default.Refresh,
                                 contentDescription = "Flip card",
                                 modifier = Modifier.size(16.dp),
-                                tint = Color.White
+                                tint = Color.White,
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Flip",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.White
+                                color = Color.White,
                             )
                         }
 
@@ -453,16 +489,15 @@ fun PassCardExpansion(
                         // Close button
                         TextButton(
                             onClick = { dismiss() },
-                            modifier = Modifier.fillMaxWidth(0.5f)
+                            modifier = Modifier.fillMaxWidth(0.5f),
                         ) {
                             Text(
                                 text = "Close",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.White
+                                color = Color.White,
                             )
                         }
                     }
-
                 }
             }
         }

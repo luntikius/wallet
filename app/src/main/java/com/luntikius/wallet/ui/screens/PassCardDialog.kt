@@ -1,57 +1,85 @@
 package com.luntikius.wallet.ui.screens
 
 import android.graphics.BitmapFactory
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.google.gson.Gson
 import com.luntikius.wallet.data.model.Pass
-import com.luntikius.wallet.data.model.PassFormat
-import com.luntikius.wallet.data.parser.pkpass.PKField
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.ui.components.HtmlText
 import com.luntikius.wallet.ui.utils.ensureContrast
-import com.luntikius.wallet.ui.utils.parseColor
-import com.luntikius.wallet.ui.utils.stripHtml
 import com.luntikius.wallet.ui.utils.generateBarcodeBitmap
+import com.luntikius.wallet.ui.utils.parseColor
 import com.luntikius.wallet.ui.utils.pkPassFormatToZXingFormat
+import com.luntikius.wallet.ui.utils.stripHtml
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import io.github.alexzhirkevich.qrose.rememberQrCodePainter
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.io.File
+import kotlinx.coroutines.launch
 
 /**
  * Dialog that displays a pass card with flip animation.
@@ -59,11 +87,7 @@ import java.io.File
  * Back shows: additional fields
  */
 @Composable
-fun PassCardDialog(
-    passId: String,
-    viewModel: PassViewModel,
-    onDismiss: () -> Unit
-) {
+fun PassCardDialog(passId: String, viewModel: PassViewModel, onDismiss: () -> Unit) {
     var pass by remember { mutableStateOf<Pass?>(null) }
     var pkPassJson by remember { mutableStateOf<PKPassJson?>(null) }
 
@@ -79,22 +103,22 @@ fun PassCardDialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(
                 usePlatformDefaultWidth = false,
-                decorFitsSystemWindows = false
-            )
+                decorFitsSystemWindows = false,
+            ),
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.3f))
                     .clickable(onClick = onDismiss),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
                         .fillMaxHeight(0.85f)
                         .windowInsetsPadding(WindowInsets.systemBars)
-                        .clickable(enabled = false) { /* Prevent dismissing when clicking */ }
+                        .clickable(enabled = false) { /* Prevent dismissing when clicking */ },
                 ) {
                     // Flippable card
                     FlippablePassCard(
@@ -104,7 +128,7 @@ fun PassCardDialog(
                         onDismiss = onDismiss,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .fillMaxHeight()
+                            .fillMaxHeight(),
                     )
                 }
             }
@@ -121,19 +145,19 @@ fun FlippablePassCard(
     pkPassJson: PKPassJson?,
     viewModel: PassViewModel,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var isFlipped by remember { mutableStateOf(false) }
 
     val rotation by animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
         animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
-        label = "card flip"
+        label = "card flip",
     )
 
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Card(
             modifier = Modifier
@@ -145,10 +169,10 @@ fun FlippablePassCard(
                 },
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color.Transparent
+                containerColor = Color.Transparent,
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            border = null
+            border = null,
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 if (rotation <= 90f) {
@@ -159,13 +183,13 @@ fun FlippablePassCard(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .graphicsLayer { rotationY = 180f }
+                            .graphicsLayer { rotationY = 180f },
                     ) {
                         PassCardBack(
                             pass = pass,
                             pkPassJson = pkPassJson,
                             viewModel = viewModel,
-                            onDismiss = onDismiss
+                            onDismiss = onDismiss,
                         )
                     }
                 }
@@ -182,21 +206,21 @@ fun FlippablePassCard(
                 .height(40.dp),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = Color.Transparent,
-                contentColor = Color.White
+                contentColor = Color.White,
             ),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.7f))
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.7f)),
         ) {
             Icon(
                 Icons.Default.Refresh,
                 contentDescription = "Flip card",
                 modifier = Modifier.size(16.dp),
-                tint = Color.White
+                tint = Color.White,
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = "Flip",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.White
+                color = Color.White,
             )
         }
 
@@ -205,12 +229,12 @@ fun FlippablePassCard(
         // Close button
         TextButton(
             onClick = onDismiss,
-            modifier = Modifier.fillMaxWidth(0.5f)
+            modifier = Modifier.fillMaxWidth(0.5f),
         ) {
             Text(
                 text = "Close",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.White
+                color = Color.White,
             )
         }
 
@@ -222,11 +246,7 @@ fun FlippablePassCard(
  * Front side of the pass card.
  */
 @Composable
-fun PassCardFront(
-    pass: Pass,
-    pkPassJson: PKPassJson?,
-    modifier: Modifier = Modifier
-) {
+fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modifier) {
     val isDarkTheme = isSystemInDarkTheme()
     val backgroundColor = pass.backgroundColor?.let { parseColor(it) }
         ?: MaterialTheme.colorScheme.surface
@@ -236,14 +256,14 @@ fun PassCardFront(
         backgroundColor = backgroundColor,
         isDarkTheme = isDarkTheme,
         lightFallback = MaterialTheme.colorScheme.onSurface,
-        darkFallback = MaterialTheme.colorScheme.onSurface
+        darkFallback = MaterialTheme.colorScheme.onSurface,
     )
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .background(backgroundColor, RoundedCornerShape(16.dp))
+            .background(backgroundColor, RoundedCornerShape(16.dp)),
     ) {
         // 1. HEADER ROW: Logo (left) + Header Fields (right)
         val structure = pkPassJson?.let { json ->
@@ -254,7 +274,7 @@ fun PassCardFront(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.Top,
         ) {
             // Logo (prioritize logo over icon)
             val logoPath = pass.logoPath ?: pass.iconPath
@@ -268,7 +288,7 @@ fun PassCardFront(
                         modifier = Modifier
                             .height(40.dp)
                             .widthIn(max = 120.dp),
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.Fit,
                     )
                 }
             }
@@ -280,24 +300,24 @@ fun PassCardFront(
                 if (headerFields.isNotEmpty()) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.Top,
                     ) {
                         headerFields.forEach { field ->
                             Column(
-                                horizontalAlignment = Alignment.End
+                                horizontalAlignment = Alignment.End,
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: ""),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = textColor.copy(alpha = 0.6f),
-                                    textAlign = TextAlign.End
+                                    textAlign = TextAlign.End,
                                 )
                                 Text(
                                     text = stripHtml(field.value?.toString() ?: ""),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = textColor,
                                     fontWeight = FontWeight.SemiBold,
-                                    textAlign = TextAlign.End
+                                    textAlign = TextAlign.End,
                                 )
                             }
                         }
@@ -318,7 +338,7 @@ fun PassCardFront(
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight(),
-                        contentScale = ContentScale.FillWidth
+                        contentScale = ContentScale.FillWidth,
                     )
                 }
             }
@@ -328,7 +348,7 @@ fun PassCardFront(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             // Primary fields
             structure?.primaryFields?.let { fields ->
@@ -339,7 +359,7 @@ fun PassCardFront(
                             fields.size == 1 -> Arrangement.Start
                             fields.size == 2 -> Arrangement.SpaceBetween
                             else -> Arrangement.SpaceEvenly
-                        }
+                        },
                     ) {
                         fields.forEachIndexed { index, field ->
                             Column(
@@ -347,18 +367,18 @@ fun PassCardFront(
                                 modifier = when {
                                     fields.size > 2 -> Modifier.weight(1f)
                                     else -> Modifier
-                                }
+                                },
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: field.key),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = textColor.copy(alpha = 0.6f)
+                                    color = textColor.copy(alpha = 0.6f),
                                 )
                                 Text(
                                     text = stripHtml(field.value?.toString() ?: ""),
                                     style = MaterialTheme.typography.titleLarge,
                                     color = textColor,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 )
                             }
                         }
@@ -376,25 +396,25 @@ fun PassCardFront(
                             fields.size == 1 -> Arrangement.Start
                             fields.size == 2 -> Arrangement.SpaceBetween
                             else -> Arrangement.SpaceEvenly
-                        }
+                        },
                     ) {
                         fields.forEachIndexed { index, field ->
                             Column(
                                 modifier = when {
                                     fields.size > 2 -> Modifier.weight(1f)
                                     else -> Modifier
-                                }
+                                },
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: field.key),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = textColor.copy(alpha = 0.6f)
+                                    color = textColor.copy(alpha = 0.6f),
                                 )
                                 Text(
                                     text = stripHtml(field.value?.toString() ?: ""),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = textColor,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
                                 )
                             }
                         }
@@ -417,7 +437,7 @@ fun PassCardFront(
                             message = barcodeData.message,
                             format = it,
                             width = if (barcodeData.format == "PKBarcodeFormatQR") 600 else 800,
-                            height = if (barcodeData.format == "PKBarcodeFormatQR") 600 else 400
+                            height = if (barcodeData.format == "PKBarcodeFormatQR") 600 else 400,
                         )
                     }
                 }
@@ -426,7 +446,7 @@ fun PassCardFront(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 16.dp),
                 ) {
                     barcodeBitmap?.let { bitmap ->
                         Surface(
@@ -434,7 +454,7 @@ fun PassCardFront(
                                 .fillMaxWidth()
                                 .height(if (barcodeData.format == "PKBarcodeFormatQR") 180.dp else 130.dp),
                             color = Color.White,
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Image(
                                 bitmap = bitmap.asImageBitmap(),
@@ -442,7 +462,7 @@ fun PassCardFront(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .padding(12.dp),
-                                contentScale = ContentScale.Fit
+                                contentScale = ContentScale.Fit,
                             )
                         }
                     }
@@ -454,7 +474,7 @@ fun PassCardFront(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = textColor.copy(alpha = 0.7f),
                                 modifier = Modifier.padding(top = 8.dp),
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
@@ -476,7 +496,7 @@ fun PassCardBack(
     pkPassJson: PKPassJson?,
     viewModel: PassViewModel,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val backgroundColor = pass.backgroundColor?.let { parseColor(it) }
@@ -487,7 +507,7 @@ fun PassCardBack(
         backgroundColor = backgroundColor,
         isDarkTheme = isDarkTheme,
         lightFallback = MaterialTheme.colorScheme.onSurface,
-        darkFallback = MaterialTheme.colorScheme.onSurface
+        darkFallback = MaterialTheme.colorScheme.onSurface,
     )
 
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -495,14 +515,14 @@ fun PassCardBack(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(backgroundColor, RoundedCornerShape(16.dp))
+            .background(backgroundColor, RoundedCornerShape(16.dp)),
     ) {
         // 1. HEADER ROW: Logo (left) + Action Buttons (right)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Logo (prioritize logo over icon)
             val logoPath = pass.logoPath ?: pass.iconPath
@@ -516,7 +536,7 @@ fun PassCardBack(
                         modifier = Modifier
                             .height(40.dp)
                             .widthIn(max = 120.dp),
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.Fit,
                     )
                 }
             }
@@ -527,23 +547,23 @@ fun PassCardBack(
             IconButton(
                 onClick = {
                     // TODO: Implement share functionality
-                }
+                },
             ) {
                 Icon(
                     Icons.Outlined.Share,
                     contentDescription = "Share",
-                    tint = textColor
+                    tint = textColor,
                 )
             }
 
             // Delete button
             IconButton(
-                onClick = { showDeleteDialog = true }
+                onClick = { showDeleteDialog = true },
             ) {
                 Icon(
                     Icons.Outlined.Delete,
                     contentDescription = "Delete",
-                    tint = textColor
+                    tint = textColor,
                 )
             }
         }
@@ -553,8 +573,8 @@ fun PassCardBack(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight()
-                .padding(start = 16.dp, end = 16.dp,  bottom = 16.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .clip(RoundedCornerShape(12.dp)),
         ) {
             item {
                 val coroutineScope = rememberCoroutineScope()
@@ -569,20 +589,20 @@ fun PassCardBack(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.White,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Automatic Refresh",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
                                 text = if (supportsAutoRefresh) {
@@ -592,7 +612,7 @@ fun PassCardBack(
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier.padding(top = 4.dp),
                             )
                         }
 
@@ -604,7 +624,7 @@ fun PassCardBack(
                                     viewModel.setAutoRefreshEnabled(pass.id, newValue)
                                 }
                             },
-                            enabled = supportsAutoRefresh
+                            enabled = supportsAutoRefresh,
                         )
                     }
                 }
@@ -625,7 +645,7 @@ fun PassCardBack(
                             InfoBlock(
                                 title = field.label ?: "",
                                 htmlContent = content,
-                                textColor = textColor
+                                textColor = textColor,
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                         }
@@ -651,18 +671,18 @@ fun PassCardBack(
                         viewModel.deletePass(pass)
                         showDeleteDialog = false
                         onDismiss()
-                    }
+                    },
                 ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showDeleteDialog = false }
+                    onClick = { showDeleteDialog = false },
                 ) {
                     Text("Cancel")
                 }
-            }
+            },
         )
     }
 }
@@ -671,19 +691,14 @@ fun PassCardBack(
  * Info block for displaying back field with HTML content.
  */
 @Composable
-private fun InfoBlock(
-    title: String,
-    htmlContent: String,
-    textColor: Color,
-    modifier: Modifier = Modifier
-) {
+private fun InfoBlock(title: String, htmlContent: String, textColor: Color, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = Color.White,
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             // Block title/label (only if not blank)
             if (title.isNotBlank()) {
@@ -692,7 +707,7 @@ private fun InfoBlock(
                         text = title,
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.Black.copy(alpha = 0.6f),
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
 
@@ -704,7 +719,7 @@ private fun InfoBlock(
                 HtmlText(
                     html = htmlContent,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black
+                    color = Color.Black,
                 )
             }
         }

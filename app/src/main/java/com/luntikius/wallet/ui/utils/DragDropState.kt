@@ -3,7 +3,6 @@ package com.luntikius.wallet.ui.utils
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -15,7 +14,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 
 /**
@@ -143,9 +141,7 @@ class DragDropState {
 }
 
 @Composable
-fun rememberDragDropState(): DragDropState {
-    return remember { DragDropState() }
-}
+fun rememberDragDropState(): DragDropState = remember { DragDropState() }
 
 /**
  * Modifier for draggable grid items.
@@ -154,7 +150,7 @@ fun Modifier.draggableGridItem(
     state: DragDropState,
     index: Int,
     enabled: Boolean = true,
-    onDragEnd: (fromIndex: Int, toIndex: Int?, overDeleteZone: Boolean) -> Unit
+    onDragEnd: (fromIndex: Int, toIndex: Int?, overDeleteZone: Boolean) -> Unit,
 ): Modifier = this
     .onGloballyPositioned { coordinates ->
         val size = coordinates.size
@@ -162,28 +158,31 @@ fun Modifier.draggableGridItem(
         state.updateItemPosition(index, center, size)
     }
     .then(
-        if (!enabled) Modifier
-        else Modifier.pointerInput(index) {
-            detectDragGesturesAfterLongPress(
-                onDragStart = { offset ->
-                    val center = Offset(size.width / 2f, size.height / 2f) + offset
-                    state.onDragStart(index, center)
-                },
-                onDrag = { change, dragAmount ->
-                    change.consume()
-                    state.onDrag(dragAmount)
-                },
-                onDragEnd = {
-                    val target = state.targetIndex
-                    val overDelete = state.isOverDeleteZone
-                    state.onDragEnd()
-                    onDragEnd(index, target, overDelete)
-                },
-                onDragCancel = {
-                    state.onDragEnd()
-                }
-            )
-        }
+        if (!enabled) {
+            Modifier
+        } else {
+            Modifier.pointerInput(index) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { offset ->
+                        val center = Offset(size.width / 2f, size.height / 2f) + offset
+                        state.onDragStart(index, center)
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        state.onDrag(dragAmount)
+                    },
+                    onDragEnd = {
+                        val target = state.targetIndex
+                        val overDelete = state.isOverDeleteZone
+                        state.onDragEnd()
+                        onDragEnd(index, target, overDelete)
+                    },
+                    onDragCancel = {
+                        state.onDragEnd()
+                    },
+                )
+            }
+        },
     )
     .zIndex(if (state.draggedIndex == index) 999f else 0f)
     .graphicsLayer {

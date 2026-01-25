@@ -7,12 +7,10 @@ import androidx.compose.ui.graphics.luminance
 /**
  * Parse hex color string to Color.
  */
-fun parseColor(colorString: String): Color {
-    return try {
-        Color(android.graphics.Color.parseColor(colorString))
-    } catch (e: Exception) {
-        Color.Unspecified
-    }
+fun parseColor(colorString: String): Color = try {
+    Color(android.graphics.Color.parseColor(colorString))
+} catch (e: Exception) {
+    Color.Unspecified
 }
 
 /**
@@ -24,7 +22,7 @@ fun ensureContrast(
     backgroundColor: Color?,
     isDarkTheme: Boolean,
     lightFallback: Color,
-    darkFallback: Color
+    darkFallback: Color,
 ): Color {
     if (foregroundColor == null || backgroundColor == null) {
         return if (isDarkTheme) darkFallback else lightFallback
@@ -55,11 +53,4 @@ private fun calculateContrastRatio(color1: Color, color2: Color): Float {
 /**
  * Strip HTML tags from a string and decode HTML entities.
  */
-fun stripHtml(html: String): String {
-    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-        Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString().trim()
-    } else {
-        @Suppress("DEPRECATION")
-        Html.fromHtml(html).toString().trim()
-    }
-}
+fun stripHtml(html: String): String = Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString().trim()

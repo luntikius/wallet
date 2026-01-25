@@ -8,10 +8,10 @@ import com.luntikius.wallet.data.model.PassCategory
 import com.luntikius.wallet.data.model.PassFormat
 import com.luntikius.wallet.data.parser.ParseResult
 import com.luntikius.wallet.data.parser.PassParser
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.zip.ZipInputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Parser for Apple Wallet PKPass files (.pkpass).
@@ -44,9 +44,9 @@ class PKPassParser(private val context: Context) : PassParser {
                             passJson = gson.fromJson(String(bytes), PKPassJson::class.java)
                         }
                         fileName.matches(Regex("icon(@\\dx)?\\.png")) ||
-                        fileName.matches(Regex("logo(@\\dx)?\\.png")) ||
-                        fileName.matches(Regex("strip(@\\dx)?\\.png")) ||
-                        fileName.matches(Regex("background(@\\dx)?\\.png")) -> {
+                            fileName.matches(Regex("logo(@\\dx)?\\.png")) ||
+                            fileName.matches(Regex("strip(@\\dx)?\\.png")) ||
+                            fileName.matches(Regex("background(@\\dx)?\\.png")) -> {
                             extractedFiles[fileName] = bytes
                         }
                     }
@@ -103,7 +103,7 @@ class PKPassParser(private val context: Context) : PassParser {
                 assetsDirectory = passDir.absolutePath,
                 rawData = gson.toJson(passJson),
                 importedDate = System.currentTimeMillis(),
-                category = category
+                category = category,
             )
 
             ParseResult(pass, gson.toJson(passJson))
@@ -113,22 +113,18 @@ class PKPassParser(private val context: Context) : PassParser {
         }
     }
 
-    override fun getSupportedFormats(): List<PassFormat> {
-        return listOf(PassFormat.PKPASS)
-    }
+    override fun getSupportedFormats(): List<PassFormat> = listOf(PassFormat.PKPASS)
 
-    override fun canParse(uri: Uri, mimeType: String?): Boolean {
-        return mimeType == "application/vnd.apple.pkpass" ||
-                uri.path?.endsWith(".pkpass") == true ||
-                uri.toString().endsWith(".pkpass")
-    }
+    override fun canParse(uri: Uri, mimeType: String?): Boolean = mimeType == "application/vnd.apple.pkpass" ||
+        uri.path?.endsWith(".pkpass") == true ||
+        uri.toString().endsWith(".pkpass")
 
     /**
      * Find the best available image resolution for a given image type.
      * Preference: image@3x.png > image@2x.png > image.png
      */
     private fun findBestImage(passDir: File, baseName: String): String? {
-        val imageOptions = listOf("${baseName}@3x.png", "${baseName}@2x.png", "$baseName.png")
+        val imageOptions = listOf("$baseName@3x.png", "$baseName@2x.png", "$baseName.png")
         return imageOptions
             .map { File(passDir, it) }
             .firstOrNull { it.exists() }
@@ -200,7 +196,7 @@ class PKPassParser(private val context: Context) : PassParser {
             labelColor = normalizeColor(newPassJson.labelColor),
             rawData = gson.toJson(newPassJson),
             lastRefreshDate = System.currentTimeMillis(),
-            category = category
+            category = category,
         )
     }
 }

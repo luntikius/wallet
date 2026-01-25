@@ -38,5 +38,5 @@ data class ParseResult(
     val pass: Pass,
 
     /** Raw format-specific data (e.g., JSON string for PKPass) */
-    val rawData: String
+    val rawData: String,
 )

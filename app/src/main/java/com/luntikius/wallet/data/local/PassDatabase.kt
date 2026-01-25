@@ -15,8 +15,8 @@ import com.luntikius.wallet.data.model.Pass
  */
 @Database(
     entities = [Pass::class],
-     version = 5,
-    exportSchema = false
+    version = 5,
+    exportSchema = false,
 )
 @TypeConverters(PassTypeConverters::class)
 abstract class PassDatabase : RoomDatabase() {
@@ -42,14 +42,16 @@ abstract class PassDatabase : RoomDatabase() {
 
                 // Assign sequential order based on existing importedDate DESC to preserve current order
                 // Using a temporary table approach for reliable ordering
-                database.execSQL("""
+                database.execSQL(
+                    """
                     UPDATE passes
                     SET displayOrder = (
                         SELECT COUNT(*)
                         FROM passes AS p2
                         WHERE p2.importedDate > passes.importedDate
                     )
-                """.trimIndent())
+                    """.trimIndent(),
+                )
             }
         }
 
@@ -67,18 +69,16 @@ abstract class PassDatabase : RoomDatabase() {
             }
         }
 
-        fun getInstance(context: Context): PassDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    PassDatabase::class.java,
-                    "pass_database"
-                )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
-                    .build()
-                INSTANCE = instance
-                instance
-            }
+        fun getInstance(context: Context): PassDatabase = INSTANCE ?: synchronized(this) {
+            val instance = Room.databaseBuilder(
+                context.applicationContext,
+                PassDatabase::class.java,
+                "pass_database",
+            )
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .build()
+            INSTANCE = instance
+            instance
         }
     }
 }
