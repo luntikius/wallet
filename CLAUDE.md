@@ -77,13 +77,42 @@ Currently implemented: PKPass (Apple Wallet) format via `PKPassParser`
 ### Data Layer
 
 - **Room Database**: Single-source-of-truth for passes (`PassDatabase`)
-- **Repository Pattern**: `PassRepository` interface with `PassRepositoryImpl` handles pass import/export/deletion
-- **DAO**: `PassDao` provides reactive Flow-based queries
+  - Database name: `pass_database`
+  - Current version: 5 (includes 4 migrations for schema evolution)
+  - Singleton pattern with thread-safe initialization
+- **Repository Pattern**: `PassRepository` interface with `PassRepositoryImpl` handles pass import/export/deletion/refresh
+- **DAO**: `PassDao` provides reactive Flow-based queries with custom ordering (`displayOrder ASC, importedDate DESC`)
 - **Type Converters**: `PassTypeConverters` handles enum serialization for Room
+
+**Database Schema (Pass Entity):**
+The `Pass` entity includes:
+- Common fields: `organizationName`, `description`, `iconPath`, `logoPath`, color fields
+- Format-specific: `rawData` (JSON blob preserving format-specific data)
+- Refresh tracking: `lastRefreshDate`, `autoRefreshEnabled`
+- Display management: `displayOrder` (for drag-and-drop grid reordering)
+- Category: `PassCategory` enum (BOARDING_PASS, EVENT_TICKET, COUPON, STORE_CARD, GENERIC)
+
+**Database Migrations:**
+- v1→v2: Added image path columns (logoPath, stripPath, backgroundPath)
+- v2→v3: Added displayOrder for custom grid ordering
+- v3→v4: Added lastRefreshDate for refresh tracking
+- v4→v5: Added autoRefreshEnabled boolean
 
 **Key flows:**
 - Pass import: URI → ParserRegistry → Parser → Pass entity → Room database
 - Pass deletion: Database removal + cleanup of internal storage files (assets directory)
+- Pass refresh: Network fetch → Parser update → Database sync
+
+**Internal Storage Structure:**
+Pass assets are stored in app's internal storage:
+```
+/app/files/passes/pkpass/{serialNumber}/
+  ├── icon.png (or @2x, @3x variants)
+  ├── logo.png
+  ├── strip.png
+  └── background.png
+```
+PKPassParser extracts ZIP archives and selects best image resolution (@3x > @2x > @1x)
 
 ### UI Layer
 
@@ -94,15 +123,25 @@ Currently implemented: PKPass (Apple Wallet) format via `PKPassParser`
 - **Edge-to-Edge**: App uses edge-to-edge display with proper inset handling via Scaffold
 
 **Navigation Structure:**
-- Grid Screen (`PassGridScreen`): Displays all passes in a grid layout
+- Grid Screen (`PassGridScreen`): Displays all passes in a grid layout with drag-and-drop reordering
 - Detail Screen (`PassDetailScreen`): Shows expanded pass with barcode/QR code
 - Routes defined in `ui/navigation/NavGraph.kt`
+- Shared element transitions between grid and detail screens
+
+**Grid Features:**
+- Drag-and-drop reordering: Uses Reorderable library with custom `displayOrder` persistence
+- Pull-to-refresh: Manual pass refresh trigger
+- Swipe-to-delete: Delete zone appears during drag operations
+- Optimistic UI updates during drag operations
 
 ### ViewModel Layer
 
 - **PassViewModel**: Single ViewModel manages all pass state using StateFlow
-- **Import Status**: Tracks import operations with sealed class pattern (`ImportStatus`)
+- **State Management**: Uses sealed classes for operation status tracking:
+  - `ImportStatus`: Idle, Loading, Success, Error(message)
+  - `RefreshStatus`: Idle, Loading(passId), Success(updatedCount), Error(message, passId)
 - **Reactive Updates**: Exposes `Flow<List<Pass>>` from repository for automatic UI updates
+- **Coroutine Scope**: Uses `viewModelScope.launch {}` for async operations
 
 ### Theme System
 
@@ -116,12 +155,50 @@ The theme supports:
 - Dynamic color extraction from system (Android 12+)
 - System theme following via `isSystemInDarkTheme()`
 
+### Network Layer
+
+**PKPass Update Protocol** (`data/network/PKPassUpdateService.kt`):
+- Extracts web service URL and auth token from pass `rawData` JSON
+- Creates dynamic Retrofit instance for each pass's specific service
+- Makes authenticated requests to fetch updated pass data
+- Handles standard PKPass web service responses:
+  - 200: Updated (new pass data provided)
+  - 304: Not Modified
+  - 401: Unauthorized
+  - 404: Deleted/Voided
+  - Network errors
+
+**Network Module** (`data/network/NetworkModule.kt`):
+- Centralized Gson and OkHttp client configuration
+- Shared across all network operations
+- Includes logging interceptor for debugging
+
+### Background Refresh System
+
+**WorkManager Integration** (`data/worker/PassRefreshWorker.kt`):
+- Periodic background refresh using WorkManager
+- Runs every 24 hours with 2-hour flex period
+- Constraints: WiFi + battery not low
+- Exponential backoff on failure
+- Filters passes: only refreshes if `autoRefreshEnabled == true`
+- Format-gated: only PKPASS format supports refresh currently
+
+**Scheduling in MainActivity:**
+```kotlin
+PeriodicWorkRequestBuilder(1 day, 2 hour flex)
+    .setConstraints(WiFi + battery not low)
+    .setBackoffPolicy(EXPONENTIAL)
+    .enqueueUniquePeriodicWork("pass_refresh", KEEP)
+```
+
 ### Key Architectural Decisions
 
-1. **Manual Dependency Injection**: Database, repository, and ViewModel are manually instantiated in `MainActivity`. No DI framework (Hilt/Koin) is used.
+1. **Manual Dependency Injection**: Database, repository, and ViewModel are manually instantiated in `MainActivity`. No DI framework (Hilt/Koin) is used. Note: `PassRefreshWorker` re-instantiates dependencies for background execution.
 2. **Coroutines & Flow**: All async operations use Kotlin coroutines; reactive data uses Flow
 3. **Internal Storage**: Pass assets (images, raw files) stored in app's internal storage directory, referenced by path in Room database
 4. **Intent Handling**: App handles `ACTION_VIEW` intents for `.pkpass` files via `MainActivity.onNewIntent()`
+5. **Single ViewModel**: One ViewModel manages all pass state for simplified state management
+6. **Sealed Class Status Pattern**: Import and refresh operations use sealed classes for type-safe state representation
 
 ## Dependency Management
 
