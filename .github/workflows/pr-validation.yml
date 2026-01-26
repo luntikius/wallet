@@ -49,6 +49,21 @@ jobs:
       - name: Run Android Lint
         run: ./gradlew lintDebug --no-daemon --stacktrace
 
+      - name: Fix SARIF file for GitHub Code Scanning
+        if: always()
+        run: |
+          SARIF_FILE="app/build/reports/lint-results-debug.sarif"
+          if [ -f "$SARIF_FILE" ]; then
+            # Fix column numbers: replace "startColumn": 0 with "startColumn": 1
+            # and "endColumn": 0 with "endColumn": 1
+            sed -i.bak 's/"startColumn": 0/"startColumn": 1/g' "$SARIF_FILE"
+            sed -i.bak 's/"endColumn": 0/"endColumn": 1/g' "$SARIF_FILE"
+            rm -f "${SARIF_FILE}.bak"
+            echo "Fixed SARIF column numbers"
+          else
+            echo "SARIF file not found, skipping fix"
+          fi
+
       - name: Upload lint reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -63,7 +78,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Security
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: app/build/reports/lint-results-debug.sarif
           category: android-lint
