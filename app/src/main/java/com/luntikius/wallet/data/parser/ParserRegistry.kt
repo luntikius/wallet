@@ -10,7 +10,7 @@ import com.luntikius.wallet.data.parser.pkpass.PKPassParser
  */
 class ParserRegistry(context: Context) {
     private val parsers: List<PassParser> = listOf(
-        PKPassParser(context)
+        PKPassParser(context),
         // Future parsers can be added here:
         // GoogleWalletParser(context),
         // CustomPassParser(context)
@@ -22,9 +22,7 @@ class ParserRegistry(context: Context) {
      * @param mimeType MIME type of the file (may be null)
      * @return PassParser that can handle the file, or null if no parser found
      */
-    fun resolveParser(uri: Uri, mimeType: String?): PassParser? {
-        return parsers.firstOrNull { it.canParse(uri, mimeType) }
-    }
+    fun resolveParser(uri: Uri, mimeType: String?): PassParser? = parsers.firstOrNull { it.canParse(uri, mimeType) }
 
     /**
      * Get all registered parsers.

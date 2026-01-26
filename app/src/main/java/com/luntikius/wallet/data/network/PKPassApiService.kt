@@ -33,6 +33,6 @@ interface PKPassApiService {
     suspend fun getPassUpdate(
         @Path("passTypeIdentifier") passTypeIdentifier: String,
         @Path("serialNumber") serialNumber: String,
-        @Header("Authorization") authToken: String
+        @Header("Authorization") authToken: String,
     ): Response<ResponseBody>
 }

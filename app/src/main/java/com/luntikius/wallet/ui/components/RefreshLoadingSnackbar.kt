@@ -23,15 +23,12 @@ import com.luntikius.wallet.data.model.RefreshStatus
  * Displays loading, success, or error states with appropriate styling.
  */
 @Composable
-fun RefreshLoadingSnackbar(
-    refreshStatus: RefreshStatus,
-    modifier: Modifier = Modifier
-) {
+fun RefreshLoadingSnackbar(refreshStatus: RefreshStatus, modifier: Modifier = Modifier) {
     AnimatedVisibility(
         visible = refreshStatus !is RefreshStatus.Idle,
         enter = fadeIn(),
         exit = fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         val (backgroundColor, textColor, message, showProgress) = when (refreshStatus) {
             is RefreshStatus.Loading -> {
@@ -44,7 +41,7 @@ fun RefreshLoadingSnackbar(
                     MaterialTheme.colorScheme.primaryContainer,
                     MaterialTheme.colorScheme.onPrimaryContainer,
                     msg,
-                    true
+                    true,
                 )
             }
             is RefreshStatus.Success -> {
@@ -57,7 +54,7 @@ fun RefreshLoadingSnackbar(
                     MaterialTheme.colorScheme.tertiaryContainer,
                     MaterialTheme.colorScheme.onTertiaryContainer,
                     msg,
-                    false
+                    false,
                 )
             }
             is RefreshStatus.Error -> {
@@ -65,7 +62,7 @@ fun RefreshLoadingSnackbar(
                     MaterialTheme.colorScheme.errorContainer,
                     MaterialTheme.colorScheme.onErrorContainer,
                     refreshStatus.message,
-                    false
+                    false,
                 )
             }
             RefreshStatus.Idle -> {
@@ -74,7 +71,7 @@ fun RefreshLoadingSnackbar(
                     MaterialTheme.colorScheme.surface,
                     MaterialTheme.colorScheme.onSurface,
                     "",
-                    false
+                    false,
                 )
             }
         }
@@ -83,24 +80,24 @@ fun RefreshLoadingSnackbar(
             color = backgroundColor,
             shape = RoundedCornerShape(8.dp),
             shadowElevation = 4.dp,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (showProgress) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         color = textColor,
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                 }
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = textColor
+                    color = textColor,
                 )
             }
         }
@@ -110,9 +107,4 @@ fun RefreshLoadingSnackbar(
 /**
  * Helper data class for destructuring multiple values.
  */
-private data class Tuple4<A, B, C, D>(
-    val first: A,
-    val second: B,
-    val third: C,
-    val fourth: D
-)
+private data class Tuple4<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)

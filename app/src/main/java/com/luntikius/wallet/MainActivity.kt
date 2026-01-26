@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
         val repository = PassRepositoryImpl(
             passDao = database.passDao(),
             parserRegistry = parserRegistry,
-            context = applicationContext
+            context = applicationContext,
         )
         viewModel = PassViewModel(repository)
 
@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
                 PassNavGraph(
                     navController = navController,
                     viewModel = viewModel,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
 
                 // Handle intent for opening pass files
@@ -92,13 +92,13 @@ class MainActivity : ComponentActivity() {
             repeatInterval = 1,
             repeatIntervalTimeUnit = TimeUnit.DAYS,
             flexTimeInterval = 2,
-            flexTimeIntervalUnit = TimeUnit.HOURS
+            flexTimeIntervalUnit = TimeUnit.HOURS,
         )
             .setConstraints(constraints)
             .setBackoffCriteria(
                 BackoffPolicy.EXPONENTIAL,
                 WorkRequest.MIN_BACKOFF_MILLIS,
-                TimeUnit.MILLISECONDS
+                TimeUnit.MILLISECONDS,
             )
             .build()
 
@@ -106,7 +106,7 @@ class MainActivity : ComponentActivity() {
             .enqueueUniquePeriodicWork(
                 "pass_refresh",
                 ExistingPeriodicWorkPolicy.KEEP,
-                refreshRequest
+                refreshRequest,
             )
     }
 }

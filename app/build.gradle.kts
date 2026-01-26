@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.ktlint)
 }
 
 android {
@@ -50,7 +51,7 @@ android {
 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -76,6 +77,23 @@ android {
         abi {
             enableSplit = true
         }
+    }
+
+    lint {
+        abortOnError = true
+        warningsAsErrors = false
+        checkReleaseBuilds = true
+        htmlReport = true
+        htmlOutput = file("build/reports/lint-results-debug.html")
+        sarifReport = true
+        sarifOutput = file("build/reports/lint-results-debug.sarif")
+        xmlReport = true
+        xmlOutput = file("build/reports/lint-results-debug.xml")
+        checkDependencies = false
+        disable += setOf(
+            "ContentDescription", // Compose handles a11y differently
+            "HardcodedText", // Not localized yet
+        )
     }
 }
 
@@ -131,4 +149,17 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+ktlint {
+    version.set("1.4.1")
+    android.set(true)
+    ignoreFailures.set(false)
+    reporters {
+        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.HTML)
+        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.CHECKSTYLE)
+    }
+    filter {
+        exclude("**/build/**")
+    }
 }

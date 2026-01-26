@@ -61,7 +61,7 @@ data class Pass(
     val displayOrder: Int = 0,
 
     /** Category of the pass */
-    val category: PassCategory
+    val category: PassCategory,
 )
 
 /**
@@ -72,5 +72,5 @@ enum class PassCategory {
     EVENT_TICKET,
     COUPON,
     STORE_CARD,
-    GENERIC
+    GENERIC,
 }

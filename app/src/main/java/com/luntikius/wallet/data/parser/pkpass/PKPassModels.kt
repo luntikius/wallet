@@ -1,7 +1,5 @@
 package com.luntikius.wallet.data.parser.pkpass
 
-import com.google.gson.annotations.SerializedName
-
 /**
  * PKPass JSON structure (pass.json)
  * Based on Apple Wallet Pass specification
@@ -39,7 +37,7 @@ data class PKPassJson(
 
     // Web service for updates
     val webServiceURL: String?,
-    val authenticationToken: String?
+    val authenticationToken: String?,
 )
 
 /**
@@ -51,7 +49,7 @@ data class PKPassStructure(
     val primaryFields: List<PKField>?,
     val secondaryFields: List<PKField>?,
     val auxiliaryFields: List<PKField>?,
-    val backFields: List<PKField>?
+    val backFields: List<PKField>?,
 )
 
 /**
@@ -62,25 +60,15 @@ data class PKField(
     val label: String?,
     val value: Any?,
     val textAlignment: String?,
-    val dataDetectorTypes: List<String>?
+    val dataDetectorTypes: List<String>?,
 )
 
 /**
  * Barcode information
  */
-data class PKBarcode(
-    val format: String,
-    val message: String,
-    val messageEncoding: String,
-    val altText: String?
-)
+data class PKBarcode(val format: String, val message: String, val messageEncoding: String, val altText: String?)
 
 /**
  * Location for relevance
  */
-data class PKLocation(
-    val latitude: Double,
-    val longitude: Double,
-    val altitude: Double?,
-    val relevantText: String?
-)
+data class PKLocation(val latitude: Double, val longitude: Double, val altitude: Double?, val relevantText: String?)

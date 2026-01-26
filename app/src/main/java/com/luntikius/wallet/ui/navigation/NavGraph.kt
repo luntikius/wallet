@@ -24,16 +24,12 @@ object Routes {
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun PassNavGraph(
-    navController: NavHostController,
-    viewModel: PassViewModel,
-    modifier: Modifier = Modifier
-) {
+fun PassNavGraph(navController: NavHostController, viewModel: PassViewModel, modifier: Modifier = Modifier) {
     SharedTransitionLayout {
         NavHost(
             navController = navController,
             startDestination = Routes.GRID,
-            modifier = modifier
+            modifier = modifier,
         ) {
             composable(Routes.GRID) {
                 PassGridScreen(
@@ -42,7 +38,7 @@ fun PassNavGraph(
                         navController.navigate(Routes.detail(passId))
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedVisibilityScope = this
+                    animatedVisibilityScope = this,
                 )
             }
         }

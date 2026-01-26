@@ -52,9 +52,31 @@ This project uses Gradle with Kotlin DSL and the Version Catalog feature for dep
 ./gradlew clean
 ```
 
-**Lint checks:**
+**Run all lint checks:**
 ```bash
-./gradlew lint
+./gradlew ktlintCheck detekt lintDebug
+```
+
+**Auto-fix formatting:**
+```bash
+./gradlew ktlintFormat
+```
+
+**View lint reports:**
+- ktlint: `app/build/reports/ktlint/`
+- detekt: `app/build/reports/detekt/detekt.html`
+- Android Lint: `app/build/reports/lint-results-debug.html`
+
+**Install git hooks (for pre-commit auto-formatting):**
+```bash
+brew install lefthook  # macOS
+# or: npm install -g lefthook
+lefthook install
+```
+
+**Bypass pre-commit hooks (emergencies only):**
+```bash
+git commit --no-verify -m "Emergency fix"
 ```
 
 ## Architecture
@@ -199,6 +221,16 @@ PeriodicWorkRequestBuilder(1 day, 2 hour flex)
 4. **Intent Handling**: App handles `ACTION_VIEW` intents for `.pkpass` files via `MainActivity.onNewIntent()`
 5. **Single ViewModel**: One ViewModel manages all pass state for simplified state management
 6. **Sealed Class Status Pattern**: Import and refresh operations use sealed classes for type-safe state representation
+
+### Code Quality
+
+The project enforces code quality through three lint tools:
+
+- **ktlint**: Kotlin code formatting (auto-fixable via pre-commit hooks)
+- **detekt**: Static code analysis for code smells and complexity
+- **Android Lint**: Android-specific checks for API usage, resources, and best practices
+
+Pre-commit hooks automatically format code before commits using Lefthook. All checks run in CI on pull requests with results uploaded to GitHub Security (SARIF format).
 
 ## Dependency Management
 

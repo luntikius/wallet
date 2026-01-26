@@ -17,6 +17,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      security-events: write  # For SARIF upload
 
     steps:
       - name: Checkout code
@@ -39,7 +40,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run lint checks
+      - name: Run ktlint
+        run: ./gradlew ktlintCheck --no-daemon --stacktrace
+
+      - name: Run detekt
+        run: ./gradlew detekt --no-daemon --stacktrace
+
+      - name: Run Android Lint
         run: ./gradlew lintDebug --no-daemon --stacktrace
 
       - name: Upload lint reports
@@ -47,7 +54,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lint-reports
-          path: app/build/reports/lint-results-debug.html
+          path: |
+            app/build/reports/ktlint/
+            app/build/reports/detekt/
+            app/build/reports/lint-results-debug.html
           if-no-files-found: warn
 
       - name: Comment lint results on PR
@@ -55,20 +65,23 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            const lintReportPath = 'app/build/reports/lint-results-debug.html';
-
-            let lintStatus = '✅ Lint checks passed';
+            let lintStatus = '✅ All lint checks passed';
             if ('${{ job.status }}' === 'failure') {
               lintStatus = '❌ Lint checks failed';
             }
 
             const comment = `### ${lintStatus}
 
-            <details>
-            <summary>Lint Report</summary>
+            **Checks run:**
+            - ktlint (formatting)
+            - detekt (static analysis)
+            - Android Lint (platform checks)
 
-            Lint report artifact is available for download in the workflow run.
+            <details>
+            <summary>View Reports</summary>
+
+            Lint report artifacts are available for download in the workflow run.
+            SARIF results are uploaded to the Security tab.
 
             </details>`;
 

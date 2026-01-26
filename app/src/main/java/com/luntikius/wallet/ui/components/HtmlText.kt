@@ -24,12 +24,7 @@ import androidx.compose.ui.text.style.TextDecoration
  * Supports basic HTML tags: <a>, <b>, <i>, <br>
  */
 @Composable
-fun HtmlText(
-    html: String,
-    style: TextStyle,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
+fun HtmlText(html: String, style: TextStyle, color: Color, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val annotatedString = remember(html, color) {
         parseHtmlToAnnotatedString(html, color)
@@ -51,7 +46,7 @@ fun HtmlText(
                         // Ignore invalid URLs
                     }
                 }
-        }
+        },
     )
 }
 
@@ -81,16 +76,16 @@ private fun parseHtmlToAnnotatedString(html: String, baseColor: Color): Annotate
                         tag = "URL",
                         annotation = span.url,
                         start = start,
-                        end = end
+                        end = end,
                     )
                     // Style links in blue with underline
                     addStyle(
                         style = SpanStyle(
                             color = Color(0xFF2196F3), // Blue color for links
-                            textDecoration = TextDecoration.Underline
+                            textDecoration = TextDecoration.Underline,
                         ),
                         start = start,
-                        end = end
+                        end = end,
                     )
                 }
                 is android.text.style.StyleSpan -> {
@@ -99,24 +94,24 @@ private fun parseHtmlToAnnotatedString(html: String, baseColor: Color): Annotate
                             addStyle(
                                 style = SpanStyle(fontWeight = FontWeight.Bold),
                                 start = start,
-                                end = end
+                                end = end,
                             )
                         }
                         android.graphics.Typeface.ITALIC -> {
                             addStyle(
                                 style = SpanStyle(fontStyle = FontStyle.Italic),
                                 start = start,
-                                end = end
+                                end = end,
                             )
                         }
                         android.graphics.Typeface.BOLD_ITALIC -> {
                             addStyle(
                                 style = SpanStyle(
                                     fontWeight = FontWeight.Bold,
-                                    fontStyle = FontStyle.Italic
+                                    fontStyle = FontStyle.Italic,
                                 ),
                                 start = start,
-                                end = end
+                                end = end,
                             )
                         }
                     }

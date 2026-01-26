@@ -12,5 +12,5 @@ enum class PassFormat {
     GOOGLE_WALLET,
 
     /** Custom pass format (future support) */
-    CUSTOM
+    CUSTOM,
 }
