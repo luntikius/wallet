@@ -1,13 +1,15 @@
 package com.luntikius.wallet
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.rememberNavController
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -32,6 +34,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Test obsolete SDK check - should fail lint
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // This check is obsolete since minSdk is 33
+        }
 
         // Initialize database, repository, and ViewModel
         val database = PassDatabase.getInstance(applicationContext)
