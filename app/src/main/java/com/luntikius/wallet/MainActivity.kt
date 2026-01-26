@@ -1,13 +1,18 @@
 package com.luntikius.wallet
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -21,16 +26,34 @@ import com.luntikius.wallet.data.parser.ParserRegistry
 import com.luntikius.wallet.data.repository.PassRepositoryImpl
 import com.luntikius.wallet.data.worker.PassRefreshWorker
 import com.luntikius.wallet.ui.navigation.PassNavGraph
+import com.luntikius.wallet.ui.navigation.Routes
 import com.luntikius.wallet.ui.theme.WalletTheme
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: PassViewModel
+    private var intentUri by mutableStateOf<Uri?>(null)
+    private var newIntentUri by mutableStateOf<Uri?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // If launched from external app with ACTION_VIEW, relaunch in our own task
+        if (intent?.action == Intent.ACTION_VIEW && !isTaskRoot) {
+            val relaunchIntent = Intent(this, MainActivity::class.java).apply {
+                action = intent.action
+                data = intent.data
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            startActivity(relaunchIntent)
+            finish()
+            return
+        }
+
         enableEdgeToEdge()
 
         // Initialize database, repository, and ViewModel
@@ -43,8 +66,20 @@ class MainActivity : ComponentActivity() {
         )
         viewModel = PassViewModel(repository)
 
+        // Clean up temporary preview files on startup
+        lifecycleScope.launch {
+            File(cacheDir, "preview_passes").deleteRecursively()
+        }
+
         // Schedule background pass refresh
         schedulePassRefresh()
+
+        // Extract intent URI if present
+        intentUri = if (intent?.action == Intent.ACTION_VIEW) {
+            intent.data
+        } else {
+            null
+        }
 
         setContent {
             WalletTheme {
@@ -53,12 +88,20 @@ class MainActivity : ComponentActivity() {
                 PassNavGraph(
                     navController = navController,
                     viewModel = viewModel,
+                    intentUri = intentUri,
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                // Handle intent for opening pass files
-                LaunchedEffect(Unit) {
-                    handleIntent(intent)
+                // Handle new intents while app is running
+                LaunchedEffect(newIntentUri) {
+                    newIntentUri?.let { uri ->
+                        viewModel.previewPass(uri)
+                        navController.navigate(Routes.PREVIEW) {
+                            popUpTo(Routes.GRID) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                        newIntentUri = null
+                    }
                 }
             }
         }
@@ -67,14 +110,10 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleIntent(intent)
-    }
 
-    private fun handleIntent(intent: Intent?) {
-        if (intent?.action == Intent.ACTION_VIEW) {
-            intent.data?.let { uri ->
-                viewModel.importPass(uri)
-            }
+        // Handle new intent while app is running
+        if (intent.action == Intent.ACTION_VIEW) {
+            newIntentUri = intent.data
         }
     }
 

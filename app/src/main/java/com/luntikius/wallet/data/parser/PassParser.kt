@@ -17,6 +17,14 @@ interface PassParser {
     suspend fun parse(uri: Uri): ParseResult?
 
     /**
+     * Parse a pass file from the given URI to a temporary location for preview.
+     * This is used when the user wants to preview a pass before adding it to the wallet.
+     * @param uri URI of the pass file to parse
+     * @return ParseResult containing the Pass entity with temp paths, or null if parsing failed
+     */
+    suspend fun parseToTemp(uri: Uri): ParseResult?
+
+    /**
      * Get the list of formats this parser supports.
      */
     fun getSupportedFormats(): List<PassFormat>

@@ -21,7 +21,16 @@ class PKPassParser(private val context: Context) : PassParser {
 
     private val gson = Gson()
 
-    override suspend fun parse(uri: Uri): ParseResult? = withContext(Dispatchers.IO) {
+    override suspend fun parse(uri: Uri): ParseResult? = parseInternal(uri, useTemp = false)
+
+    override suspend fun parseToTemp(uri: Uri): ParseResult? = parseInternal(uri, useTemp = true)
+
+    /**
+     * Internal parsing method that supports both permanent and temporary storage.
+     * @param uri URI of the pass file to parse
+     * @param useTemp If true, extract to cacheDir for preview; if false, extract to filesDir for permanent storage
+     */
+    private suspend fun parseInternal(uri: Uri, useTemp: Boolean): ParseResult? = withContext(Dispatchers.IO) {
         try {
             // Open input stream from URI
             val inputStream = context.contentResolver.openInputStream(uri)
@@ -62,8 +71,10 @@ class PKPassParser(private val context: Context) : PassParser {
                 return@withContext null
             }
 
-            // Create directory for this pass
-            val passDir = File(context.filesDir, "passes/pkpass/${passJson.serialNumber}")
+            // Create directory for this pass (temp or permanent)
+            val baseDir = if (useTemp) context.cacheDir else context.filesDir
+            val subPath = if (useTemp) "preview_passes" else "passes/pkpass"
+            val passDir = File(baseDir, "$subPath/${passJson.serialNumber}")
             passDir.mkdirs()
 
             // Save extracted files

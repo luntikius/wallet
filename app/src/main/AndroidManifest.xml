@@ -18,6 +18,8 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.luntikius.wallet.WALLET_TASK"
             android:theme="@style/Theme.Wallet">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

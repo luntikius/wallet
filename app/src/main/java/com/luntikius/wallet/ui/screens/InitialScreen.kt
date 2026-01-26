@@ -1,0 +1,42 @@
+package com.luntikius.wallet.ui.screens
+
+import android.net.Uri
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import com.luntikius.wallet.ui.viewmodel.PassViewModel
+
+/**
+ * Initial loading screen that decides whether to navigate to grid or preview.
+ * Clears backstack when navigating to prevent going back to this screen.
+ */
+@Composable
+fun InitialScreen(
+    viewModel: PassViewModel,
+    intentUri: Uri?,
+    onNavigateToGrid: () -> Unit,
+    onNavigateToPreview: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator()
+    }
+
+    LaunchedEffect(Unit) {
+        if (intentUri != null) {
+            // Launch with intent - start preview loading and navigate
+            viewModel.previewPass(intentUri)
+            onNavigateToPreview()
+        } else {
+            // Normal launch - go straight to grid
+            onNavigateToGrid()
+        }
+    }
+}

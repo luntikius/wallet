@@ -63,12 +63,14 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.ui.components.DeleteZone
 import com.luntikius.wallet.ui.components.PassCardExpansion
 import com.luntikius.wallet.ui.components.PassGridSkeleton
 import com.luntikius.wallet.ui.components.RefreshLoadingSnackbar
+import com.luntikius.wallet.ui.navigation.Routes
 import com.luntikius.wallet.ui.utils.ensureContrast
 import com.luntikius.wallet.ui.utils.parseColor
 import com.luntikius.wallet.ui.utils.stripHtml
@@ -85,6 +87,7 @@ import sh.calvin.reorderable.rememberReorderableLazyGridState
 @Composable
 fun PassGridScreen(
     viewModel: PassViewModel,
+    navController: NavHostController,
     onPassClick: (String) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -142,7 +145,10 @@ fun PassGridScreen(
     val pickFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri ->
-        uri?.let { viewModel.importPass(it) }
+        uri?.let {
+            viewModel.previewPass(it)
+            navController.navigate(Routes.PREVIEW)
+        }
     }
 
     Box(modifier = modifier.fillMaxSize()) {

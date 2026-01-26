@@ -63,6 +63,24 @@ interface PassRepository {
      * Toggle automatic background refresh for a pass.
      */
     suspend fun setAutoRefreshEnabled(passId: String, enabled: Boolean): Result<Unit>
+
+    /**
+     * Parse a pass file for preview without saving to database.
+     * Extracts assets to temporary storage (cacheDir).
+     */
+    suspend fun parsePassForPreview(uri: Uri): Result<Pass>
+
+    /**
+     * Finalize adding a previewed pass to the wallet.
+     * Moves assets from temp to permanent storage and saves to database.
+     */
+    suspend fun finalizePassImport(pass: Pass): Result<Pass>
+
+    /**
+     * Clean up temporary assets for a previewed pass.
+     * Deletes the temp directory when preview is cancelled.
+     */
+    suspend fun cleanupPreviewAssets(pass: Pass): Result<Unit>
 }
 
 /**
@@ -221,4 +239,79 @@ class PassRepositoryImpl(
                 Result.failure(e)
             }
         }
+
+    override suspend fun parsePassForPreview(uri: Uri): Result<Pass> = withContext(Dispatchers.IO) {
+        try {
+            // Resolve correct parser based on file type
+            val mimeType = context.contentResolver.getType(uri)
+            val parser = parserRegistry.resolveParser(uri, mimeType)
+                ?: return@withContext Result.failure(
+                    Exception("Unsupported pass format"),
+                )
+
+            // Parse the pass file to temporary location
+            val result = parser.parseToTemp(uri)
+                ?: return@withContext Result.failure(
+                    Exception("Failed to parse pass file"),
+                )
+
+            Result.success(result.pass)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun finalizePassImport(pass: Pass): Result<Pass> = withContext(Dispatchers.IO) {
+        try {
+            // Determine new permanent location
+            val permanentDir = File(context.filesDir, "passes/pkpass/${pass.id}")
+            permanentDir.mkdirs()
+
+            // Move assets from temp to permanent location
+            val tempDir = File(pass.assetsDirectory)
+            if (tempDir.exists()) {
+                tempDir.copyRecursively(permanentDir, overwrite = true)
+                tempDir.deleteRecursively()
+            } else {
+                return@withContext Result.failure(
+                    Exception("Temporary assets not found"),
+                )
+            }
+
+            // Update pass with new paths
+            val updatedPass = pass.copy(
+                assetsDirectory = permanentDir.absolutePath,
+                iconPath = pass.iconPath.replace(tempDir.absolutePath, permanentDir.absolutePath),
+                logoPath = pass.logoPath?.replace(tempDir.absolutePath, permanentDir.absolutePath),
+                stripPath = pass.stripPath?.replace(tempDir.absolutePath, permanentDir.absolutePath),
+                backgroundPath = pass.backgroundPath?.replace(tempDir.absolutePath, permanentDir.absolutePath),
+                importedDate = System.currentTimeMillis(),
+            )
+
+            // Assign displayOrder to put new pass at end
+            val maxOrder = passDao.getMaxDisplayOrder() ?: -1
+            val passWithOrder = updatedPass.copy(displayOrder = maxOrder + 1)
+
+            // Save to database
+            passDao.insertPass(passWithOrder)
+
+            Result.success(passWithOrder)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun cleanupPreviewAssets(pass: Pass): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            // Delete temporary directory
+            val tempDir = File(pass.assetsDirectory)
+            if (tempDir.exists()) {
+                tempDir.deleteRecursively()
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

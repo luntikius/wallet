@@ -58,6 +58,18 @@ class PassViewModel(private val repository: PassRepository) : ViewModel() {
     val refreshStatus: StateFlow<RefreshStatus> = _refreshStatus.asStateFlow()
 
     /**
+     * Preview pass state for showing pass before import.
+     */
+    private val _previewPass = MutableStateFlow<Pass?>(null)
+    val previewPass: StateFlow<Pass?> = _previewPass.asStateFlow()
+
+    /**
+     * Preview status for showing loading/error states during preview.
+     */
+    private val _previewStatus = MutableStateFlow<PreviewStatus>(PreviewStatus.Idle)
+    val previewStatus: StateFlow<PreviewStatus> = _previewStatus.asStateFlow()
+
+    /**
      * Import a pass from a URI.
      */
     fun importPass(uri: Uri) {
@@ -181,6 +193,72 @@ class PassViewModel(private val repository: PassRepository) : ViewModel() {
             repository.setAutoRefreshEnabled(passId, enabled)
         }
     }
+
+    /**
+     * Preview a pass before adding it to the wallet.
+     * Parses the pass to temporary storage and sets it in previewPass state.
+     */
+    fun previewPass(uri: Uri) {
+        viewModelScope.launch {
+            // Clean up any existing preview first
+            _previewPass.value?.let { existingPass ->
+                repository.cleanupPreviewAssets(existingPass)
+            }
+
+            _previewStatus.value = PreviewStatus.Loading
+            val result = repository.parsePassForPreview(uri)
+
+            if (result.isSuccess) {
+                _previewPass.value = result.getOrThrow()
+                _previewStatus.value = PreviewStatus.Ready
+            } else {
+                _previewPass.value = null
+                _previewStatus.value = PreviewStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to load pass",
+                )
+            }
+        }
+    }
+
+    /**
+     * Confirm adding the previewed pass to the wallet.
+     * Moves assets to permanent storage and saves to database.
+     */
+    fun confirmAddPass() {
+        viewModelScope.launch {
+            val pass = _previewPass.value ?: return@launch
+
+            _previewStatus.value = PreviewStatus.Loading
+            val result = repository.finalizePassImport(pass)
+
+            if (result.isSuccess) {
+                _previewPass.value = null
+                _previewStatus.value = PreviewStatus.Idle
+                _importStatus.value = ImportStatus.Success
+
+                // Reset import status after a delay
+                kotlinx.coroutines.delay(2000)
+                _importStatus.value = ImportStatus.Idle
+            } else {
+                _previewStatus.value = PreviewStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to add pass",
+                )
+            }
+        }
+    }
+
+    /**
+     * Cancel the preview and clean up temporary assets.
+     */
+    fun cancelPreview() {
+        viewModelScope.launch {
+            _previewPass.value?.let { pass ->
+                repository.cleanupPreviewAssets(pass)
+            }
+            _previewPass.value = null
+            _previewStatus.value = PreviewStatus.Idle
+        }
+    }
 }
 
 /**
@@ -191,4 +269,14 @@ sealed class ImportStatus {
     object Loading : ImportStatus()
     object Success : ImportStatus()
     data class Error(val message: String) : ImportStatus()
+}
+
+/**
+ * Preview status sealed class.
+ */
+sealed class PreviewStatus {
+    object Idle : PreviewStatus()
+    object Loading : PreviewStatus()
+    object Ready : PreviewStatus()
+    data class Error(val message: String) : PreviewStatus()
 }
