@@ -28,10 +28,7 @@ import androidx.compose.ui.unit.dp
  * @param modifier Optional modifier for the button
  */
 @Composable
-fun FlipButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+fun FlipButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     OutlinedButton(
         onClick = onClick,
         modifier = modifier

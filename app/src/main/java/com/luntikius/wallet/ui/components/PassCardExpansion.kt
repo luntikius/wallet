@@ -2,9 +2,7 @@ package com.luntikius.wallet.ui.components
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -62,8 +60,8 @@ import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardBack
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlinx.coroutines.launch
 
 /**
  * Overlay that animates a pass card expanding from its tile position to full screen.
@@ -300,7 +298,7 @@ fun PassCardExpansion(
                     val aspectRatio = when (passData) {
                         null,
                         is PassData.PKPass,
-                            -> 0.7f
+                        -> 0.7f
 
                         is PassData.Custom -> 1.25f
                     }

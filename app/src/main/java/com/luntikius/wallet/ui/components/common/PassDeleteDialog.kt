@@ -20,12 +20,7 @@ import com.luntikius.wallet.ui.viewmodel.PassViewModel
  * @param onDismiss Callback invoked when the dialog is dismissed (both cancel and after delete)
  */
 @Composable
-fun PassDeleteDialog(
-    pass: Pass,
-    viewModel: PassViewModel,
-    showDialog: Boolean,
-    onDismiss: () -> Unit,
-) {
+fun PassDeleteDialog(pass: Pass, viewModel: PassViewModel, showDialog: Boolean, onDismiss: () -> Unit) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = onDismiss,

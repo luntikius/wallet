@@ -28,12 +28,7 @@ import androidx.compose.ui.unit.dp
  * @param modifier Optional modifier for the root Column
  */
 @Composable
-fun EmptyStateMessage(
-    icon: ImageVector,
-    message: String,
-    tint: Color,
-    modifier: Modifier = Modifier,
-) {
+fun EmptyStateMessage(icon: ImageVector, message: String, tint: Color, modifier: Modifier = Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,

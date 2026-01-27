@@ -3,7 +3,6 @@ package com.luntikius.wallet.ui.components.pass.pkpass
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,8 +47,8 @@ import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.ui.utils.rememberCardColors
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import kotlinx.coroutines.launch
 import java.io.File
+import kotlinx.coroutines.launch
 
 /**
  * Back side of the pass card.
@@ -192,7 +191,7 @@ fun PassCardBack(
             // Check if there are back fields to show
             val hasBackFields = pkPassJson?.let { json ->
                 val structure = json.boardingPass ?: json.eventTicket
-                ?: json.coupon ?: json.storeCard ?: json.generic
+                    ?: json.coupon ?: json.storeCard ?: json.generic
                 structure?.backFields?.any { field ->
                     field.value?.toString()?.isNotBlank() == true
                 } ?: false
@@ -201,7 +200,7 @@ fun PassCardBack(
             if (hasBackFields) {
                 pkPassJson.let { json ->
                     val structure = json.boardingPass ?: json.eventTicket
-                    ?: json.coupon ?: json.storeCard ?: json.generic
+                        ?: json.coupon ?: json.storeCard ?: json.generic
 
                     structure?.backFields?.let { fields ->
                         items(fields) { field ->

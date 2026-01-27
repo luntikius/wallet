@@ -103,11 +103,7 @@ fun createCustomPassGradient(backgroundColor: Color, foregroundColor: Color): an
  * @param foreground The foreground/accent color (may be null)
  * @param text The text color (guaranteed to have sufficient contrast with background)
  */
-data class CardColors(
-    val background: Color,
-    val foreground: Color?,
-    val text: Color,
-)
+data class CardColors(val background: Color, val foreground: Color?, val text: Color)
 
 /**
  * Compute card colors for a pass with proper contrast handling.
@@ -120,10 +116,7 @@ data class CardColors(
  * @return CardColors with background, foreground, and contrast-checked text color
  */
 @Composable
-fun rememberCardColors(
-    pass: Pass,
-    isDarkTheme: Boolean = isSystemInDarkTheme(),
-): CardColors {
+fun rememberCardColors(pass: Pass, isDarkTheme: Boolean = isSystemInDarkTheme()): CardColors {
     val backgroundColor = pass.backgroundColor?.let { parseColor(it) }
         ?: MaterialTheme.colorScheme.surface
 

@@ -84,9 +84,9 @@ import com.luntikius.wallet.ui.utils.parseColor
 import com.luntikius.wallet.ui.utils.stripHtml
 import com.luntikius.wallet.ui.viewmodel.ImportStatus
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import java.io.File
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
-import java.io.File
 
 /**
  * Grid screen displaying all passes.
