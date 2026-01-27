@@ -56,6 +56,7 @@ import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
+import com.luntikius.wallet.ui.animation.AnimationConstants
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardBack
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardBack
@@ -63,66 +64,6 @@ import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-
-/**
- * Animation specifications and constants for the expansion effect.
- */
-internal object AnimationConstants {
-    // Phase 1: Fade-in at tile size (card appears scaled down)
-    const val PHASE_1_DURATION_MS = 50
-
-    // Delay between phases
-    const val INTER_PHASE_DELAY_MS = 16
-
-    // Phase 2: Scale up to full size with scrim and buttons
-    const val PHASE_2_DURATION_MS = 300
-
-    // Total expansion time
-    const val TOTAL_EXPANSION_MS = PHASE_1_DURATION_MS + INTER_PHASE_DELAY_MS + PHASE_2_DURATION_MS
-
-    // Dismissal timing (mirrors expansion: scale then fade)
-    const val DISMISSAL_PHASE_1_DURATION_MS = 250 // Scale down to tile size
-    const val DISMISSAL_PHASE_2_DURATION_MS = 100 // Fade out at tile size
-    const val DISMISSAL_TOTAL_MS =
-        DISMISSAL_PHASE_1_DURATION_MS + INTER_PHASE_DELAY_MS + DISMISSAL_PHASE_2_DURATION_MS
-
-    // Card flip
-    const val FLIP_DURATION_MS = 600
-
-    // Swipe threshold
-    const val SWIPE_THRESHOLD_DP = 50
-
-    // Animation specs
-    val phaseOneCardFadeIn = tween<Float>(
-        durationMillis = PHASE_1_DURATION_MS,
-        easing = LinearEasing,
-    )
-
-    val phaseTwoScale = tween<Float>(
-        durationMillis = PHASE_2_DURATION_MS,
-        easing = FastOutSlowInEasing,
-    )
-
-    val phaseTwoScrim = tween<Float>(
-        durationMillis = PHASE_2_DURATION_MS,
-        easing = LinearEasing,
-    )
-
-    val phaseTwoButtons = tween<Float>(
-        durationMillis = PHASE_2_DURATION_MS,
-        easing = EaseOutCubic,
-    )
-
-    val dismissalPhaseOneScale = tween<Float>(
-        durationMillis = DISMISSAL_PHASE_1_DURATION_MS,
-        easing = FastOutSlowInEasing,
-    )
-
-    val dismissalPhaseTwoFade = tween<Float>(
-        durationMillis = DISMISSAL_PHASE_2_DURATION_MS,
-        easing = LinearEasing,
-    )
-}
 
 /**
  * Overlay that animates a pass card expanding from its tile position to full screen.
