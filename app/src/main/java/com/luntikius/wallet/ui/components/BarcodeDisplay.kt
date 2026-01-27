@@ -27,7 +27,7 @@ import com.luntikius.wallet.ui.utils.generateBarcodeBitmap
 
 /**
  * Common barcode display component used in both preview and detail views.
- * Matches PKPass card styling from PassCardDialog.kt.
+ * Matches PKPass card styling from PassCardFront.kt.
  */
 @Composable
 fun BarcodeDisplay(

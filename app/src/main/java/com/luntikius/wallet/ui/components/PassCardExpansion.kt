@@ -58,8 +58,8 @@ import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardBack
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
-import com.luntikius.wallet.ui.screens.PassCardBack
-import com.luntikius.wallet.ui.screens.PassCardFront
+import com.luntikius.wallet.ui.components.pass.pkpass.PassCardBack
+import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import kotlinx.coroutines.launch
 import kotlin.math.abs

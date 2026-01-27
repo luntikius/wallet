@@ -9,16 +9,16 @@ import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardBack
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
-import com.luntikius.wallet.ui.screens.PassCardBack
-import com.luntikius.wallet.ui.screens.PassCardFront
+import com.luntikius.wallet.ui.components.pass.pkpass.PassCardBack
+import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 
 /**
  * Renders the appropriate side of a pass card based on rotation angle.
  *
  * Handles the logic for determining front vs. back side and dispatching to
- * the correct card component (PKPass or Custom). Used by both PassCardDialog
- * and PassCardExpansion to avoid code duplication.
+ * the correct card component (PKPass or Custom). Used by PassCardExpansion
+ * to centralize card rendering logic.
  *
  * @param rotation Current rotation angle in degrees (0-360)
  * @param pass The pass to render

@@ -28,8 +28,6 @@ object Routes {
     const val CAMERA_SCAN = "camera_scan"
     const val CUSTOM_PASS_BUILDER = "custom_pass_builder/{barcodeValue}/{barcodeFormat}"
 
-    fun detail(passId: String) = "detail/$passId"
-
     fun customPassBuilder(barcodeValue: String, barcodeFormat: String) =
         "custom_pass_builder/$barcodeValue/$barcodeFormat"
 }
