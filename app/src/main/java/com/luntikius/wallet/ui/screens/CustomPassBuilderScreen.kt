@@ -46,7 +46,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.builder.CustomPassBuilder
-import com.luntikius.wallet.ui.components.custom.CustomPassCard
+import com.luntikius.wallet.ui.components.pass.custom.CustomPassCard
 import com.luntikius.wallet.ui.theme.CustomPassColors
 import com.luntikius.wallet.ui.utils.IconMapper
 import com.luntikius.wallet.ui.utils.createCustomPassGradient

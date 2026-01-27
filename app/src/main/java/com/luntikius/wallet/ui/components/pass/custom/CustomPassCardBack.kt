@@ -1,4 +1,4 @@
-package com.luntikius.wallet.ui.components.custom
+package com.luntikius.wallet.ui.components.pass.custom
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme

@@ -56,8 +56,8 @@ import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
-import com.luntikius.wallet.ui.components.custom.CustomPassCardBack
-import com.luntikius.wallet.ui.components.custom.CustomPassCardFront
+import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardBack
+import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.screens.PassCardBack
 import com.luntikius.wallet.ui.screens.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel

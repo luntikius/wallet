@@ -73,8 +73,8 @@ import com.luntikius.wallet.data.model.getPassData
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.ui.components.BarcodeDisplay
 import com.luntikius.wallet.ui.components.HtmlText
-import com.luntikius.wallet.ui.components.custom.CustomPassCardBack
-import com.luntikius.wallet.ui.components.custom.CustomPassCardFront
+import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardBack
+import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.utils.ensureContrast
 import com.luntikius.wallet.ui.utils.parseColor
 import com.luntikius.wallet.ui.utils.stripHtml
