@@ -54,3 +54,40 @@ private fun calculateContrastRatio(color1: Color, color2: Color): Float {
  * Strip HTML tags from a string and decode HTML entities.
  */
 fun stripHtml(html: String): String = Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString().trim()
+
+/**
+ * Blend two colors together with a given ratio.
+ * @param color1 The first color (starting color)
+ * @param color2 The second color (ending color)
+ * @param ratio How much to blend towards color2 (0.0 = all color1, 1.0 = all color2)
+ */
+fun blendColors(color1: Color, color2: Color, ratio: Float): Color {
+    val clampedRatio = ratio.coerceIn(0f, 1f)
+    val inverseRatio = 1f - clampedRatio
+
+    return Color(
+        red = color1.red * inverseRatio + color2.red * clampedRatio,
+        green = color1.green * inverseRatio + color2.green * clampedRatio,
+        blue = color1.blue * inverseRatio + color2.blue * clampedRatio,
+        alpha = color1.alpha * inverseRatio + color2.alpha * clampedRatio,
+    )
+}
+
+/**
+ * Create a gradient brush for custom pass cards.
+ * Creates a linear gradient from lighter (top-left) to darker (bottom-right).
+ * @param backgroundColor The pastel background color
+ * @param foregroundColor The darker foreground/text color
+ * @return Brush with gradient from backgroundColor to slightly darker blended color
+ */
+fun createCustomPassGradient(backgroundColor: Color, foregroundColor: Color): androidx.compose.ui.graphics.Brush {
+    val darkerColor = blendColors(backgroundColor, foregroundColor, 0.2f)
+    return androidx.compose.ui.graphics.Brush.linearGradient(
+        colors = listOf(
+            backgroundColor, // Lighter at top-left
+            darkerColor, // Darker at bottom-right
+        ),
+        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+        end = androidx.compose.ui.geometry.Offset.Infinite,
+    )
+}

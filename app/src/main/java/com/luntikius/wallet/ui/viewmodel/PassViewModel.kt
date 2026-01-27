@@ -3,6 +3,7 @@ package com.luntikius.wallet.ui.viewmodel
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.luntikius.wallet.camera.ScanResult
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.network.PKPassUpdateService
@@ -68,6 +69,13 @@ class PassViewModel(private val repository: PassRepository) : ViewModel() {
      */
     private val _previewStatus = MutableStateFlow<PreviewStatus>(PreviewStatus.Idle)
     val previewStatus: StateFlow<PreviewStatus> = _previewStatus.asStateFlow()
+
+    /**
+     * Scan result state for handling camera scan results.
+     * Used to trigger navigation to builder or download flows.
+     */
+    private val _scanResult = MutableStateFlow<ScanResult?>(null)
+    val scanResult: StateFlow<ScanResult?> = _scanResult.asStateFlow()
 
     /**
      * Import a pass from a URI.
@@ -257,6 +265,77 @@ class PassViewModel(private val repository: PassRepository) : ViewModel() {
             }
             _previewPass.value = null
             _previewStatus.value = PreviewStatus.Idle
+        }
+    }
+
+    /**
+     * Handle a scanned barcode from the camera.
+     * Detects URL vs loyalty code and triggers appropriate flow.
+     */
+    fun handleScannedCode(scanResult: ScanResult) {
+        _scanResult.value = scanResult
+
+        when (scanResult) {
+            is ScanResult.UrlDetected -> {
+                // Download and preview the pass from URL
+                downloadAndPreviewPass(scanResult.url)
+            }
+
+            is ScanResult.BarcodeDetected -> {
+                // Navigate to custom pass builder (handled by UI layer)
+                // The UI will read scanResult state and navigate accordingly
+            }
+        }
+    }
+
+    /**
+     * Clear the scan result after handling.
+     */
+    fun clearScanResult() {
+        _scanResult.value = null
+    }
+
+    /**
+     * Download a pass from a URL and preview it.
+     */
+    fun downloadAndPreviewPass(url: String) {
+        viewModelScope.launch {
+            // Clean up any existing preview first
+            _previewPass.value?.let { existingPass ->
+                repository.cleanupPreviewAssets(existingPass)
+            }
+
+            _previewStatus.value = PreviewStatus.Loading
+            val result = repository.downloadAndPreviewPass(url)
+
+            if (result.isSuccess) {
+                _previewPass.value = result.getOrThrow()
+                _previewStatus.value = PreviewStatus.Ready
+            } else {
+                _previewPass.value = null
+                _previewStatus.value = PreviewStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to download pass",
+                )
+            }
+        }
+    }
+
+    /**
+     * Create a custom pass and add it to the wallet.
+     */
+    fun createCustomPass(pass: Pass) {
+        viewModelScope.launch {
+            _importStatus.value = ImportStatus.Loading
+            val result = repository.createCustomPass(pass)
+            _importStatus.value = if (result.isSuccess) {
+                ImportStatus.Success
+            } else {
+                ImportStatus.Error(result.exceptionOrNull()?.message ?: "Unknown error")
+            }
+
+            // Reset status after a delay
+            kotlinx.coroutines.delay(2000)
+            _importStatus.value = ImportStatus.Idle
         }
     }
 }

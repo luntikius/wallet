@@ -1,5 +1,6 @@
 package com.luntikius.wallet.ui.screens
 
+import android.Manifest
 import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -7,6 +8,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -31,6 +32,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -65,20 +69,24 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.RefreshStatus
+import com.luntikius.wallet.data.model.getPassData
 import com.luntikius.wallet.ui.components.DeleteZone
 import com.luntikius.wallet.ui.components.PassCardExpansion
 import com.luntikius.wallet.ui.components.PassGridSkeleton
 import com.luntikius.wallet.ui.components.RefreshLoadingSnackbar
 import com.luntikius.wallet.ui.navigation.Routes
+import com.luntikius.wallet.ui.utils.IconMapper
+import com.luntikius.wallet.ui.utils.createCustomPassGradient
 import com.luntikius.wallet.ui.utils.ensureContrast
 import com.luntikius.wallet.ui.utils.parseColor
 import com.luntikius.wallet.ui.utils.stripHtml
 import com.luntikius.wallet.ui.viewmodel.ImportStatus
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import java.io.File
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
+import java.io.File
 
 /**
  * Grid screen displaying all passes.
@@ -141,13 +149,25 @@ fun PassGridScreen(
         }
     }
 
-    // File picker launcher
+    // Add method dropdown menu state
+    var showAddMenu by remember { mutableStateOf(false) }
+
+    // File picker launcher - filtered to .pkpass files
     val pickFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri ->
         uri?.let {
             viewModel.previewPass(it)
             navController.navigate(Routes.PREVIEW)
+        }
+    }
+
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { isGranted ->
+        if (isGranted) {
+            navController.navigate(Routes.CAMERA_SCAN)
         }
     }
 
@@ -163,11 +183,33 @@ fun PassGridScreen(
                     TopAppBar(
                         title = { Text("wallet") },
                         actions = {
-                            IconButton(onClick = { pickFileLauncher.launch("*/*") }) {
-                                Icon(
-                                    Icons.Default.Add,
-                                    contentDescription = "Add Pass",
-                                )
+                            Box {
+                                IconButton(onClick = { showAddMenu = true }) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = "Add Pass",
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = showAddMenu,
+                                    onDismissRequest = { showAddMenu = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Add from Files") },
+                                        onClick = {
+                                            showAddMenu = false
+                                            // Use */* to show all files (parser will validate format)
+                                            pickFileLauncher.launch("*/*")
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Add from Camera") },
+                                        onClick = {
+                                            showAddMenu = false
+                                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                        },
+                                    )
+                                }
                             }
                         },
                     )
@@ -367,6 +409,8 @@ fun PassTile(
     val isDarkTheme = isSystemInDarkTheme()
     val backgroundColor = pass.backgroundColor?.let { parseColor(it) }
         ?: MaterialTheme.colorScheme.surfaceVariant
+    val foregroundColor = pass.foregroundColor?.let { parseColor(it) }
+        ?: MaterialTheme.colorScheme.onSurface
 
     val textColor = ensureContrast(
         foregroundColor = pass.foregroundColor?.let { parseColor(it) },
@@ -378,6 +422,10 @@ fun PassTile(
 
     // Track this tile's position
     var currentPosition by remember { mutableStateOf<IntRect?>(null) }
+
+    // Check pass type for gradient
+    val passData = remember(pass) { pass.getPassData() }
+    val isCustomPass = passData is PassData.Custom
 
     with(sharedTransitionScope) {
         Card(
@@ -404,7 +452,7 @@ fun PassTile(
                     animatedVisibilityScope = animatedVisibilityScope,
                 ),
             colors = CardDefaults.cardColors(
-                containerColor = backgroundColor,
+                containerColor = if (isCustomPass) Color.Transparent else backgroundColor,
             ),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = if (isDragging) 16.dp else 4.dp,
@@ -416,33 +464,68 @@ fun PassTile(
                 onClick()
             },
         ) {
+            // Create gradient for custom passes
+            val gradient = if (isCustomPass) {
+                createCustomPassGradient(backgroundColor, foregroundColor)
+            } else {
+                null
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .then(
+                        if (gradient != null) {
+                            Modifier.background(gradient, RoundedCornerShape(12.dp))
+                        } else {
+                            Modifier
+                        },
+                    )
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // Spacer to push content down
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Logo (prioritize logo over icon)
-                val logoPath = pass.logoPath ?: pass.iconPath
-                val logoFile = File(logoPath)
-                if (logoFile.exists()) {
-                    val bitmap = BitmapFactory.decodeFile(logoFile.absolutePath)
-                    bitmap?.let {
-                        Image(
-                            bitmap = it.asImageBitmap(),
+                // Logo/Icon - check if custom pass or PKPass
+                when (passData) {
+                    is PassData.Custom -> {
+                        // Show Material Icon for custom passes
+                        val icon = IconMapper.getIconByName(passData.customPassJson.iconName)
+                        Icon(
+                            imageVector = icon,
                             contentDescription = null,
                             modifier = Modifier
-                                .height(60.dp)
-                                .widthIn(max = 120.dp)
+                                .size(60.dp)
                                 .sharedElement(
                                     rememberSharedContentState(key = "icon-${pass.id}"),
                                     animatedVisibilityScope = animatedVisibilityScope,
                                 ),
-                            contentScale = ContentScale.Fit,
+                            tint = textColor,
                         )
+                    }
+
+                    is PassData.PKPass -> {
+                        // Show logo/icon from file for PKPass
+                        val logoPath = pass.logoPath ?: pass.iconPath
+                        val logoFile = File(logoPath)
+                        if (logoFile.exists()) {
+                            val bitmap = BitmapFactory.decodeFile(logoFile.absolutePath)
+                            bitmap?.let {
+                                Image(
+                                    bitmap = it.asImageBitmap(),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .height(60.dp)
+                                        .widthIn(max = 120.dp)
+                                        .sharedElement(
+                                            rememberSharedContentState(key = "icon-${pass.id}"),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                        ),
+                                    contentScale = ContentScale.Fit,
+                                )
+                            }
+                        }
                     }
                 }
 

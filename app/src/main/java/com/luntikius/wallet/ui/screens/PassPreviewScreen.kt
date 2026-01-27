@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,8 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.google.gson.Gson
-import com.luntikius.wallet.data.parser.pkpass.PKPassJson
+import com.luntikius.wallet.data.model.PassData
+import com.luntikius.wallet.data.model.getPassData
+import com.luntikius.wallet.ui.components.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import com.luntikius.wallet.ui.viewmodel.PreviewStatus
 
@@ -72,13 +74,14 @@ fun PassPreviewScreen(
             is PreviewStatus.Ready -> {
                 // Show preview with card and buttons
                 previewPass?.let { pass ->
-                    val pkPassJson = remember(pass) {
-                        Gson().fromJson(pass.rawData, PKPassJson::class.java)
+                    val passData = remember(pass) {
+                        pass.getPassData()
                     }
 
                     Column(
                         modifier = Modifier
                             .fillMaxWidth(0.9f)
+                            .widthIn(max = 600.dp)
                             .padding(vertical = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -102,7 +105,15 @@ fun PassPreviewScreen(
                             elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
                             border = null,
                         ) {
-                            PassCardFront(pass = pass, pkPassJson = pkPassJson)
+                            when (passData) {
+                                is PassData.PKPass -> {
+                                    PassCardFront(pass = pass, pkPassJson = passData.pkPassJson)
+                                }
+
+                                is PassData.Custom -> {
+                                    CustomPassCardFront(pass = pass, customPassJson = passData.customPassJson)
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))

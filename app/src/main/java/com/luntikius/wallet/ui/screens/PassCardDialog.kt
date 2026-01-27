@@ -4,7 +4,6 @@ import android.graphics.BitmapFactory
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,13 +28,12 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -68,18 +66,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.google.gson.Gson
+import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.PassData
+import com.luntikius.wallet.data.model.getPassData
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
+import com.luntikius.wallet.ui.components.BarcodeDisplay
 import com.luntikius.wallet.ui.components.HtmlText
+import com.luntikius.wallet.ui.components.custom.CustomPassCardBack
+import com.luntikius.wallet.ui.components.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.utils.ensureContrast
-import com.luntikius.wallet.ui.utils.generateBarcodeBitmap
 import com.luntikius.wallet.ui.utils.parseColor
-import com.luntikius.wallet.ui.utils.pkPassFormatToZXingFormat
 import com.luntikius.wallet.ui.utils.stripHtml
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import java.io.File
 import kotlinx.coroutines.launch
+import java.io.File
 
 /**
  * Dialog that displays a pass card with flip animation.
@@ -89,16 +90,20 @@ import kotlinx.coroutines.launch
 @Composable
 fun PassCardDialog(passId: String, viewModel: PassViewModel, onDismiss: () -> Unit) {
     var pass by remember { mutableStateOf<Pass?>(null) }
-    var pkPassJson by remember { mutableStateOf<PKPassJson?>(null) }
+    var passData by remember { mutableStateOf<PassData?>(null) }
 
     LaunchedEffect(passId) {
         pass = viewModel.getPassById(passId)
         pass?.let { p ->
-            pkPassJson = Gson().fromJson(p.rawData, PKPassJson::class.java)
+            passData = p.getPassData()
         }
     }
 
     pass?.let { currentPass ->
+        // Custom cards use smaller height since they have less content (matching preview at 280dp)
+        val isCustomPass = passData is PassData.Custom
+        val heightFraction = if (isCustomPass) 0.45f else 0.85f
+
         Dialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(
@@ -116,14 +121,15 @@ fun PassCardDialog(passId: String, viewModel: PassViewModel, onDismiss: () -> Un
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
-                        .fillMaxHeight(0.85f)
+                        .widthIn(max = 600.dp)
+                        .fillMaxHeight(heightFraction)
                         .windowInsetsPadding(WindowInsets.systemBars)
                         .clickable(enabled = false) { /* Prevent dismissing when clicking */ },
                 ) {
                     // Flippable card
                     FlippablePassCard(
                         pass = currentPass,
-                        pkPassJson = pkPassJson,
+                        passData = passData,
                         viewModel = viewModel,
                         onDismiss = onDismiss,
                         modifier = Modifier
@@ -142,7 +148,7 @@ fun PassCardDialog(passId: String, viewModel: PassViewModel, onDismiss: () -> Un
 @Composable
 fun FlippablePassCard(
     pass: Pass,
-    pkPassJson: PKPassJson?,
+    passData: PassData?,
     viewModel: PassViewModel,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -177,7 +183,17 @@ fun FlippablePassCard(
             Box(modifier = Modifier.fillMaxSize()) {
                 if (rotation <= 90f) {
                     // Front side
-                    PassCardFront(pass = pass, pkPassJson = pkPassJson)
+                    passData?.let { data ->
+                        when (data) {
+                            is PassData.PKPass -> {
+                                PassCardFront(pass = pass, pkPassJson = data.pkPassJson)
+                            }
+
+                            is PassData.Custom -> {
+                                CustomPassCardFront(pass = pass, customPassJson = data.customPassJson)
+                            }
+                        }
+                    }
                 } else {
                     // Back side (flip horizontally to correct orientation)
                     Box(
@@ -185,12 +201,26 @@ fun FlippablePassCard(
                             .fillMaxSize()
                             .graphicsLayer { rotationY = 180f },
                     ) {
-                        PassCardBack(
-                            pass = pass,
-                            pkPassJson = pkPassJson,
-                            viewModel = viewModel,
-                            onDismiss = onDismiss,
-                        )
+                        passData?.let { data ->
+                            when (data) {
+                                is PassData.PKPass -> {
+                                    PassCardBack(
+                                        pass = pass,
+                                        pkPassJson = data.pkPassJson,
+                                        viewModel = viewModel,
+                                        onDismiss = onDismiss,
+                                    )
+                                }
+
+                                is PassData.Custom -> {
+                                    CustomPassCardBack(
+                                        pass = pass,
+                                        viewModel = viewModel,
+                                        onDismiss = onDismiss,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -262,7 +292,6 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .background(backgroundColor, RoundedCornerShape(16.dp)),
     ) {
         // 1. HEADER ROW: Logo (left) + Header Fields (right)
@@ -430,54 +459,13 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
         pkPassJson?.let { json ->
             val barcode = json.barcodes?.firstOrNull() ?: json.barcode
             barcode?.let { barcodeData ->
-                val barcodeFormat = pkPassFormatToZXingFormat(barcodeData.format)
-                val barcodeBitmap = remember(barcodeData.message, barcodeData.format) {
-                    barcodeFormat?.let {
-                        generateBarcodeBitmap(
-                            message = barcodeData.message,
-                            format = it,
-                            width = if (barcodeData.format == "PKBarcodeFormatQR") 600 else 800,
-                            height = if (barcodeData.format == "PKBarcodeFormatQR") 600 else 400,
-                        )
-                    }
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                ) {
-                    barcodeBitmap?.let { bitmap ->
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(if (barcodeData.format == "PKBarcodeFormatQR") 180.dp else 130.dp),
-                            color = Color.White,
-                            shape = RoundedCornerShape(12.dp),
-                        ) {
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = "Barcode",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(12.dp),
-                                contentScale = ContentScale.Fit,
-                            )
-                        }
-                    }
-
-                    barcodeData.altText?.let { alt ->
-                        if (alt.isNotBlank()) {
-                            Text(
-                                text = alt,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = textColor.copy(alpha = 0.7f),
-                                modifier = Modifier.padding(top = 8.dp),
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
+                BarcodeFormatType.fromPKPassFormat(barcodeData.format)?.let { format ->
+                    BarcodeDisplay(
+                        barcodeValue = barcodeData.message,
+                        barcodeFormat = format,
+                        textColor = textColor,
+                        altText = barcodeData.altText,
+                    )
                 }
             }
         }
@@ -571,8 +559,7 @@ fun PassCardBack(
         // 2. INFO BLOCKS: Scrollable content with back fields
         LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight()
+                .fillMaxSize()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                 .clip(RoundedCornerShape(12.dp)),
         ) {
@@ -634,20 +621,58 @@ fun PassCardBack(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            pkPassJson?.let { json ->
+            // Check if there are back fields to show
+            val hasBackFields = pkPassJson?.let { json ->
                 val structure = json.boardingPass ?: json.eventTicket
+                ?: json.coupon ?: json.storeCard ?: json.generic
+                structure?.backFields?.any { field ->
+                    field.value?.toString()?.isNotBlank() == true
+                } ?: false
+            } ?: false
+
+            if (hasBackFields) {
+                pkPassJson.let { json ->
+                    val structure = json.boardingPass ?: json.eventTicket
                     ?: json.coupon ?: json.storeCard ?: json.generic
 
-                structure?.backFields?.let { fields ->
-                    items(fields) { field ->
-                        val content = field.value?.toString() ?: ""
-                        if (content.isNotBlank()) {
-                            InfoBlock(
-                                title = field.label ?: "",
-                                htmlContent = content,
-                                textColor = textColor,
+                    structure?.backFields?.let { fields ->
+                        items(fields) { field ->
+                            val content = field.value?.toString() ?: ""
+                            if (content.isNotBlank()) {
+                                InfoBlock(
+                                    title = field.label ?: "",
+                                    htmlContent = content,
+                                    textColor = textColor,
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+                        }
+                    }
+                }
+            } else {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillParentMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Info,
+                                contentDescription = null,
+                                tint = textColor.copy(alpha = 0.5f),
+                                modifier = Modifier.size(48.dp),
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "No additional information",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = textColor.copy(alpha = 0.6f),
+                                textAlign = TextAlign.Center,
+                            )
                         }
                     }
                 }

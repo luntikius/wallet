@@ -7,13 +7,14 @@ import com.luntikius.wallet.data.local.PassDao
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassFormat
 import com.luntikius.wallet.data.network.PKPassUpdateService
+import com.luntikius.wallet.data.network.PassDownloadService
 import com.luntikius.wallet.data.parser.ParserRegistry
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.data.parser.pkpass.PKPassParser
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * Repository interface for pass operations.
@@ -81,6 +82,17 @@ interface PassRepository {
      * Deletes the temp directory when preview is cancelled.
      */
     suspend fun cleanupPreviewAssets(pass: Pass): Result<Unit>
+
+    /**
+     * Download a pass from a URL and parse for preview.
+     * Returns a temporary pass ready for preview.
+     */
+    suspend fun downloadAndPreviewPass(url: String): Result<Pass>
+
+    /**
+     * Create and save a custom pass from barcode scan data.
+     */
+    suspend fun createCustomPass(pass: Pass): Result<Pass>
 }
 
 /**
@@ -94,6 +106,7 @@ class PassRepositoryImpl(
 
     private val pkPassParser = PKPassParser(context)
     private val updateService = PKPassUpdateService(context, pkPassParser)
+    private val downloadService = PassDownloadService(context)
     private val gson = Gson()
 
     override fun getAllPasses(): Flow<List<Pass>> = passDao.getAllPasses()
@@ -310,6 +323,42 @@ class PassRepositoryImpl(
             }
 
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun downloadAndPreviewPass(url: String): Result<Pass> = withContext(Dispatchers.IO) {
+        try {
+            // Download the pass file
+            val downloadResult = downloadService.downloadPass(url)
+
+            when (downloadResult) {
+                is PassDownloadService.DownloadResult.Success -> {
+                    // Parse the downloaded file for preview
+                    parsePassForPreview(downloadResult.fileUri)
+                }
+
+                is PassDownloadService.DownloadResult.Error -> {
+                    Result.failure(Exception(downloadResult.message))
+                }
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun createCustomPass(pass: Pass): Result<Pass> = withContext(Dispatchers.IO) {
+        try {
+            // Custom passes don't need asset extraction since they have no images
+            // Assign displayOrder to put new pass at end
+            val maxOrder = passDao.getMaxDisplayOrder() ?: -1
+            val passWithOrder = pass.copy(displayOrder = maxOrder + 1)
+
+            // Save to database
+            passDao.insertPass(passWithOrder)
+
+            Result.success(passWithOrder)
         } catch (e: Exception) {
             Result.failure(e)
         }

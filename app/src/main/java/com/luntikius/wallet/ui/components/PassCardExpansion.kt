@@ -52,15 +52,17 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import com.google.gson.Gson
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.RefreshStatus
-import com.luntikius.wallet.data.parser.pkpass.PKPassJson
+import com.luntikius.wallet.data.model.getPassData
+import com.luntikius.wallet.ui.components.custom.CustomPassCardBack
+import com.luntikius.wallet.ui.components.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.screens.PassCardBack
 import com.luntikius.wallet.ui.screens.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import kotlin.math.abs
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 /**
  * Animation specifications and constants for the expansion effect.
@@ -143,7 +145,7 @@ fun PassCardExpansion(
     onTileVisibilityChange: (visible: Boolean) -> Unit = {},
 ) {
     var pass by remember { mutableStateOf<Pass?>(null) }
-    var pkPassJson by remember { mutableStateOf<PKPassJson?>(null) }
+    var passData by remember { mutableStateOf<PassData?>(null) }
     var isDismissing by remember { mutableStateOf(false) }
     val refreshStatus by viewModel.refreshStatus.collectAsState()
 
@@ -177,7 +179,7 @@ fun PassCardExpansion(
     LaunchedEffect(passId) {
         pass = viewModel.getPassById(passId)
         pass?.let { p ->
-            pkPassJson = Gson().fromJson(p.rawData, PKPassJson::class.java)
+            passData = p.getPassData()
         }
     }
 
@@ -354,11 +356,18 @@ fun PassCardExpansion(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    // Expandable card container
+                    val aspectRatio = when (passData) {
+                        null,
+                        is PassData.PKPass,
+                            -> 0.7f
+
+                        is PassData.Custom -> 1.25f
+                    }
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(0.9f)
-                            .aspectRatio(0.7f)
+                            .aspectRatio(aspectRatio)
                             .graphicsLayer {
                                 scaleX = scale.value
                                 scaleY = scale.value
@@ -422,22 +431,47 @@ fun PassCardExpansion(
                                 val showFront =
                                     normalizedRotation < 90f || normalizedRotation >= 270f
 
-                                if (showFront) {
-                                    // Front side
-                                    PassCardFront(pass = currentPass, pkPassJson = pkPassJson)
-                                } else {
-                                    // Back side (flip horizontally to correct orientation)
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .graphicsLayer { rotationY = 180f },
-                                    ) {
-                                        PassCardBack(
-                                            pass = currentPass,
-                                            pkPassJson = pkPassJson,
-                                            viewModel = viewModel,
-                                            onDismiss = { dismiss() },
-                                        )
+                                passData?.let { data ->
+                                    if (showFront) {
+                                        // Front side
+                                        when (data) {
+                                            is PassData.PKPass -> {
+                                                PassCardFront(pass = currentPass, pkPassJson = data.pkPassJson)
+                                            }
+
+                                            is PassData.Custom -> {
+                                                CustomPassCardFront(
+                                                    pass = currentPass,
+                                                    customPassJson = data.customPassJson,
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        // Back side (flip horizontally to correct orientation)
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .graphicsLayer { rotationY = 180f },
+                                        ) {
+                                            when (data) {
+                                                is PassData.PKPass -> {
+                                                    PassCardBack(
+                                                        pass = currentPass,
+                                                        pkPassJson = data.pkPassJson,
+                                                        viewModel = viewModel,
+                                                        onDismiss = { dismiss() },
+                                                    )
+                                                }
+
+                                                is PassData.Custom -> {
+                                                    CustomPassCardBack(
+                                                        pass = currentPass,
+                                                        viewModel = viewModel,
+                                                        onDismiss = { dismiss() },
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
