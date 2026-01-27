@@ -96,7 +96,6 @@ import java.io.File
 fun PassGridScreen(
     viewModel: PassViewModel,
     navController: NavHostController,
-    onPassClick: (String) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier,

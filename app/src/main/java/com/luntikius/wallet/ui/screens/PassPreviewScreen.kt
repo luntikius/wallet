@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.getPassData
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
+import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import com.luntikius.wallet.ui.viewmodel.PreviewStatus
 

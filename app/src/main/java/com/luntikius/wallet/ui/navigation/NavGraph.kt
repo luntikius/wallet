@@ -72,9 +72,6 @@ fun PassNavGraph(
                 PassGridScreen(
                     viewModel = viewModel,
                     navController = navController,
-                    onPassClick = { passId ->
-                        navController.navigate(Routes.detail(passId))
-                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this,
                 )
