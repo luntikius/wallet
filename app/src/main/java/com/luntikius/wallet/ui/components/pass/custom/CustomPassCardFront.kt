@@ -30,8 +30,7 @@ import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.ui.components.BarcodeDisplay
 import com.luntikius.wallet.ui.utils.IconMapper
 import com.luntikius.wallet.ui.utils.createCustomPassGradient
-import com.luntikius.wallet.ui.utils.ensureContrast
-import com.luntikius.wallet.ui.utils.parseColor
+import com.luntikius.wallet.ui.utils.rememberCardColors
 
 /**
  * Front side of a custom pass card.
@@ -39,19 +38,10 @@ import com.luntikius.wallet.ui.utils.parseColor
  */
 @Composable
 fun CustomPassCardFront(pass: Pass, customPassJson: CustomPassJson, modifier: Modifier = Modifier) {
-    val isDarkTheme = isSystemInDarkTheme()
-    val backgroundColor = pass.backgroundColor?.let { parseColor(it) }
-        ?: MaterialTheme.colorScheme.surface
-    val foregroundColor = pass.foregroundColor?.let { parseColor(it) }
-        ?: MaterialTheme.colorScheme.onSurface
-
-    val textColor = ensureContrast(
-        foregroundColor = foregroundColor,
-        backgroundColor = backgroundColor,
-        isDarkTheme = isDarkTheme,
-        lightFallback = MaterialTheme.colorScheme.onSurface,
-        darkFallback = MaterialTheme.colorScheme.onSurface,
-    )
+    val cardColors = rememberCardColors(pass)
+    val backgroundColor = cardColors.background
+    val foregroundColor = cardColors.foreground ?: MaterialTheme.colorScheme.onSurface
+    val textColor = cardColors.text
 
     val icon = IconMapper.getIconByName(customPassJson.iconName)
 

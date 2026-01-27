@@ -40,8 +40,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.CustomPassJson
 import com.luntikius.wallet.data.model.Pass
-import com.luntikius.wallet.ui.utils.ensureContrast
-import com.luntikius.wallet.ui.utils.parseColor
+import com.luntikius.wallet.ui.components.common.EmptyStateMessage
+import com.luntikius.wallet.ui.components.common.PassDeleteDialog
+import com.luntikius.wallet.ui.components.pass.PassCardBackHeader
+import com.luntikius.wallet.ui.utils.rememberCardColors
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 
 /**
@@ -55,17 +57,9 @@ fun CustomPassCardBack(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isDarkTheme = isSystemInDarkTheme()
-    val backgroundColor = pass.backgroundColor?.let { parseColor(it) }
-        ?: MaterialTheme.colorScheme.surface
-
-    val textColor = ensureContrast(
-        foregroundColor = pass.foregroundColor?.let { parseColor(it) },
-        backgroundColor = backgroundColor,
-        isDarkTheme = isDarkTheme,
-        lightFallback = MaterialTheme.colorScheme.onSurface,
-        darkFallback = MaterialTheme.colorScheme.onSurface,
-    )
+    val cardColors = rememberCardColors(pass)
+    val backgroundColor = cardColors.background
+    val textColor = cardColors.text
 
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -75,39 +69,15 @@ fun CustomPassCardBack(
             .background(backgroundColor, RoundedCornerShape(16.dp)),
     ) {
         // 1. HEADER ROW: Logo (left) + Action Buttons (right)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Logo/Icon - custom passes use Material Icons, so no image to show
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Share button
-            IconButton(
-                onClick = {
-                    // TODO: Implement share functionality
-                },
-            ) {
-                Icon(
-                    Icons.Outlined.Share,
-                    contentDescription = "Share",
-                    tint = textColor,
-                )
-            }
-
-            // Delete button
-            IconButton(
-                onClick = { showDeleteDialog = true },
-            ) {
-                Icon(
-                    Icons.Outlined.Delete,
-                    contentDescription = "Delete",
-                    tint = textColor,
-                )
-            }
-        }
+        PassCardBackHeader(
+            logoPath = null, // Custom passes don't have logo images
+            iconPath = null,
+            textColor = textColor,
+            onShareClick = {
+                // TODO: Implement share functionality
+            },
+            onDeleteClick = { showDeleteDialog = true },
+        )
 
         // 2. INFO BLOCKS: Scrollable content
         Box(
@@ -116,52 +86,35 @@ fun CustomPassCardBack(
                 .height(200.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Info,
-                    contentDescription = null,
-                    tint = textColor.copy(alpha = 0.5f),
-                    modifier = Modifier.size(48.dp),
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "No additional information",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = textColor.copy(alpha = 0.6f),
-                    textAlign = TextAlign.Center,
-                )
-            }
+            EmptyStateMessage(
+                icon = Icons.Outlined.Info,
+                message = "No additional information",
+                tint = textColor,
+            )
         }
     }
 
     // Delete confirmation dialog
+    // Note: PassDeleteDialog will close itself and call onDismiss for both cancel and delete
+    // The expansion overlay will auto-close when pass is deleted (pass becomes null in state)
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = {
-                Text("Delete Pass")
-            },
-            text = {
-                Text("Are you sure you want to delete this pass? This action cannot be undone.")
-            },
+            title = { Text("Delete Pass") },
+            text = { Text("Are you sure you want to delete this pass? This action cannot be undone.") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         viewModel.deletePass(pass)
                         showDeleteDialog = false
-                        onDismiss()
+                        onDismiss() // Close expansion after delete
                     },
                 ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { showDeleteDialog = false },
-                ) {
+                TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Cancel")
                 }
             },

@@ -29,8 +29,7 @@ import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.ui.components.BarcodeDisplay
-import com.luntikius.wallet.ui.utils.ensureContrast
-import com.luntikius.wallet.ui.utils.parseColor
+import com.luntikius.wallet.ui.utils.rememberCardColors
 import com.luntikius.wallet.ui.utils.stripHtml
 import java.io.File
 
@@ -39,17 +38,9 @@ import java.io.File
  */
 @Composable
 fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modifier) {
-    val isDarkTheme = isSystemInDarkTheme()
-    val backgroundColor = pass.backgroundColor?.let { parseColor(it) }
-        ?: MaterialTheme.colorScheme.surface
-
-    val textColor = ensureContrast(
-        foregroundColor = pass.foregroundColor?.let { parseColor(it) },
-        backgroundColor = backgroundColor,
-        isDarkTheme = isDarkTheme,
-        lightFallback = MaterialTheme.colorScheme.onSurface,
-        darkFallback = MaterialTheme.colorScheme.onSurface,
-    )
+    val cardColors = rememberCardColors(pass)
+    val backgroundColor = cardColors.background
+    val textColor = cardColors.text
 
     Column(
         modifier = modifier
