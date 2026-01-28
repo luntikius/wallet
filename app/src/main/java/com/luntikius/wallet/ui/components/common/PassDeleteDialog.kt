@@ -14,13 +14,12 @@ import com.luntikius.wallet.ui.viewmodel.PassViewModel
  * Displays a confirmation dialog when the user attempts to delete a pass.
  * Handles the delete action and dismisses the dialog and parent screen on confirmation.
  *
- * @param pass The pass to delete
- * @param viewModel The ViewModel to handle the delete operation
  * @param showDialog Whether the dialog is currently visible
+ * @param onDelete Callback invoked when user decides to delete a pass
  * @param onDismiss Callback invoked when the dialog is dismissed (both cancel and after delete)
  */
 @Composable
-fun PassDeleteDialog(pass: Pass, viewModel: PassViewModel, showDialog: Boolean, onDismiss: () -> Unit) {
+fun PassDeleteDialog(showDialog: Boolean, onDelete: () -> Unit, onDismiss: () -> Unit) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = onDismiss,
@@ -32,10 +31,7 @@ fun PassDeleteDialog(pass: Pass, viewModel: PassViewModel, showDialog: Boolean, 
             },
             confirmButton = {
                 TextButton(
-                    onClick = {
-                        viewModel.deletePass(pass)
-                        onDismiss()
-                    },
+                    onClick = onDelete,
                 ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }

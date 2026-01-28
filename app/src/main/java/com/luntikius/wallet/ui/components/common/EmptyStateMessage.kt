@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,20 +24,19 @@ import androidx.compose.ui.unit.dp
  * Displays an icon and message centered in its container, typically used
  * when there's no content to display (e.g., "No additional information").
  *
- * @param icon The icon to display above the message
  * @param message The text message to display
  * @param tint The color to apply to both icon and text (with appropriate alpha)
  * @param modifier Optional modifier for the root Column
  */
 @Composable
-fun EmptyStateMessage(icon: ImageVector, message: String, tint: Color, modifier: Modifier = Modifier) {
+fun EmptyStateMessage(message: String, tint: Color, modifier: Modifier = Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = modifier,
     ) {
         Icon(
-            imageVector = icon,
+            imageVector = Icons.Outlined.Info,
             contentDescription = null,
             tint = tint.copy(alpha = 0.5f),
             modifier = Modifier.size(48.dp),

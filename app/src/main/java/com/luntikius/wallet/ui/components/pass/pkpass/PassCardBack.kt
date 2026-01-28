@@ -45,6 +45,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
+import com.luntikius.wallet.ui.components.common.EmptyStateMessage
+import com.luntikius.wallet.ui.components.common.PassDeleteDialog
 import com.luntikius.wallet.ui.utils.rememberCardColors
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import java.io.File
@@ -218,63 +220,28 @@ fun PassCardBack(
                 }
             } else {
                 item {
-                    Box(
+                    EmptyStateMessage(
+                        message = "No additional information",
+                        tint = textColor.copy(alpha = 0.6f),
                         modifier = Modifier
-                            .fillParentMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Info,
-                                contentDescription = null,
-                                tint = textColor.copy(alpha = 0.5f),
-                                modifier = Modifier.size(48.dp),
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "No additional information",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = textColor.copy(alpha = 0.6f),
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
+                            .height(200.dp)
+                            .fillMaxWidth()
+                    )
                 }
             }
         }
     }
 
     // Delete confirmation dialog
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = {
-                Text("Delete Pass")
-            },
-            text = {
-                Text("Are you sure you want to delete this pass? This action cannot be undone.")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.deletePass(pass)
-                        showDeleteDialog = false
-                        onDismiss()
-                    },
-                ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showDeleteDialog = false },
-                ) {
-                    Text("Cancel")
-                }
-            },
-        )
-    }
+    PassDeleteDialog(
+        showDialog = showDeleteDialog,
+        onDelete = {
+            viewModel.deletePass(pass)
+            showDeleteDialog = false
+            onDismiss()
+        },
+        onDismiss = {
+            showDeleteDialog = false
+        }
+    )
 }
