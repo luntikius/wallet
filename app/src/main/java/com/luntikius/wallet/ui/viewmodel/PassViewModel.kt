@@ -3,6 +3,7 @@ package com.luntikius.wallet.ui.viewmodel
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.luntikius.wallet.camera.ScanResult
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.network.PKPassUpdateService
@@ -56,6 +57,25 @@ class PassViewModel(private val repository: PassRepository) : ViewModel() {
      */
     private val _refreshStatus = MutableStateFlow<RefreshStatus>(RefreshStatus.Idle)
     val refreshStatus: StateFlow<RefreshStatus> = _refreshStatus.asStateFlow()
+
+    /**
+     * Preview pass state for showing pass before import.
+     */
+    private val _previewPass = MutableStateFlow<Pass?>(null)
+    val previewPass: StateFlow<Pass?> = _previewPass.asStateFlow()
+
+    /**
+     * Preview status for showing loading/error states during preview.
+     */
+    private val _previewStatus = MutableStateFlow<PreviewStatus>(PreviewStatus.Idle)
+    val previewStatus: StateFlow<PreviewStatus> = _previewStatus.asStateFlow()
+
+    /**
+     * Scan result state for handling camera scan results.
+     * Used to trigger navigation to builder or download flows.
+     */
+    private val _scanResult = MutableStateFlow<ScanResult?>(null)
+    val scanResult: StateFlow<ScanResult?> = _scanResult.asStateFlow()
 
     /**
      * Import a pass from a URI.
@@ -181,6 +201,143 @@ class PassViewModel(private val repository: PassRepository) : ViewModel() {
             repository.setAutoRefreshEnabled(passId, enabled)
         }
     }
+
+    /**
+     * Preview a pass before adding it to the wallet.
+     * Parses the pass to temporary storage and sets it in previewPass state.
+     */
+    fun previewPass(uri: Uri) {
+        viewModelScope.launch {
+            // Clean up any existing preview first
+            _previewPass.value?.let { existingPass ->
+                repository.cleanupPreviewAssets(existingPass)
+            }
+
+            _previewStatus.value = PreviewStatus.Loading
+            val result = repository.parsePassForPreview(uri)
+
+            if (result.isSuccess) {
+                _previewPass.value = result.getOrThrow()
+                _previewStatus.value = PreviewStatus.Ready
+            } else {
+                _previewPass.value = null
+                _previewStatus.value = PreviewStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to load pass",
+                )
+            }
+        }
+    }
+
+    /**
+     * Confirm adding the previewed pass to the wallet.
+     * Moves assets to permanent storage and saves to database.
+     */
+    fun confirmAddPass() {
+        viewModelScope.launch {
+            val pass = _previewPass.value ?: return@launch
+
+            _previewStatus.value = PreviewStatus.Loading
+            val result = repository.finalizePassImport(pass)
+
+            if (result.isSuccess) {
+                _previewPass.value = null
+                _previewStatus.value = PreviewStatus.Idle
+                _importStatus.value = ImportStatus.Success
+
+                // Reset import status after a delay
+                kotlinx.coroutines.delay(2000)
+                _importStatus.value = ImportStatus.Idle
+            } else {
+                _previewStatus.value = PreviewStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to add pass",
+                )
+            }
+        }
+    }
+
+    /**
+     * Cancel the preview and clean up temporary assets.
+     */
+    fun cancelPreview() {
+        viewModelScope.launch {
+            _previewPass.value?.let { pass ->
+                repository.cleanupPreviewAssets(pass)
+            }
+            _previewPass.value = null
+            _previewStatus.value = PreviewStatus.Idle
+        }
+    }
+
+    /**
+     * Handle a scanned barcode from the camera.
+     * Detects URL vs loyalty code and triggers appropriate flow.
+     */
+    fun handleScannedCode(scanResult: ScanResult) {
+        _scanResult.value = scanResult
+
+        when (scanResult) {
+            is ScanResult.UrlDetected -> {
+                // Download and preview the pass from URL
+                downloadAndPreviewPass(scanResult.url)
+            }
+
+            is ScanResult.BarcodeDetected -> {
+                // Navigate to custom pass builder (handled by UI layer)
+                // The UI will read scanResult state and navigate accordingly
+            }
+        }
+    }
+
+    /**
+     * Clear the scan result after handling.
+     */
+    fun clearScanResult() {
+        _scanResult.value = null
+    }
+
+    /**
+     * Download a pass from a URL and preview it.
+     */
+    fun downloadAndPreviewPass(url: String) {
+        viewModelScope.launch {
+            // Clean up any existing preview first
+            _previewPass.value?.let { existingPass ->
+                repository.cleanupPreviewAssets(existingPass)
+            }
+
+            _previewStatus.value = PreviewStatus.Loading
+            val result = repository.downloadAndPreviewPass(url)
+
+            if (result.isSuccess) {
+                _previewPass.value = result.getOrThrow()
+                _previewStatus.value = PreviewStatus.Ready
+            } else {
+                _previewPass.value = null
+                _previewStatus.value = PreviewStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to download pass",
+                )
+            }
+        }
+    }
+
+    /**
+     * Create a custom pass and add it to the wallet.
+     */
+    fun createCustomPass(pass: Pass) {
+        viewModelScope.launch {
+            _importStatus.value = ImportStatus.Loading
+            val result = repository.createCustomPass(pass)
+            _importStatus.value = if (result.isSuccess) {
+                ImportStatus.Success
+            } else {
+                ImportStatus.Error(result.exceptionOrNull()?.message ?: "Unknown error")
+            }
+
+            // Reset status after a delay
+            kotlinx.coroutines.delay(2000)
+            _importStatus.value = ImportStatus.Idle
+        }
+    }
 }
 
 /**
@@ -191,4 +348,14 @@ sealed class ImportStatus {
     object Loading : ImportStatus()
     object Success : ImportStatus()
     data class Error(val message: String) : ImportStatus()
+}
+
+/**
+ * Preview status sealed class.
+ */
+sealed class PreviewStatus {
+    object Idle : PreviewStatus()
+    object Loading : PreviewStatus()
+    object Ready : PreviewStatus()
+    data class Error(val message: String) : PreviewStatus()
 }

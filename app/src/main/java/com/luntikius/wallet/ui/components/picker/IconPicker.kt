@@ -1,0 +1,94 @@
+package com.luntikius.wallet.ui.components.picker
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
+
+/**
+ * Icon picker with circular icon buttons in a horizontally scrolling row.
+ */
+@Composable
+fun IconPicker(
+    icons: List<Pair<String, ImageVector>>,
+    selectedIndex: Int,
+    onIconSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scrollState = rememberScrollState()
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(scrollState),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Spacer(modifier = Modifier.width(4.dp))
+        icons.forEachIndexed { index, (name, icon) ->
+            IconCircle(
+                icon = icon,
+                isSelected = index == selectedIndex,
+                onClick = { onIconSelected(index) },
+            )
+        }
+        Spacer(modifier = Modifier.width(4.dp))
+    }
+}
+
+/**
+ * Individual circular icon button.
+ */
+@Composable
+fun IconCircle(icon: ImageVector, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .then(
+                if (isSelected) {
+                    Modifier.border(
+                        width = 3.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = CircleShape,
+                    )
+                } else {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        shape = CircleShape,
+                    )
+                },
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(32.dp),
+            tint = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        )
+    }
+}

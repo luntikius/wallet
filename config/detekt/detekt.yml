@@ -15,6 +15,7 @@ complexity:
     constructorThreshold: 7
   TooManyFunctions:
     thresholdInInterfaces: 15  # DAOs can have many functions
+    thresholdInClasses: 15  # Repositories can have many functions
   NestedBlockDepth:
     threshold: 6  # UI rendering logic can be deeply nested
 

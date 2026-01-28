@@ -1,0 +1,96 @@
+package com.luntikius.wallet.ui.components.pass
+
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import java.io.File
+
+/**
+ * Reusable header component for pass card back sides.
+ *
+ * Displays a logo/icon on the left (if provided) and action buttons (Share, Delete) on the right.
+ * Used by both PKPass and Custom pass back sides.
+ *
+ * @param logoPath Optional path to the logo image file (PKPass uses this)
+ * @param iconPath Optional path to the icon image file (fallback if no logo)
+ * @param textColor Color for the action button icons
+ * @param onShareClick Callback invoked when share button is clicked
+ * @param onDeleteClick Callback invoked when delete button is clicked
+ * @param modifier Optional modifier for the root Row
+ */
+@Composable
+fun PassCardBackHeader(
+    logoPath: String?,
+    iconPath: String?,
+    textColor: Color,
+    onShareClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Logo (prioritize logo over icon) - only for PKPass
+        val imagePath = logoPath ?: iconPath
+        if (imagePath != null) {
+            val imageFile = File(imagePath)
+            if (imageFile.exists()) {
+                val bitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
+                bitmap?.let {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = "Logo",
+                        modifier = Modifier
+                            .height(40.dp)
+                            .widthIn(max = 120.dp),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Share button
+        IconButton(
+            onClick = onShareClick,
+        ) {
+            Icon(
+                Icons.Outlined.Share,
+                contentDescription = "Share",
+                tint = textColor,
+            )
+        }
+
+        // Delete button
+        IconButton(
+            onClick = onDeleteClick,
+        ) {
+            Icon(
+                Icons.Outlined.Delete,
+                contentDescription = "Delete",
+                tint = textColor,
+            )
+        }
+    }
+}

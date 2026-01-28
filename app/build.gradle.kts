@@ -98,6 +98,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":camera"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -141,6 +143,9 @@ dependencies {
 
     // WorkManager (background tasks)
     implementation(libs.androidx.work.runtime.ktx)
+
+    // ML Kit Barcode (for barcode format constants)
+    implementation(libs.mlkit.barcode)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
