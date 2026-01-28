@@ -1,0 +1,25 @@
+{
+  "plansDirectory": "./docs/plans",
+  "env": {
+    "ENABLE_TOOL_SEARCH": "auto:5"
+  },
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(./gradlew build)",
+      "Bash(./gradlew:*)",
+      "Bash(/Users/luntikius/AndroidStudioProjects/wallet/gradlew:*)",
+      "Bash(xargs ls:*)",
+      "Bash(adb:*)",
+      "Bash(tee:*)",
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Bash(rm -rf:*)"
+    ]
+  }
+}
