@@ -62,6 +62,7 @@ fun CustomPassCardFront(pass: Pass, customPassJson: CustomPassJson, modifier: Mo
  * Shared custom pass card component that can be used in both expansion and builder views.
  * Supports both editable (TextField) and non-editable (Text) card name.
  */
+@Suppress("LongParameterList")
 @Composable
 fun CustomPassCard(
     cardName: String,

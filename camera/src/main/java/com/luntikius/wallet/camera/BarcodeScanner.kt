@@ -23,6 +23,7 @@ class BarcodeScanner(private val context: Context) {
      * Analyzes a camera frame for barcodes.
      * Used with CameraX ImageAnalysis use case.
      */
+    @androidx.camera.core.ExperimentalGetImage
     fun analyzeCameraImage(
         imageProxy: ImageProxy,
         onBarcodeDetected: (ScanResult) -> Unit,
@@ -117,6 +118,7 @@ class BarcodeScanner(private val context: Context) {
     /**
      * Creates an ImageAnalysis.Analyzer for use with CameraX.
      */
+    @androidx.camera.core.ExperimentalGetImage
     fun createAnalyzer(
         onBarcodeDetected: (ScanResult) -> Unit,
         onError: (String) -> Unit

@@ -61,6 +61,7 @@ import java.util.concurrent.Executors
  * Supports both camera scanning and gallery image scanning.
  * Full screen design with edge-to-edge camera view.
  */
+@androidx.camera.core.ExperimentalGetImage
 @Composable
 fun CameraScanScreen(
     onScanResult: (ScanResult) -> Unit,

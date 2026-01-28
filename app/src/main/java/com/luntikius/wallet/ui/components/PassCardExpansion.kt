@@ -295,32 +295,14 @@ fun PassCardExpansion(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    val aspectRatio = when (passData) {
-                        null,
-                        is PassData.PKPass,
-                        -> 0.7f
-
-                        is PassData.Custom -> 1.25f
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.9f)
-                            .aspectRatio(aspectRatio)
-                            .graphicsLayer {
-                                scaleX = scale.value
-                                scaleY = scale.value
-                                translationX = offsetX.value
-                                translationY = offsetY.value
-                            },
-                    ) {
-                        // Flippable card with swipe gesture
-                        Card(
+                    passData?.let { data ->
+                        Box(
                             modifier = Modifier
-                                .fillMaxSize()
                                 .graphicsLayer {
-                                    rotationY = rotation
-                                    cameraDistance = 12f * density.density
+                                    scaleX = scale.value
+                                    scaleY = scale.value
+                                    translationX = offsetX.value
+                                    translationY = offsetY.value
                                 }
                                 .pointerInput(targetRotation) {
                                     var dragOffset = 0f
@@ -329,15 +311,11 @@ fun PassCardExpansion(
                                             if (abs(dragOffset) >
                                                 AnimationConstants.SWIPE_THRESHOLD_DP * density.density
                                             ) {
-                                                // Check which side is currently showing
                                                 val normalizedRotation =
                                                     ((targetRotation % 360) + 360) % 360
                                                 val isShowingFront =
                                                     normalizedRotation < 90f || normalizedRotation >= 270f
 
-                                                // Flip in direction of swipe
-                                                // When on front: right = +180, left = -180
-                                                // When on back: reverse directions to match user expectation
                                                 val flipDirection =
                                                     if (dragOffset > 0) 180f else -180f
                                                 targetRotation += if (isShowingFront) flipDirection else -flipDirection
@@ -350,130 +328,189 @@ fun PassCardExpansion(
                                             dragOffset += dragAmount
                                         },
                                     )
-                                }
-                                .clickable(enabled = false) { /* Prevent dismissing when clicking card */ },
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color.Transparent,
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                            border = null,
+                                },
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer { alpha = contentAlpha.value },
-                            ) {
-                                // Determine which side to show based on rotation
-                                // Normalize rotation to 0-360 range and check if we're on front or back
-                                val normalizedRotation = ((rotation % 360) + 360) % 360
-                                val showFront =
-                                    normalizedRotation < 90f || normalizedRotation >= 270f
-
-                                passData?.let { data ->
-                                    if (showFront) {
-                                        // Front side
-                                        when (data) {
-                                            is PassData.PKPass -> {
-                                                PassCardFront(pass = currentPass, pkPassJson = data.pkPassJson)
-                                            }
-
-                                            is PassData.Custom -> {
-                                                CustomPassCardFront(
-                                                    pass = currentPass,
-                                                    customPassJson = data.customPassJson,
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        // Back side (flip horizontally to correct orientation)
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .graphicsLayer { rotationY = 180f },
-                                        ) {
-                                            when (data) {
-                                                is PassData.PKPass -> {
-                                                    PassCardBack(
-                                                        pass = currentPass,
-                                                        pkPassJson = data.pkPassJson,
-                                                        viewModel = viewModel,
-                                                        onDismiss = { dismiss() },
-                                                    )
-                                                }
-
-                                                is PassData.Custom -> {
-                                                    CustomPassCardBack(
-                                                        pass = currentPass,
-                                                        viewModel = viewModel,
-                                                        onDismiss = { dismiss() },
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            FlippableCardContent(
+                                pass = currentPass,
+                                passData = data,
+                                rotation = rotation,
+                                contentAlpha = contentAlpha.value,
+                                density = density,
+                                viewModel = viewModel,
+                                onDismiss = { dismiss() },
+                            )
                         }
                     }
 
                     // Buttons that slide up from bottom
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth(0.9f)
-                            .align(Alignment.BottomCenter)
-                            .graphicsLayer {
-                                translationY = buttonSlide.value * 200f * density.density
-                                alpha = 1f - buttonSlide.value
-                            }
-                            .padding(bottom = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        // Flip button
-                        OutlinedButton(
-                            onClick = { targetRotation += 180f },
-                            modifier = Modifier
-                                .fillMaxWidth(0.5f)
-                                .height(40.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = Color.White,
-                            ),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                Color.White.copy(alpha = 0.7f),
-                            ),
-                        ) {
-                            Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = "Flip card",
-                                modifier = Modifier.size(16.dp),
-                                tint = Color.White,
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Flip",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
+                    CardControls(
+                        buttonSlide = buttonSlide.value,
+                        density = density,
+                        onFlip = { targetRotation += 180f },
+                        onClose = { dismiss() },
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Renders the flippable card content with front and back sides.
+ */
+@Composable
+private fun FlippableCardContent(
+    pass: Pass,
+    passData: PassData,
+    rotation: Float,
+    contentAlpha: Float,
+    density: androidx.compose.ui.unit.Density,
+    viewModel: PassViewModel,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val aspectRatio = when (passData) {
+        is PassData.PKPass -> 0.7f
+        is PassData.Custom -> 1.25f
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth(0.9f)
+            .aspectRatio(aspectRatio),
+    ) {
+        // Flippable card with swipe gesture
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    rotationY = rotation
+                    cameraDistance = 12f * density.density
+                }
+                .clickable(enabled = false) { /* Prevent dismissing when clicking card */ },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.Transparent,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = null,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = contentAlpha },
+            ) {
+                // Determine which side to show based on rotation
+                val normalizedRotation = ((rotation % 360) + 360) % 360
+                val showFront = normalizedRotation < 90f || normalizedRotation >= 270f
+
+                if (showFront) {
+                    // Front side
+                    when (passData) {
+                        is PassData.PKPass -> {
+                            PassCardFront(pass = pass, pkPassJson = passData.pkPassJson)
+                        }
+                        is PassData.Custom -> {
+                            CustomPassCardFront(
+                                pass = pass,
+                                customPassJson = passData.customPassJson,
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Close button
-                        TextButton(
-                            onClick = { dismiss() },
-                            modifier = Modifier.fillMaxWidth(0.5f),
-                        ) {
-                            Text(
-                                text = "Close",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
-                            )
+                    }
+                } else {
+                    // Back side (flip horizontally to correct orientation)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { rotationY = 180f },
+                    ) {
+                        when (passData) {
+                            is PassData.PKPass -> {
+                                PassCardBack(
+                                    pass = pass,
+                                    pkPassJson = passData.pkPassJson,
+                                    viewModel = viewModel,
+                                    onDismiss = onDismiss,
+                                )
+                            }
+                            is PassData.Custom -> {
+                                CustomPassCardBack(
+                                    pass = pass,
+                                    viewModel = viewModel,
+                                    onDismiss = onDismiss,
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Renders the flip and close buttons that slide up from the bottom.
+ */
+@Composable
+private fun CardControls(
+    buttonSlide: Float,
+    density: androidx.compose.ui.unit.Density,
+    onFlip: () -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth(0.9f)
+            .graphicsLayer {
+                translationY = buttonSlide * 200f * density.density
+                alpha = 1f - buttonSlide
+            }
+            .padding(bottom = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Flip button
+        OutlinedButton(
+            onClick = onFlip,
+            modifier = Modifier
+                .fillMaxWidth(0.5f)
+                .height(40.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color.Transparent,
+                contentColor = Color.White,
+            ),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                Color.White.copy(alpha = 0.7f),
+            ),
+        ) {
+            Icon(
+                Icons.Default.Refresh,
+                contentDescription = "Flip card",
+                modifier = Modifier.size(16.dp),
+                tint = Color.White,
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "Flip",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Close button
+        TextButton(
+            onClick = onClose,
+            modifier = Modifier.fillMaxWidth(0.5f),
+        ) {
+            Text(
+                text = "Close",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White,
+            )
         }
     }
 }
