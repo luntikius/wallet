@@ -5,8 +5,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import com.luntikius.wallet.data.model.Pass
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
 
 /**
  * Reusable delete confirmation dialog for passes.
