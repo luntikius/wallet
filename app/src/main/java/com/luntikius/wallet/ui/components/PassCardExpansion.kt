@@ -310,14 +310,9 @@ fun PassCardExpansion(
                                             if (abs(dragOffset) >
                                                 AnimationTokens.SWIPE_THRESHOLD_DP * density.density
                                             ) {
-                                                val normalizedRotation =
-                                                    ((targetRotation % 360) + 360) % 360
-                                                val isShowingFront =
-                                                    normalizedRotation < 90f || normalizedRotation >= 270f
-
                                                 val flipDirection =
                                                     if (dragOffset > 0) 180f else -180f
-                                                targetRotation += if (isShowingFront) flipDirection else -flipDirection
+                                                targetRotation += flipDirection
                                             }
                                             dragOffset = 0f
                                         },
