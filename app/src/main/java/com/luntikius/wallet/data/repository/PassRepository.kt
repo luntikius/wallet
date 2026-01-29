@@ -3,6 +3,8 @@ package com.luntikius.wallet.data.repository
 import android.content.Context
 import android.net.Uri
 import com.google.gson.Gson
+import com.luntikius.wallet.data.exporter.ExportResult
+import com.luntikius.wallet.data.exporter.ExporterRegistry
 import com.luntikius.wallet.data.local.PassDao
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassFormat
@@ -93,6 +95,12 @@ interface PassRepository {
      * Create and save a custom pass from barcode scan data.
      */
     suspend fun createCustomPass(pass: Pass): Result<Pass>
+
+    /**
+     * Export a pass as a shareable file.
+     * Uses ExporterRegistry to find appropriate exporter for the pass format.
+     */
+    suspend fun exportPassForSharing(passId: String): Result<com.luntikius.wallet.data.exporter.ExportResult>
 }
 
 /**
@@ -107,6 +115,7 @@ class PassRepositoryImpl(
     private val pkPassParser = PKPassParser(context)
     private val updateService = PKPassUpdateService(context, pkPassParser)
     private val downloadService = PassDownloadService(context)
+    private val exporterRegistry = ExporterRegistry(context)
     private val gson = Gson()
 
     override fun getAllPasses(): Flow<List<Pass>> = passDao.getAllPasses()
@@ -359,6 +368,25 @@ class PassRepositoryImpl(
             passDao.insertPass(passWithOrder)
 
             Result.success(passWithOrder)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun exportPassForSharing(passId: String): Result<ExportResult> = withContext(Dispatchers.IO) {
+        try {
+            val pass = passDao.getPassById(passId)
+                ?: return@withContext Result.failure(Exception("Pass not found"))
+
+            val exporter = exporterRegistry.resolveExporter(pass)
+                ?: return@withContext Result.failure(
+                    Exception("No exporter available for ${pass.format}"),
+                )
+
+            val result = exporter.export(pass)
+                ?: return@withContext Result.failure(Exception("Export failed"))
+
+            Result.success(result)
         } catch (e: Exception) {
             Result.failure(e)
         }
