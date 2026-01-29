@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
         // Clean up temporary preview files on startup
         lifecycleScope.launch {
             File(cacheDir, "preview_passes").deleteRecursively()
+            File(cacheDir, "shared_passes").deleteRecursively()
         }
 
         // Schedule background pass refresh

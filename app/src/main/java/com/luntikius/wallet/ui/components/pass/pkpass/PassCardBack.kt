@@ -25,6 +25,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,12 +38,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.PassFormat
+import com.luntikius.wallet.data.model.ShareStatus
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.ui.components.common.EmptyStateMessage
 import com.luntikius.wallet.ui.components.common.PassDeleteDialog
 import com.luntikius.wallet.ui.utils.rememberCardColors
+import com.luntikius.wallet.ui.utils.sharePassFile
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import java.io.File
 import kotlinx.coroutines.launch
@@ -61,7 +67,29 @@ fun PassCardBack(
     val backgroundColor = cardColors.background
     val textColor = cardColors.text
 
+    val shareStatus by viewModel.shareStatus.collectAsState()
+    val context = LocalContext.current
+
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // Handle share status changes
+    LaunchedEffect(shareStatus) {
+        when (val status = shareStatus) {
+            is ShareStatus.Success -> {
+                if (status.passId == pass.id) {
+                    sharePassFile(context, status.exportResult)
+                    viewModel.resetShareStatus()
+                }
+            }
+            is ShareStatus.Error -> {
+                if (status.passId == pass.id) {
+                    // Log error silently (matches app pattern)
+                    viewModel.resetShareStatus()
+                }
+            }
+            else -> { /* Idle or Loading */ }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -94,17 +122,20 @@ fun PassCardBack(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Share button
-            IconButton(
-                onClick = {
-                    // TODO: Implement share functionality
-                },
-            ) {
-                Icon(
-                    Icons.Outlined.Share,
-                    contentDescription = "Share",
-                    tint = textColor,
-                )
+            // Share button - only visible for PKPASS format
+            if (pass.format == PassFormat.PKPASS) {
+                IconButton(
+                    onClick = {
+                        viewModel.prepareSharePass(pass.id)
+                    },
+                    enabled = shareStatus !is ShareStatus.Loading,
+                ) {
+                    Icon(
+                        Icons.Outlined.Share,
+                        contentDescription = "Share",
+                        tint = textColor,
+                    )
+                }
             }
 
             // Delete button

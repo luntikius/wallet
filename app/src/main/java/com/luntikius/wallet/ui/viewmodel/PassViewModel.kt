@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.luntikius.wallet.camera.ScanResult
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.RefreshStatus
+import com.luntikius.wallet.data.model.ShareStatus
 import com.luntikius.wallet.data.network.PKPassUpdateService
 import com.luntikius.wallet.data.repository.PassRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -76,6 +77,12 @@ class PassViewModel(private val repository: PassRepository) : ViewModel() {
      */
     private val _scanResult = MutableStateFlow<ScanResult?>(null)
     val scanResult: StateFlow<ScanResult?> = _scanResult.asStateFlow()
+
+    /**
+     * Share status for showing share loading/success/error states.
+     */
+    private val _shareStatus = MutableStateFlow<ShareStatus>(ShareStatus.Idle)
+    val shareStatus: StateFlow<ShareStatus> = _shareStatus.asStateFlow()
 
     /**
      * Import a pass from a URI.
@@ -337,6 +344,32 @@ class PassViewModel(private val repository: PassRepository) : ViewModel() {
             kotlinx.coroutines.delay(2000)
             _importStatus.value = ImportStatus.Idle
         }
+    }
+
+    /**
+     * Prepare a pass for sharing by exporting it to a file.
+     */
+    fun prepareSharePass(passId: String) {
+        viewModelScope.launch {
+            _shareStatus.value = ShareStatus.Loading(passId)
+            val result = repository.exportPassForSharing(passId)
+
+            _shareStatus.value = if (result.isSuccess) {
+                ShareStatus.Success(result.getOrThrow(), passId)
+            } else {
+                ShareStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to share pass",
+                    passId,
+                )
+            }
+        }
+    }
+
+    /**
+     * Reset the share status to idle.
+     */
+    fun resetShareStatus() {
+        _shareStatus.value = ShareStatus.Idle
     }
 }
 
