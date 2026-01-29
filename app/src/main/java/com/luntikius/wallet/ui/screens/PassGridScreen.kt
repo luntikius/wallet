@@ -31,7 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,9 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -72,15 +69,19 @@ import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
+import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
+import com.luntikius.wallet.designsystem.components.feedback.WalletSnackbar
+import com.luntikius.wallet.designsystem.components.navigation.WalletTopAppBar
+import com.luntikius.wallet.designsystem.foundation.color.createCustomPassGradient
+import com.luntikius.wallet.designsystem.foundation.color.ensureContrast
+import com.luntikius.wallet.designsystem.foundation.color.parseColor
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.DeleteZone
 import com.luntikius.wallet.ui.components.PassCardExpansion
 import com.luntikius.wallet.ui.components.PassGridSkeleton
 import com.luntikius.wallet.ui.components.RefreshLoadingSnackbar
 import com.luntikius.wallet.ui.navigation.Routes
 import com.luntikius.wallet.ui.utils.IconMapper
-import com.luntikius.wallet.ui.utils.createCustomPassGradient
-import com.luntikius.wallet.ui.utils.ensureContrast
-import com.luntikius.wallet.ui.utils.parseColor
 import com.luntikius.wallet.ui.utils.stripHtml
 import com.luntikius.wallet.ui.viewmodel.ImportStatus
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
@@ -179,7 +180,7 @@ fun PassGridScreen(
         ) {
             Scaffold(
                 topBar = {
-                    TopAppBar(
+                    WalletTopAppBar(
                         title = { Text("wallet") },
                         actions = {
                             Box {
@@ -240,7 +241,7 @@ fun PassGridScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(horizontal = 32.dp),
+                                .padding(horizontal = MaterialTheme.spacing.huge),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
                         ) {
@@ -249,7 +250,7 @@ fun PassGridScreen(
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
                             Text(
                                 text = "Tap + to add a pass",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -262,13 +263,13 @@ fun PassGridScreen(
                             state = gridState,
                             columns = GridCells.Adaptive(160.dp),
                             contentPadding = PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 16.dp,
-                                bottom = 16.dp,
+                                start = MaterialTheme.spacing.mediumLarge,
+                                end = MaterialTheme.spacing.mediumLarge,
+                                top = MaterialTheme.spacing.mediumLarge,
+                                bottom = MaterialTheme.spacing.mediumLarge,
                             ),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
+                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
                             modifier = Modifier.fillMaxSize(),
                         ) {
                             items(localPasses, key = { it.id }) { pass ->
@@ -345,17 +346,17 @@ fun PassGridScreen(
 
                     // Import status snackbar
                     if (importStatus is ImportStatus.Error) {
-                        Snackbar(
+                        WalletSnackbar(
+                            message = (importStatus as ImportStatus.Error).message,
+                            status = com.luntikius.wallet.designsystem.components.feedback.SnackbarStatus.ERROR,
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
-                                .padding(16.dp),
-                        ) {
-                            Text((importStatus as ImportStatus.Error).message)
-                        }
+                                .padding(MaterialTheme.spacing.mediumLarge),
+                        )
                     }
 
                     if (importStatus is ImportStatus.Loading) {
-                        CircularProgressIndicator(
+                        WalletCircularProgressIndicator(
                             modifier = Modifier.align(Alignment.Center),
                         )
                     }
@@ -385,7 +386,7 @@ fun PassGridScreen(
             refreshStatus = refreshStatus,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = if (importStatus is ImportStatus.Error) 80.dp else 16.dp),
+                .padding(bottom = if (importStatus is ImportStatus.Error) 80.dp else MaterialTheme.spacing.mediumLarge),
         )
     }
 }
@@ -454,7 +455,11 @@ fun PassTile(
                 containerColor = if (isCustomPass) Color.Transparent else backgroundColor,
             ),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = if (isDragging) 16.dp else 4.dp,
+                defaultElevation = if (isDragging) {
+                    MaterialTheme.spacing.mediumLarge
+                } else {
+                    MaterialTheme.spacing.extraSmall
+                },
             ),
             shape = RoundedCornerShape(12.dp),
             onClick = {
@@ -480,7 +485,7 @@ fun PassTile(
                             Modifier
                         },
                     )
-                    .padding(16.dp),
+                    .padding(MaterialTheme.spacing.mediumLarge),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // Spacer to push content down

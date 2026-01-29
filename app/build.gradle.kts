@@ -99,6 +99,7 @@ android {
 
 dependencies {
     implementation(project(":camera"))
+    implementation(project(":design-system"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

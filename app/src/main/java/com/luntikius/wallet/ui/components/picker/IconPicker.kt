@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 
 /**
  * Icon picker with circular icon buttons in a horizontally scrolling row.
@@ -38,9 +39,9 @@ fun IconPicker(
         modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(scrollState),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
     ) {
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(MaterialTheme.spacing.extraSmall))
         icons.forEachIndexed { index, (name, icon) ->
             IconCircle(
                 icon = icon,
@@ -48,7 +49,7 @@ fun IconPicker(
                 onClick = { onIconSelected(index) },
             )
         }
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(MaterialTheme.spacing.extraSmall))
     }
 }
 

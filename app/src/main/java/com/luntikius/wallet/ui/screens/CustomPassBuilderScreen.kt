@@ -17,14 +17,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,12 +34,16 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.builder.CustomPassBuilder
+import com.luntikius.wallet.designsystem.components.button.WalletFilledButton
+import com.luntikius.wallet.designsystem.components.button.WalletOutlinedButton
+import com.luntikius.wallet.designsystem.components.navigation.WalletTopAppBar
+import com.luntikius.wallet.designsystem.components.picker.ColorPicker
+import com.luntikius.wallet.designsystem.foundation.color.DefaultPassColors
+import com.luntikius.wallet.designsystem.foundation.color.ensureContrast
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCard
-import com.luntikius.wallet.ui.components.picker.ColorPicker
 import com.luntikius.wallet.ui.components.picker.IconPicker
-import com.luntikius.wallet.ui.theme.CustomPassColors
 import com.luntikius.wallet.ui.utils.IconMapper
-import com.luntikius.wallet.ui.utils.ensureContrast
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 
 /**
@@ -65,7 +66,7 @@ fun CustomPassBuilderScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            WalletTopAppBar(
                 title = { Text("Create Card") },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
@@ -85,8 +86,9 @@ fun CustomPassBuilderScreen(
         ) {
             // Preview card at the top with editable name
             val (_, selectedIcon) = IconMapper.availableIcons[selectedIconIndex]
-            val backgroundColor = CustomPassColors[selectedColorIndex].first
-            val foregroundColor = CustomPassColors[selectedColorIndex].second
+            val colorPalette = DefaultPassColors[selectedColorIndex]
+            val backgroundColor = colorPalette.background
+            val foregroundColor = colorPalette.foreground
             val isDarkTheme = isSystemInDarkTheme()
             val textColor = ensureContrast(
                 foregroundColor = foregroundColor,
@@ -113,62 +115,62 @@ fun CustomPassBuilderScreen(
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
                         .aspectRatio(1.25f)
-                        .padding(vertical = 12.dp)
+                        .padding(vertical = MaterialTheme.spacing.medium)
                         .shadow(8.dp, RoundedCornerShape(12.dp)),
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.extraLarge))
 
             // Icon picker
             Text(
                 text = "Icon",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.mediumLarge),
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
             IconPicker(
                 icons = IconMapper.availableIcons,
                 selectedIndex = selectedIconIndex,
                 onIconSelected = { selectedIconIndex = it },
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.extraLarge))
 
             // Color picker
             Text(
                 text = "Color",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.mediumLarge),
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
             ColorPicker(
-                colorPairs = CustomPassColors,
+                colors = DefaultPassColors,
                 selectedIndex = selectedColorIndex,
                 onColorSelected = { selectedColorIndex = it },
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.huge))
 
             // Action buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = MaterialTheme.spacing.mediumLarge),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
             ) {
-                OutlinedButton(
+                WalletOutlinedButton(
                     onClick = onCancel,
                     modifier = Modifier.weight(1f),
                 ) {
                     Text("Cancel")
                 }
-                Button(
+                WalletFilledButton(
                     onClick = {
                         if (cardName.isNotBlank()) {
-                            val selectedColor = CustomPassColors[selectedColorIndex]
+                            val selectedColorPalette = DefaultPassColors[selectedColorIndex]
                             val (iconName, _) = IconMapper.availableIcons[selectedIconIndex]
                             val pass = CustomPassBuilder.createCustomPass(
                                 cardName = cardName,
@@ -177,11 +179,11 @@ fun CustomPassBuilderScreen(
                                 iconName = iconName,
                                 backgroundColor = String.format(
                                     "#%06X",
-                                    0xFFFFFF and selectedColor.first.toArgb(),
+                                    0xFFFFFF and selectedColorPalette.background.toArgb(),
                                 ),
                                 foregroundColor = String.format(
                                     "#%06X",
-                                    0xFFFFFF and selectedColor.second.toArgb(),
+                                    0xFFFFFF and selectedColorPalette.foreground.toArgb(),
                                 ),
                             )
                             viewModel.createCustomPass(pass)

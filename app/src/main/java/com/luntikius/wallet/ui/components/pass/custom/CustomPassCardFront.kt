@@ -14,8 +14,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,9 +24,11 @@ import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.data.model.CustomPassJson
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.designsystem.components.input.WalletTransparentTextField
+import com.luntikius.wallet.designsystem.foundation.color.createCustomPassGradient
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.BarcodeDisplay
 import com.luntikius.wallet.ui.utils.IconMapper
-import com.luntikius.wallet.ui.utils.createCustomPassGradient
 import com.luntikius.wallet.ui.utils.rememberCardColors
 
 /**
@@ -88,7 +88,12 @@ fun CustomPassCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
+                .padding(
+                    start = MaterialTheme.spacing.mediumLarge,
+                    end = MaterialTheme.spacing.large,
+                    top = MaterialTheme.spacing.medium,
+                    bottom = MaterialTheme.spacing.medium,
+                ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -97,35 +102,25 @@ fun CustomPassCard(
                 modifier = Modifier.size(40.dp),
                 tint = textColor,
             )
-            Spacer(modifier = Modifier.size(6.dp))
+            Spacer(modifier = Modifier.size(MaterialTheme.spacing.extraSmall))
 
             if (isEditable) {
-                val textStyle = MaterialTheme.typography.titleLarge.copy(
-                    color = textColor,
-                    fontWeight = FontWeight.Bold,
-                )
-
-                TextField(
+                WalletTransparentTextField(
                     value = cardName,
                     onValueChange = onCardNameChange,
                     placeholder = {
                         Text(
                             text = "Enter Card Name",
-                            style = textStyle.copy(color = textColor.copy(alpha = 0.5f)),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor.copy(alpha = 0.6f),
                         )
                     },
-                    textStyle = textStyle,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent,
-                        cursorColor = textColor,
-                    ),
-                    modifier = Modifier.weight(1f),
+                    textColor = textColor,
                     singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                 )
             } else {
                 Text(

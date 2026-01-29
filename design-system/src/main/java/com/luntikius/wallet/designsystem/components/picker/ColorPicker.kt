@@ -1,4 +1,4 @@
-package com.luntikius.wallet.ui.components.picker
+package com.luntikius.wallet.designsystem.components.picker
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,16 +17,33 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.luntikius.wallet.ui.utils.createCustomPassGradient
+import com.luntikius.wallet.designsystem.foundation.color.PassColorPalette
+import com.luntikius.wallet.designsystem.foundation.color.createCustomPassGradient
 
 /**
  * Color picker with circular swatches in a horizontally scrolling row.
+ *
+ * Displays a list of pass color palettes as circular swatches with gradients.
+ * Used in the custom pass builder for selecting card colors.
+ *
+ * Usage:
+ * ```
+ * ColorPicker(
+ *     colors = MaterialTheme.walletColors,
+ *     selectedIndex = 0,
+ *     onColorSelected = { index -> /* handle selection */ }
+ * )
+ * ```
+ *
+ * @param colors List of pass color palettes to display
+ * @param selectedIndex The currently selected color index
+ * @param onColorSelected Callback when a color is selected
+ * @param modifier Modifier to be applied to the picker
  */
 @Composable
 fun ColorPicker(
-    colorPairs: List<Pair<Color, Color>>,
+    colors: List<PassColorPalette>,
     selectedIndex: Int,
     onColorSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -40,10 +57,9 @@ fun ColorPicker(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Spacer(modifier = Modifier.width(4.dp))
-        colorPairs.forEachIndexed { index, (backgroundColor, foregroundColor) ->
+        colors.forEachIndexed { index, palette ->
             ColorCircle(
-                backgroundColor = backgroundColor,
-                foregroundColor = foregroundColor,
+                palette = palette,
                 isSelected = index == selectedIndex,
                 onClick = { onColorSelected(index) },
             )
@@ -54,16 +70,18 @@ fun ColorPicker(
 
 /**
  * Individual circular color swatch with gradient.
+ *
+ * Displays a single color palette as a circular swatch with a gradient.
+ * Shows a primary border when selected, a subtle outline otherwise.
+ *
+ * @param palette The color palette to display
+ * @param isSelected Whether this color is currently selected
+ * @param onClick Callback when the circle is clicked
+ * @param modifier Modifier to be applied to the circle
  */
 @Composable
-fun ColorCircle(
-    backgroundColor: Color,
-    foregroundColor: Color,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val gradient = createCustomPassGradient(backgroundColor, foregroundColor)
+fun ColorCircle(palette: PassColorPalette, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val gradient = createCustomPassGradient(palette.background, palette.foreground)
 
     Box(
         modifier = modifier

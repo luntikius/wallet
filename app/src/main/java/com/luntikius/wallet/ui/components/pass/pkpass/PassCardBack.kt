@@ -44,6 +44,7 @@ import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassFormat
 import com.luntikius.wallet.data.model.ShareStatus
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.common.EmptyStateMessage
 import com.luntikius.wallet.ui.components.common.PassDeleteDialog
 import com.luntikius.wallet.ui.utils.rememberCardColors
@@ -100,7 +101,7 @@ fun PassCardBack(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = MaterialTheme.spacing.mediumLarge, vertical = MaterialTheme.spacing.medium),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Logo (prioritize logo over icon)
@@ -154,7 +155,11 @@ fun PassCardBack(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .padding(
+                    start = MaterialTheme.spacing.mediumLarge,
+                    end = MaterialTheme.spacing.mediumLarge,
+                    bottom = MaterialTheme.spacing.mediumLarge,
+                )
                 .clip(RoundedCornerShape(12.dp)),
         ) {
             item {
@@ -175,7 +180,7 @@ fun PassCardBack(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(MaterialTheme.spacing.mediumLarge),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -193,7 +198,7 @@ fun PassCardBack(
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp),
+                                modifier = Modifier.padding(top = MaterialTheme.spacing.extraSmall),
                             )
                         }
 
@@ -212,7 +217,7 @@ fun PassCardBack(
             }
 
             item {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
             }
 
             // Check if there are back fields to show
@@ -238,7 +243,7 @@ fun PassCardBack(
                                     htmlContent = content,
                                     textColor = textColor,
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
                             }
                         }
                     }

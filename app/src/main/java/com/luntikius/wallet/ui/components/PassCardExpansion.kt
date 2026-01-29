@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,7 +52,8 @@ import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
-import com.luntikius.wallet.ui.animation.AnimationConstants
+import com.luntikius.wallet.designsystem.foundation.animation.AnimationTokens
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardBack
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardBack
@@ -101,7 +100,7 @@ fun PassCardExpansion(
     val rotation by animateFloatAsState(
         targetValue = targetRotation,
         animationSpec = tween(
-            durationMillis = AnimationConstants.FLIP_DURATION_MS,
+            durationMillis = AnimationTokens.FLIP_DURATION_MS,
             easing = FastOutSlowInEasing,
         ),
         label = "card flip",
@@ -144,12 +143,12 @@ fun PassCardExpansion(
 
             // Fade in the full card content at tile size
             launch {
-                contentAlpha.animateTo(1f, AnimationConstants.phaseOneCardFadeIn)
+                contentAlpha.animateTo(1f, AnimationTokens.phaseOneCardFadeIn)
             }
 
             // Wait for phase 1 to complete, then delay before phase 2
             kotlinx.coroutines.delay(
-                (AnimationConstants.PHASE_1_DURATION_MS + AnimationConstants.INTER_PHASE_DELAY_MS).toLong(),
+                (AnimationTokens.PHASE_1_DURATION_MS + AnimationTokens.INTER_PHASE_DELAY_MS).toLong(),
             )
 
             // Hide tile before Phase 2 starts
@@ -157,19 +156,19 @@ fun PassCardExpansion(
 
             // PHASE 2: Scale up, add scrim, show buttons (300ms)
             launch {
-                scale.animateTo(1f, AnimationConstants.phaseTwoScale)
+                scale.animateTo(1f, AnimationTokens.phaseTwoScale)
             }
             launch {
-                offsetX.animateTo(0f, AnimationConstants.phaseTwoScale)
+                offsetX.animateTo(0f, AnimationTokens.phaseTwoScale)
             }
             launch {
-                offsetY.animateTo(0f, AnimationConstants.phaseTwoScale)
+                offsetY.animateTo(0f, AnimationTokens.phaseTwoScale)
             }
             launch {
-                scrimAlpha.animateTo(0.6f, AnimationConstants.phaseTwoScrim)
+                scrimAlpha.animateTo(0.6f, AnimationTokens.phaseTwoScrim)
             }
             launch {
-                buttonSlide.animateTo(0f, AnimationConstants.phaseTwoButtons)
+                buttonSlide.animateTo(0f, AnimationTokens.phaseTwoButtons)
             }
         } else {
             // No tile position, just fade in instantly
@@ -201,22 +200,22 @@ fun PassCardExpansion(
                 // Two-phase dismissal (mirrors expansion)
                 // Phase 1: Scale down to tile size (250ms) with content visible
                 launch {
-                    scale.animateTo(targetScale, AnimationConstants.dismissalPhaseOneScale)
+                    scale.animateTo(targetScale, AnimationTokens.dismissalPhaseOneScale)
                 }
                 launch {
-                    offsetX.animateTo(targetOffsetX, AnimationConstants.dismissalPhaseOneScale)
+                    offsetX.animateTo(targetOffsetX, AnimationTokens.dismissalPhaseOneScale)
                 }
                 launch {
-                    offsetY.animateTo(targetOffsetY, AnimationConstants.dismissalPhaseOneScale)
+                    offsetY.animateTo(targetOffsetY, AnimationTokens.dismissalPhaseOneScale)
                 }
                 launch {
-                    scrimAlpha.animateTo(0f, AnimationConstants.dismissalPhaseOneScale)
+                    scrimAlpha.animateTo(0f, AnimationTokens.dismissalPhaseOneScale)
                 }
                 launch {
                     buttonSlide.animateTo(
                         1f,
                         tween(
-                            AnimationConstants.DISMISSAL_PHASE_1_DURATION_MS - 50,
+                            AnimationTokens.DISMISSAL_PHASE_1_DURATION_MS - 50,
                             easing = FastOutSlowInEasing,
                         ),
                     )
@@ -226,8 +225,8 @@ fun PassCardExpansion(
                 launch {
                     kotlinx.coroutines.delay(
                         (
-                            AnimationConstants.DISMISSAL_PHASE_1_DURATION_MS +
-                                AnimationConstants.INTER_PHASE_DELAY_MS
+                            AnimationTokens.DISMISSAL_PHASE_1_DURATION_MS +
+                                AnimationTokens.INTER_PHASE_DELAY_MS
                             ).toLong(),
                     )
 
@@ -235,31 +234,31 @@ fun PassCardExpansion(
                     onTileVisibilityChange(true)
 
                     // Phase 2: Fade out content at tile size (100ms)
-                    contentAlpha.animateTo(0f, AnimationConstants.dismissalPhaseTwoFade)
+                    contentAlpha.animateTo(0f, AnimationTokens.dismissalPhaseTwoFade)
                 }
 
                 // Wait for all animations to complete before calling onDismiss
                 launch {
-                    kotlinx.coroutines.delay(AnimationConstants.DISMISSAL_TOTAL_MS.toLong())
+                    kotlinx.coroutines.delay(AnimationTokens.DISMISSAL_TOTAL_MS.toLong())
                     onDismiss()
                 }
             } else {
                 // Just fade out (no tile position)
                 launch {
-                    scrimAlpha.animateTo(0f, AnimationConstants.dismissalPhaseOneScale)
+                    scrimAlpha.animateTo(0f, AnimationTokens.dismissalPhaseOneScale)
                 }
                 launch {
                     kotlinx.coroutines.delay(
                         (
-                            AnimationConstants.DISMISSAL_PHASE_1_DURATION_MS +
-                                AnimationConstants.INTER_PHASE_DELAY_MS
+                            AnimationTokens.DISMISSAL_PHASE_1_DURATION_MS +
+                                AnimationTokens.INTER_PHASE_DELAY_MS
                             ).toLong(),
                     )
                     onTileVisibilityChange(true)
-                    contentAlpha.animateTo(0f, AnimationConstants.dismissalPhaseTwoFade)
+                    contentAlpha.animateTo(0f, AnimationTokens.dismissalPhaseTwoFade)
                 }
                 launch {
-                    kotlinx.coroutines.delay(AnimationConstants.DISMISSAL_TOTAL_MS.toLong())
+                    kotlinx.coroutines.delay(AnimationTokens.DISMISSAL_TOTAL_MS.toLong())
                     onDismiss()
                 }
             }
@@ -309,7 +308,7 @@ fun PassCardExpansion(
                                     detectHorizontalDragGestures(
                                         onDragEnd = {
                                             if (abs(dragOffset) >
-                                                AnimationConstants.SWIPE_THRESHOLD_DP * density.density
+                                                AnimationTokens.SWIPE_THRESHOLD_DP * density.density
                                             ) {
                                                 val normalizedRotation =
                                                     ((targetRotation % 360) + 360) % 360
@@ -467,7 +466,7 @@ private fun CardControls(
                 translationY = buttonSlide * 200f * density.density
                 alpha = 1f - buttonSlide
             }
-            .padding(bottom = 24.dp),
+            .padding(bottom = MaterialTheme.spacing.extraLarge),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Flip button
@@ -476,7 +475,7 @@ private fun CardControls(
             modifier = Modifier
                 .fillMaxWidth(0.5f)
                 .height(40.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
+            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
                 containerColor = Color.Transparent,
                 contentColor = Color.White,
             ),
@@ -491,7 +490,7 @@ private fun CardControls(
                 modifier = Modifier.size(16.dp),
                 tint = Color.White,
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.extraSmall))
             Text(
                 text = "Flip",
                 style = MaterialTheme.typography.labelMedium,
@@ -499,10 +498,10 @@ private fun CardControls(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
         // Close button
-        TextButton(
+        androidx.compose.material3.TextButton(
             onClick = onClose,
             modifier = Modifier.fillMaxWidth(0.5f),
         ) {

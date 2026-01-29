@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
+import com.luntikius.wallet.designsystem.foundation.typography.textStyles
 import com.luntikius.wallet.ui.components.BarcodeDisplay
 import com.luntikius.wallet.ui.utils.rememberCardColors
 import com.luntikius.wallet.ui.utils.stripHtml
@@ -54,7 +56,12 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
+                .padding(
+                    start = MaterialTheme.spacing.mediumLarge,
+                    end = MaterialTheme.spacing.large,
+                    top = MaterialTheme.spacing.medium,
+                    bottom = MaterialTheme.spacing.medium,
+                ),
             verticalAlignment = Alignment.Top,
         ) {
             // Logo (prioritize logo over icon)
@@ -80,7 +87,7 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
             structure?.headerFields?.let { headerFields ->
                 if (headerFields.isNotEmpty()) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
                         verticalAlignment = Alignment.Top,
                     ) {
                         headerFields.forEach { field ->
@@ -89,8 +96,8 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: ""),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = textColor.copy(alpha = 0.6f),
+                                    style = MaterialTheme.textStyles.labelSecondary,
+                                    color = textColor,
                                     textAlign = TextAlign.End,
                                 )
                                 Text(
@@ -129,7 +136,7 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = MaterialTheme.spacing.mediumLarge, vertical = MaterialTheme.spacing.medium),
         ) {
             // Primary fields
             structure?.primaryFields?.let { fields ->
@@ -152,8 +159,8 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: field.key),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = textColor.copy(alpha = 0.6f),
+                                    style = MaterialTheme.textStyles.labelSecondary,
+                                    color = textColor,
                                 )
                                 Text(
                                     text = stripHtml(field.value?.toString() ?: ""),
@@ -164,7 +171,7 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
                 }
             }
 
@@ -188,8 +195,8 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: field.key),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = textColor.copy(alpha = 0.6f),
+                                    style = MaterialTheme.textStyles.labelSecondary,
+                                    color = textColor,
                                 )
                                 Text(
                                     text = stripHtml(field.value?.toString() ?: ""),

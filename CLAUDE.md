@@ -96,6 +96,103 @@ To add a new pass format:
 
 Currently implemented: PKPass (Apple Wallet) format via `PKPassParser`
 
+### Design System Module
+
+**Location:** `design-system/`
+**Package:** `com.luntikius.wallet.designsystem`
+
+The app uses a centralized design system module for all UI theming and reusable components.
+
+#### Structure
+
+```
+design-system/
+├── theme/           # Main theme system
+│   ├── WalletTheme.kt      # Theme composable
+│   ├── ColorScheme.kt      # Material 3 color schemes
+│   ├── Typography.kt       # Typography scale
+│   ├── Shape.kt            # Shape system
+│   └── Dimensions.kt       # Size constants
+├── foundation/      # Design tokens
+│   ├── color/              # Color system
+│   ├── typography/         # Text styles
+│   ├── spacing/            # Spacing scale
+│   └── animation/          # Animation specs
+└── components/      # Reusable components
+    ├── button/
+    ├── card/
+    ├── dialog/
+    ├── input/
+    ├── menu/
+    ├── navigation/
+    ├── feedback/
+    └── picker/
+```
+
+#### Key Features
+
+**Theme System:**
+- Black & White color scheme with Blue accent (#FF0077b6)
+- No dynamic color support (fixed color schemes)
+- Automatic dark/light theme switching
+- Material 3 exclusively
+
+**Color System:**
+- 8 pastel pass color palettes (`PassColorPalette` data class)
+- WCAG AA contrast validation (4.5:1 ratio)
+- Color utilities: `parseColor`, `ensureContrast`, `blendColors`, `createCustomPassGradient`
+- Semantic color tokens for consistent usage
+
+**Typography:**
+- Complete Material 3 type scale (Display, Headline, Title, Body, Label)
+- Semantic text styles (primary/secondary variants)
+- Replaces manual `.copy(alpha = 0.5)` patterns
+
+**Spacing:**
+- 4dp-based grid system
+- 9-level scale: `extraSmall` (4dp) to `massive` (48dp)
+- Accessed via `MaterialTheme.spacing.medium`
+
+**Components (11 total):**
+- Buttons: Filled, Outlined, Text, Icon
+- Dialogs: AlertDialog
+- Input: TextField (3 variants)
+- Menus: DropdownMenu, MenuItem
+- Navigation: TopAppBar
+- Feedback: EmptyState, Snackbar, ProgressIndicator
+- Pickers: ColorPicker
+
+**Usage Examples:**
+
+```kotlin
+// Theme
+WalletTheme {
+    // App content
+}
+
+// Spacing
+Box(modifier = Modifier.padding(MaterialTheme.spacing.medium))
+
+// Pass colors
+val palette = MaterialTheme.walletColors[0]
+
+// Semantic text styles
+Text(
+    text = "Primary",
+    style = MaterialTheme.textStyles.bodyPrimary
+)
+```
+
+**Migration Notes:**
+- Old `ui/theme` package replaced by design-system
+- `CustomPassColors` → `DefaultPassColors` (PassColorPalette data class)
+- `PassUtils` color functions → `designsystem.foundation.color.ColorUtils`
+- `AnimationConstants` → `AnimationTokens`
+- Hardcoded spacing → `MaterialTheme.spacing` tokens
+- Opacity patterns → Semantic text styles
+
+**See Also:** `/design-system/README.md` for detailed documentation
+
 ### Data Layer
 
 - **Room Database**: Single-source-of-truth for passes (`PassDatabase`)

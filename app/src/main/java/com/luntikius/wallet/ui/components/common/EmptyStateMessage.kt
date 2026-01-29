@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.designsystem.foundation.typography.textStyles
 
 /**
  * Reusable empty state message component.
@@ -43,8 +44,8 @@ fun EmptyStateMessage(message: String, tint: Color, modifier: Modifier = Modifie
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = tint.copy(alpha = 0.6f),
+            style = MaterialTheme.textStyles.bodySecondary,
+            color = tint,
             textAlign = TextAlign.Center,
         )
     }

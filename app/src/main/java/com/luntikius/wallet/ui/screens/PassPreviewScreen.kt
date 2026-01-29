@@ -1,7 +1,6 @@
 package com.luntikius.wallet.ui.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,13 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -34,6 +30,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.getPassData
+import com.luntikius.wallet.designsystem.components.button.WalletOutlinedButton
+import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
@@ -67,8 +66,8 @@ fun PassPreviewScreen(
         when (previewStatus) {
             is PreviewStatus.Loading -> {
                 // Loading state
-                CircularProgressIndicator(
-                    modifier = Modifier.padding(16.dp),
+                WalletCircularProgressIndicator(
+                    modifier = Modifier.padding(MaterialTheme.spacing.mediumLarge),
                 )
             }
 
@@ -83,7 +82,7 @@ fun PassPreviewScreen(
                         modifier = Modifier
                             .fillMaxWidth(0.9f)
                             .widthIn(max = 600.dp)
-                            .padding(vertical = 24.dp),
+                            .padding(vertical = MaterialTheme.spacing.extraLarge),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         // Title
@@ -91,7 +90,7 @@ fun PassPreviewScreen(
                             text = "Add to Wallet",
                             style = MaterialTheme.typography.headlineMedium,
                             color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(bottom = 16.dp),
+                            modifier = Modifier.padding(bottom = MaterialTheme.spacing.mediumLarge),
                         )
 
                         // Card preview
@@ -117,24 +116,19 @@ fun PassPreviewScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.extraLarge))
 
                         // Action buttons
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
                         ) {
                             // Cancel button
-                            OutlinedButton(
+                            WalletOutlinedButton(
                                 onClick = onCancel,
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = Color.Transparent,
-                                    contentColor = MaterialTheme.colorScheme.onSurface,
-                                ),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                             ) {
                                 Text(
                                     text = "Cancel",
@@ -143,7 +137,7 @@ fun PassPreviewScreen(
                             }
 
                             // Add button - vibrant green
-                            Button(
+                            androidx.compose.material3.Button(
                                 onClick = onAdd,
                                 modifier = Modifier
                                     .weight(1f)
@@ -179,7 +173,7 @@ fun PassPreviewScreen(
                         textAlign = TextAlign.Center,
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
 
                     Text(
                         text = (previewStatus as PreviewStatus.Error).message,
@@ -188,15 +182,10 @@ fun PassPreviewScreen(
                         textAlign = TextAlign.Center,
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.extraLarge))
 
-                    OutlinedButton(
+                    WalletOutlinedButton(
                         onClick = onCancel,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                     ) {
                         Text(
                             text = "Close",
@@ -208,8 +197,8 @@ fun PassPreviewScreen(
 
             is PreviewStatus.Idle -> {
                 // Should not happen, but handle gracefully
-                CircularProgressIndicator(
-                    modifier = Modifier.padding(16.dp),
+                WalletCircularProgressIndicator(
+                    modifier = Modifier.padding(MaterialTheme.spacing.mediumLarge),
                 )
             }
         }
