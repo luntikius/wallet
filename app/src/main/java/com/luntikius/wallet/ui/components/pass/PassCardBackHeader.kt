@@ -41,7 +41,7 @@ fun PassCardBackHeader(
     logoPath: String?,
     iconPath: String?,
     textColor: Color,
-    onShareClick: () -> Unit,
+    onShareClick: (() -> Unit)?,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -73,14 +73,16 @@ fun PassCardBackHeader(
         Spacer(modifier = Modifier.weight(1f))
 
         // Share button
-        IconButton(
-            onClick = onShareClick,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.share),
-                contentDescription = "Share",
-                tint = textColor,
-            )
+        onShareClick?.let { action ->
+            IconButton(
+                onClick = action,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.share),
+                    contentDescription = "Share",
+                    tint = textColor,
+                )
+            }
         }
 
         // Delete button

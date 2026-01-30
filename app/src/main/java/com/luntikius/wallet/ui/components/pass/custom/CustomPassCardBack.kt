@@ -40,9 +40,7 @@ fun CustomPassCardBack(pass: Pass, viewModel: PassViewModel, onDismiss: () -> Un
             logoPath = null, // Custom passes don't have logo images
             iconPath = null,
             textColor = textColor,
-            onShareClick = {
-                // TODO: Implement share functionality
-            },
+            onShareClick = null,
             onDeleteClick = { showDeleteDialog = true },
         )
 

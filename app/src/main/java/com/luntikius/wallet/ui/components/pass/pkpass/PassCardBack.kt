@@ -28,8 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.Pass
@@ -94,7 +92,8 @@ fun PassCardBack(
             logoPath = pass.logoPath,
             iconPath = pass.iconPath,
             textColor = textColor,
-            onShareClick = { viewModel.prepareSharePass(pass.id) }.takeIf { pass.format == PassFormat.PKPASS },
+            onShareClick = { viewModel.prepareSharePass(pass.id) }
+                .takeIf { pass.format == PassFormat.PKPASS },
             onDeleteClick = { showDeleteDialog = true },
         )
 
