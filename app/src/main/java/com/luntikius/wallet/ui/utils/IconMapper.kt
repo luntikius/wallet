@@ -1,44 +1,37 @@
 package com.luntikius.wallet.ui.utils
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.ShoppingCart
-import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.outlined.ThumbUp
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.DrawableRes
+import com.luntikius.wallet.designsystem.R
 
 /**
- * Utility object for mapping icon names to Material Icons.
+ * Utility object for mapping icon names to custom drawable icons.
  * Used for custom pass icon selection and rendering.
  */
 object IconMapper {
     /**
      * List of available icons for custom pass selection.
-     * Each pair contains: (iconName, ImageVector)
+     * Each pair contains: (iconName, drawableResourceId)
      */
-    val availableIcons: List<Pair<String, ImageVector>> = listOf(
-        "Star" to Icons.Outlined.Star,
-        "ShoppingCart" to Icons.Outlined.ShoppingCart,
-        "Favorite" to Icons.Outlined.Favorite,
-        "ThumbUp" to Icons.Outlined.ThumbUp,
-        "Check" to Icons.Outlined.Check,
-        "AccountCircle" to Icons.Outlined.AccountCircle,
-        "Home" to Icons.Outlined.Home,
-        "Info" to Icons.Outlined.Info,
+    val availableIcons: List<Pair<String, Int>> = listOf(
+        "Star" to R.drawable.star,
+        "Like" to R.drawable.like,
+        "Cart" to R.drawable.cart,
+        "Gift" to R.drawable.present,
+        "Food" to R.drawable.food,
+        "Shop" to R.drawable.shop,
+        "Flower" to R.drawable.flower,
+        "Package" to R.drawable.package_icon,
     )
 
     /**
-     * Retrieves the Material Icon for a given icon name.
+     * Retrieves the drawable resource ID for a given icon name.
      *
-     * @param name The icon name (e.g., "Star", "ShoppingCart")
-     * @return The corresponding ImageVector, or Star as fallback if not found
+     * @param name The icon name (e.g., "Star", "Cart")
+     * @return The corresponding drawable resource ID, or Star as fallback if not found
      */
-    fun getIconByName(name: String?): ImageVector {
+    @DrawableRes
+    fun getIconByName(name: String?): Int {
         return availableIcons.find { it.first == name }?.second
-            ?: Icons.Outlined.Star // Default fallback
+            ?: R.drawable.star // Default fallback
     }
 }

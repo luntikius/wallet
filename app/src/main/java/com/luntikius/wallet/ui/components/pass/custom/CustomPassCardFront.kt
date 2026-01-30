@@ -20,15 +20,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.data.model.CustomPassJson
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.designsystem.foundation.color.createCustomPassGradient
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.BarcodeDisplay
 import com.luntikius.wallet.ui.utils.IconMapper
-import com.luntikius.wallet.ui.utils.createCustomPassGradient
 import com.luntikius.wallet.ui.utils.rememberCardColors
 
 /**
@@ -42,11 +43,11 @@ fun CustomPassCardFront(pass: Pass, customPassJson: CustomPassJson, modifier: Mo
     val foregroundColor = cardColors.foreground ?: MaterialTheme.colorScheme.onSurface
     val textColor = cardColors.text
 
-    val icon = IconMapper.getIconByName(customPassJson.iconName)
+    val iconRes = IconMapper.getIconByName(customPassJson.iconName)
 
     CustomPassCard(
         cardName = pass.organizationName,
-        icon = icon,
+        icon = iconRes,
         backgroundColor = backgroundColor,
         foregroundColor = foregroundColor,
         textColor = textColor,
@@ -66,7 +67,7 @@ fun CustomPassCardFront(pass: Pass, customPassJson: CustomPassJson, modifier: Mo
 @Composable
 fun CustomPassCard(
     cardName: String,
-    icon: ImageVector,
+    icon: Int,
     backgroundColor: Color,
     foregroundColor: Color,
     textColor: Color,
@@ -88,16 +89,21 @@ fun CustomPassCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
+                .padding(
+                    start = MaterialTheme.spacing.mediumLarge,
+                    end = MaterialTheme.spacing.large,
+                    top = MaterialTheme.spacing.medium,
+                    bottom = MaterialTheme.spacing.medium,
+                ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = icon,
+                painter = painterResource(id = icon),
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
                 tint = textColor,
             )
-            Spacer(modifier = Modifier.size(6.dp))
+            Spacer(modifier = Modifier.size(MaterialTheme.spacing.extraSmall))
 
             if (isEditable) {
                 val textStyle = MaterialTheme.typography.titleLarge.copy(

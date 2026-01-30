@@ -23,6 +23,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.BarcodeFormatType
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
+import com.luntikius.wallet.designsystem.foundation.typography.textStyles
 import com.luntikius.wallet.ui.utils.generateBarcodeBitmap
 
 /**
@@ -41,7 +43,7 @@ fun BarcodeDisplay(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = MaterialTheme.spacing.mediumLarge),
     ) {
         val barcodeBitmap = remember(barcodeValue, barcodeFormat) {
             generateBarcodeBitmap(
@@ -65,7 +67,7 @@ fun BarcodeDisplay(
                     contentDescription = "Barcode",
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(12.dp),
+                        .padding(MaterialTheme.spacing.medium),
                     contentScale = ContentScale.Fit,
                 )
             }
@@ -82,8 +84,8 @@ fun BarcodeDisplay(
             ) {
                 Text(
                     text = "Barcode unavailable",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textColor.copy(alpha = 0.5f),
+                    style = MaterialTheme.textStyles.captionSecondary,
+                    color = textColor,
                 )
             }
         }
@@ -91,11 +93,11 @@ fun BarcodeDisplay(
         // Display altText or barcode value below
         val displayText = altText?.takeIf { it.isNotBlank() } ?: barcodeValue
         if (displayText.isNotBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
             Text(
                 text = displayText,
-                style = MaterialTheme.typography.bodySmall,
-                color = textColor.copy(alpha = 0.7f),
+                style = MaterialTheme.textStyles.labelSecondary,
+                color = textColor.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )

@@ -25,8 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 
 @Composable
 fun PassGridSkeleton(modifier: Modifier = Modifier) {
@@ -44,13 +44,13 @@ fun PassGridSkeleton(modifier: Modifier = Modifier) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(160.dp),
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = 16.dp,
-            bottom = 16.dp,
+            start = MaterialTheme.spacing.mediumLarge,
+            end = MaterialTheme.spacing.mediumLarge,
+            top = MaterialTheme.spacing.mediumLarge,
+            bottom = MaterialTheme.spacing.mediumLarge,
         ),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
         modifier = modifier.fillMaxSize(),
     ) {
         items(6) {
@@ -71,7 +71,7 @@ private fun SkeletonCard(alpha: Float, modifier: Modifier = Modifier) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(MaterialTheme.spacing.mediumLarge),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Spacer(modifier = Modifier.weight(1f))
@@ -82,7 +82,7 @@ private fun SkeletonCard(alpha: Float, modifier: Modifier = Modifier) {
                     .height(60.dp)
                     .fillMaxWidth(0.6f)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White.copy(alpha = 0.3f)),
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)),
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -90,10 +90,10 @@ private fun SkeletonCard(alpha: Float, modifier: Modifier = Modifier) {
             // Skeleton for text
             Box(
                 modifier = Modifier
-                    .height(16.dp)
+                    .height(MaterialTheme.spacing.mediumLarge)
                     .fillMaxWidth(0.8f)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color.White.copy(alpha = 0.3f)),
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)),
             )
         }
     }

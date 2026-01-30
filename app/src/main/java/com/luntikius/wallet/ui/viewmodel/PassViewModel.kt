@@ -40,9 +40,9 @@ class PassViewModel(private val repository: PassRepository) : ViewModel() {
         )
 
     init {
-        // Mark loading as complete after first emission from repository
+        // Mark loading as complete after first emission from the passes StateFlow
         viewModelScope.launch {
-            repository.getAllPasses().first()
+            passes.first()
             _isInitialLoading.value = false
         }
     }

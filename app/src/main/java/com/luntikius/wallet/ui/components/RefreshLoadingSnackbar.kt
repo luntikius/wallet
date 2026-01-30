@@ -7,8 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -17,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.RefreshStatus
+import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 
 /**
  * Custom snackbar for showing refresh status.
@@ -78,18 +79,21 @@ fun RefreshLoadingSnackbar(refreshStatus: RefreshStatus, modifier: Modifier = Mo
 
         Surface(
             color = backgroundColor,
-            shape = RoundedCornerShape(8.dp),
+            shape = CircleShape,
             shadowElevation = 4.dp,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(MaterialTheme.spacing.mediumLarge),
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(
+                    horizontal = MaterialTheme.spacing.mediumLarge,
+                    vertical = MaterialTheme.spacing.medium,
+                ),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (showProgress) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
+                    WalletCircularProgressIndicator(
+                        modifier = Modifier.size(MaterialTheme.spacing.large),
                         color = textColor,
                         strokeWidth = 2.dp,
                     )

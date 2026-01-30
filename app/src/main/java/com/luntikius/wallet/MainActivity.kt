@@ -25,9 +25,9 @@ import com.luntikius.wallet.data.local.PassDatabase
 import com.luntikius.wallet.data.parser.ParserRegistry
 import com.luntikius.wallet.data.repository.PassRepositoryImpl
 import com.luntikius.wallet.data.worker.PassRefreshWorker
+import com.luntikius.wallet.designsystem.theme.WalletTheme
 import com.luntikius.wallet.ui.navigation.PassNavGraph
 import com.luntikius.wallet.ui.navigation.Routes
-import com.luntikius.wallet.ui.theme.WalletTheme
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import java.io.File
 import java.util.concurrent.TimeUnit

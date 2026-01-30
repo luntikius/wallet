@@ -27,22 +27,17 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -64,6 +59,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -72,15 +70,23 @@ import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
+import com.luntikius.wallet.designsystem.R
+import com.luntikius.wallet.designsystem.components.branding.AppLogo
+import com.luntikius.wallet.designsystem.components.button.WalletIconButton
+import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
+import com.luntikius.wallet.designsystem.components.feedback.WalletSnackbar
+import com.luntikius.wallet.designsystem.components.menu.WalletDropdownMenu
+import com.luntikius.wallet.designsystem.components.navigation.WalletTopAppBar
+import com.luntikius.wallet.designsystem.foundation.color.createCustomPassGradient
+import com.luntikius.wallet.designsystem.foundation.color.ensureContrast
+import com.luntikius.wallet.designsystem.foundation.color.parseColor
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.DeleteZone
 import com.luntikius.wallet.ui.components.PassCardExpansion
 import com.luntikius.wallet.ui.components.PassGridSkeleton
 import com.luntikius.wallet.ui.components.RefreshLoadingSnackbar
 import com.luntikius.wallet.ui.navigation.Routes
 import com.luntikius.wallet.ui.utils.IconMapper
-import com.luntikius.wallet.ui.utils.createCustomPassGradient
-import com.luntikius.wallet.ui.utils.ensureContrast
-import com.luntikius.wallet.ui.utils.parseColor
 import com.luntikius.wallet.ui.utils.stripHtml
 import com.luntikius.wallet.ui.viewmodel.ImportStatus
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
@@ -138,6 +144,9 @@ fun PassGridScreen(
         fingerPositionX > deleteZoneLeft &&
         fingerPositionX < deleteZoneRight
 
+    // Pull-to-refresh state
+    val pullToRefreshState = rememberPullToRefreshState()
+
     // Reorderable state with move callback
     val reorderableState = rememberReorderableLazyGridState(gridState) { from, to ->
         // Only allow reordering when not importing and not over delete zone
@@ -176,24 +185,47 @@ fun PassGridScreen(
             refreshStatus is RefreshStatus.Loading && (refreshStatus as? RefreshStatus.Loading)?.passId == null,
             onRefresh = { viewModel.refreshAllPasses() },
             modifier = Modifier.fillMaxSize(),
+            state = pullToRefreshState,
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    state = pullToRefreshState,
+                    isRefreshing = refreshStatus is RefreshStatus.Loading &&
+                        (refreshStatus as? RefreshStatus.Loading)?.passId == null,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            },
         ) {
             Scaffold(
                 topBar = {
-                    TopAppBar(
-                        title = { Text("wallet") },
+                    WalletTopAppBar(
+                        title = {
+                            AppLogo()
+                        },
                         actions = {
                             Box {
-                                IconButton(onClick = { showAddMenu = true }) {
+                                WalletIconButton(onClick = { showAddMenu = true }) {
                                     Icon(
-                                        Icons.Default.Add,
+                                        painter = painterResource(
+                                            id = R.drawable.plus,
+                                        ),
                                         contentDescription = "Add Pass",
                                     )
                                 }
-                                DropdownMenu(
+                                WalletDropdownMenu(
                                     expanded = showAddMenu,
                                     onDismissRequest = { showAddMenu = false },
                                 ) {
                                     DropdownMenuItem(
+                                        leadingIcon = {
+                                            Icon(
+                                                painter = painterResource(
+                                                    id = R.drawable.file,
+                                                ),
+                                                contentDescription = null,
+                                            )
+                                        },
                                         text = { Text("Add from Files") },
                                         onClick = {
                                             showAddMenu = false
@@ -202,6 +234,14 @@ fun PassGridScreen(
                                         },
                                     )
                                     DropdownMenuItem(
+                                        leadingIcon = {
+                                            Icon(
+                                                painter = painterResource(
+                                                    id = R.drawable.camera,
+                                                ),
+                                                contentDescription = null,
+                                            )
+                                        },
                                         text = { Text("Add from Camera") },
                                         onClick = {
                                             showAddMenu = false
@@ -237,97 +277,50 @@ fun PassGridScreen(
                         PassGridSkeleton()
                     } else if (localPasses.isEmpty()) {
                         // Empty state
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Text(
-                                text = "No passes yet",
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Tap + to add a pass",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        EmptyPassGridState()
                     } else {
                         // Grid of passes
-                        LazyVerticalGrid(
-                            state = gridState,
-                            columns = GridCells.Adaptive(160.dp),
-                            contentPadding = PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 16.dp,
-                                bottom = 16.dp,
-                            ),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            items(localPasses, key = { it.id }) { pass ->
-                                ReorderableItem(reorderableState, key = pass.id) { itemIsDragging ->
-                                    // Track when any item starts/stops dragging
-                                    LaunchedEffect(itemIsDragging) {
-                                        if (itemIsDragging) {
-                                            isDragging = true
-                                            passToDelete = pass
-                                            dragStartedPasses = localPasses
-                                        } else if (isDragging && passToDelete?.id == pass.id) {
-                                            // This item just stopped dragging (finger lifted)
-                                            isDragging = false
-
-                                            // Handle deletion or reordering based on where finger was lifted
-                                            if (isOverDeleteZone && passToDelete != null) {
-                                                // Delete the pass - finger was lifted over delete zone
-                                                viewModel.deletePass(passToDelete!!)
-                                                localPasses = localPasses.filter { it.id != passToDelete!!.id }
-                                                // Trigger haptic feedback
-                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            } else if (localPasses != dragStartedPasses) {
-                                                // Reorder passes (only if order changed and not deleted)
-                                                viewModel.updatePassOrder(
-                                                    localPasses.mapIndexed { index, p ->
-                                                        p.id to index
-                                                    }.toMap(),
-                                                )
-                                            }
-
-                                            // Reset state
-                                            passToDelete = null
-                                            fingerPositionY = 0f
-                                            fingerPositionX = 0f
-                                            dragStartedPasses = emptyList()
-                                        }
+                        PassGridContent(
+                            localPasses = localPasses,
+                            gridState = gridState,
+                            reorderableState = reorderableState,
+                            paddingValues = paddingValues,
+                            hideTileId = hideTileId,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            haptic = haptic,
+                            isDragging = isDragging,
+                            passToDelete = passToDelete,
+                            isOverDeleteZone = isOverDeleteZone,
+                            dragStartedPasses = dragStartedPasses,
+                            onDragStart = { pass ->
+                                isDragging = true
+                                passToDelete = pass
+                                dragStartedPasses = localPasses
+                            },
+                            onDragEnd = { pass, shouldDelete ->
+                                if (isDragging && passToDelete?.id == pass.id) {
+                                    isDragging = false
+                                    if (shouldDelete && passToDelete != null) {
+                                        viewModel.deletePass(passToDelete!!)
+                                        localPasses = localPasses.filter { it.id != passToDelete!!.id }
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    } else if (localPasses != dragStartedPasses) {
+                                        viewModel.updatePassOrder(
+                                            localPasses.mapIndexed { index, p ->
+                                                p.id to index
+                                            }.toMap(),
+                                        )
                                     }
-
-                                    PassTile(
-                                        pass = pass,
-                                        isDragging = itemIsDragging,
-                                        isExpanded = hideTileId == pass.id,
-                                        modifier = Modifier
-                                            .longPressDraggableHandle(
-                                                onDragStarted = {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                },
-                                                onDragStopped = {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                },
-                                            ),
-                                        onClick = { selectedPassId = pass.id },
-                                        onPositioned = { rect -> tilePositionCache = rect },
-                                        sharedTransitionScope = sharedTransitionScope,
-                                        animatedVisibilityScope = animatedVisibilityScope,
-                                    )
+                                    passToDelete = null
+                                    fingerPositionY = 0f
+                                    fingerPositionX = 0f
+                                    dragStartedPasses = emptyList()
                                 }
-                            }
-                        }
+                            },
+                            onTileClick = { pass -> selectedPassId = pass.id },
+                            onTilePositioned = { rect -> tilePositionCache = rect },
+                        )
                     }
 
                     // Delete zone at bottom (only visible during drag)
@@ -345,17 +338,17 @@ fun PassGridScreen(
 
                     // Import status snackbar
                     if (importStatus is ImportStatus.Error) {
-                        Snackbar(
+                        WalletSnackbar(
+                            message = (importStatus as ImportStatus.Error).message,
+                            status = com.luntikius.wallet.designsystem.components.feedback.SnackbarStatus.ERROR,
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
-                                .padding(16.dp),
-                        ) {
-                            Text((importStatus as ImportStatus.Error).message)
-                        }
+                                .padding(MaterialTheme.spacing.mediumLarge),
+                        )
                     }
 
-                    if (importStatus is ImportStatus.Loading) {
-                        CircularProgressIndicator(
+                    if (importStatus is ImportStatus.Loading && !isInitialLoading) {
+                        WalletCircularProgressIndicator(
                             modifier = Modifier.align(Alignment.Center),
                         )
                     }
@@ -385,7 +378,7 @@ fun PassGridScreen(
             refreshStatus = refreshStatus,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = if (importStatus is ImportStatus.Error) 80.dp else 16.dp),
+                .padding(bottom = if (importStatus is ImportStatus.Error) 80.dp else MaterialTheme.spacing.mediumLarge),
         )
     }
 }
@@ -454,7 +447,11 @@ fun PassTile(
                 containerColor = if (isCustomPass) Color.Transparent else backgroundColor,
             ),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = if (isDragging) 16.dp else 4.dp,
+                defaultElevation = if (isDragging) {
+                    MaterialTheme.spacing.mediumLarge
+                } else {
+                    MaterialTheme.spacing.extraSmall
+                },
             ),
             shape = RoundedCornerShape(12.dp),
             onClick = {
@@ -480,7 +477,7 @@ fun PassTile(
                             Modifier
                         },
                     )
-                    .padding(16.dp),
+                    .padding(MaterialTheme.spacing.mediumLarge),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // Spacer to push content down
@@ -489,10 +486,10 @@ fun PassTile(
                 // Logo/Icon - check if custom pass or PKPass
                 when (passData) {
                     is PassData.Custom -> {
-                        // Show Material Icon for custom passes
-                        val icon = IconMapper.getIconByName(passData.customPassJson.iconName)
+                        // Show custom icon for custom passes
+                        val iconRes = IconMapper.getIconByName(passData.customPassJson.iconName)
                         Icon(
-                            imageVector = icon,
+                            painter = painterResource(id = iconRes),
                             contentDescription = null,
                             modifier = Modifier
                                 .size(60.dp)
@@ -535,9 +532,110 @@ fun PassTile(
                 Text(
                     text = stripHtml(pass.organizationName),
                     style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.W400,
                     color = textColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Empty state shown when there are no passes.
+ */
+@Composable
+private fun EmptyPassGridState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = MaterialTheme.spacing.huge),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = "No passes yet",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
+        Text(
+            text = "Tap + to add a pass",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * Grid content showing the list of passes with reordering support.
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+@Suppress("LongParameterList")
+private fun PassGridContent(
+    localPasses: List<Pass>,
+    gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
+    reorderableState: sh.calvin.reorderable.ReorderableLazyGridState,
+    paddingValues: PaddingValues,
+    hideTileId: String?,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback,
+    isDragging: Boolean,
+    passToDelete: Pass?,
+    isOverDeleteZone: Boolean,
+    dragStartedPasses: List<Pass>,
+    onDragStart: (Pass) -> Unit,
+    onDragEnd: (Pass, Boolean) -> Unit,
+    onTileClick: (Pass) -> Unit,
+    onTilePositioned: (IntRect) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyVerticalGrid(
+        state = gridState,
+        columns = GridCells.Adaptive(160.dp),
+        contentPadding = PaddingValues(
+            start = MaterialTheme.spacing.mediumLarge,
+            end = MaterialTheme.spacing.mediumLarge,
+            top = MaterialTheme.spacing.mediumLarge,
+            bottom = MaterialTheme.spacing.mediumLarge + paddingValues.calculateBottomPadding(),
+        ),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
+        modifier = modifier.fillMaxSize(),
+    ) {
+        items(localPasses, key = { it.id }) { pass ->
+            ReorderableItem(reorderableState, key = pass.id) { itemIsDragging ->
+                // Track when any item starts/stops dragging
+                LaunchedEffect(itemIsDragging) {
+                    if (itemIsDragging) {
+                        onDragStart(pass)
+                    } else if (isDragging && passToDelete?.id == pass.id) {
+                        // This item just stopped dragging (finger lifted)
+                        onDragEnd(pass, isOverDeleteZone && passToDelete != null)
+                    }
+                }
+
+                PassTile(
+                    pass = pass,
+                    isDragging = itemIsDragging,
+                    isExpanded = hideTileId == pass.id,
+                    modifier = Modifier
+                        .longPressDraggableHandle(
+                            onDragStarted = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                            onDragStopped = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                        ),
+                    onClick = { onTileClick(pass) },
+                    onPositioned = { rect -> onTilePositioned(rect) },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
                 )
             }
         }

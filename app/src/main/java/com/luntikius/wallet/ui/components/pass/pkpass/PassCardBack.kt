@@ -1,7 +1,5 @@
 package com.luntikius.wallet.ui.components.pass.pkpass
 
-import android.graphics.BitmapFactory
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,15 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -36,20 +28,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassFormat
 import com.luntikius.wallet.data.model.ShareStatus
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.common.EmptyStateMessage
 import com.luntikius.wallet.ui.components.common.PassDeleteDialog
+import com.luntikius.wallet.ui.components.pass.PassCardBackHeader
 import com.luntikius.wallet.ui.utils.rememberCardColors
 import com.luntikius.wallet.ui.utils.sharePassFile
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import java.io.File
 import kotlinx.coroutines.launch
 
 /**
@@ -97,64 +88,24 @@ fun PassCardBack(
             .background(backgroundColor, RoundedCornerShape(16.dp)),
     ) {
         // 1. HEADER ROW: Logo (left) + Action Buttons (right)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Logo (prioritize logo over icon)
-            val logoPath = pass.logoPath ?: pass.iconPath
-            val logoFile = File(logoPath)
-            if (logoFile.exists()) {
-                val bitmap = BitmapFactory.decodeFile(logoFile.absolutePath)
-                bitmap?.let {
-                    Image(
-                        bitmap = it.asImageBitmap(),
-                        contentDescription = "Logo",
-                        modifier = Modifier
-                            .height(40.dp)
-                            .widthIn(max = 120.dp),
-                        contentScale = ContentScale.Fit,
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Share button - only visible for PKPASS format
-            if (pass.format == PassFormat.PKPASS) {
-                IconButton(
-                    onClick = {
-                        viewModel.prepareSharePass(pass.id)
-                    },
-                    enabled = shareStatus !is ShareStatus.Loading,
-                ) {
-                    Icon(
-                        Icons.Outlined.Share,
-                        contentDescription = "Share",
-                        tint = textColor,
-                    )
-                }
-            }
-
-            // Delete button
-            IconButton(
-                onClick = { showDeleteDialog = true },
-            ) {
-                Icon(
-                    Icons.Outlined.Delete,
-                    contentDescription = "Delete",
-                    tint = textColor,
-                )
-            }
-        }
+        PassCardBackHeader(
+            logoPath = pass.logoPath,
+            iconPath = pass.iconPath,
+            textColor = textColor,
+            onShareClick = { viewModel.prepareSharePass(pass.id) }
+                .takeIf { pass.format == PassFormat.PKPASS },
+            onDeleteClick = { showDeleteDialog = true },
+        )
 
         // 2. INFO BLOCKS: Scrollable content with back fields
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .padding(
+                    start = MaterialTheme.spacing.mediumLarge,
+                    end = MaterialTheme.spacing.mediumLarge,
+                    bottom = MaterialTheme.spacing.mediumLarge,
+                )
                 .clip(RoundedCornerShape(12.dp)),
         ) {
             item {
@@ -175,7 +126,7 @@ fun PassCardBack(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(MaterialTheme.spacing.mediumLarge),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -193,7 +144,7 @@ fun PassCardBack(
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp),
+                                modifier = Modifier.padding(top = MaterialTheme.spacing.extraSmall),
                             )
                         }
 
@@ -212,7 +163,7 @@ fun PassCardBack(
             }
 
             item {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
             }
 
             // Check if there are back fields to show
@@ -238,7 +189,7 @@ fun PassCardBack(
                                     htmlContent = content,
                                     textColor = textColor,
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
                             }
                         }
                     }
@@ -247,7 +198,7 @@ fun PassCardBack(
                 item {
                     EmptyStateMessage(
                         message = "No additional information",
-                        tint = textColor.copy(alpha = 0.6f),
+                        tint = textColor,
                         modifier = Modifier
                             .height(200.dp)
                             .fillMaxWidth(),

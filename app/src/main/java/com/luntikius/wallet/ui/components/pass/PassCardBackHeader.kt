@@ -8,18 +8,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.designsystem.R
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import java.io.File
 
 /**
@@ -40,14 +41,14 @@ fun PassCardBackHeader(
     logoPath: String?,
     iconPath: String?,
     textColor: Color,
-    onShareClick: () -> Unit,
+    onShareClick: (() -> Unit)?,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = MaterialTheme.spacing.mediumLarge, vertical = MaterialTheme.spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Logo (prioritize logo over icon) - only for PKPass
@@ -72,14 +73,16 @@ fun PassCardBackHeader(
         Spacer(modifier = Modifier.weight(1f))
 
         // Share button
-        IconButton(
-            onClick = onShareClick,
-        ) {
-            Icon(
-                Icons.Outlined.Share,
-                contentDescription = "Share",
-                tint = textColor,
-            )
+        onShareClick?.let { action ->
+            IconButton(
+                onClick = action,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.share),
+                    contentDescription = "Share",
+                    tint = textColor,
+                )
+            }
         }
 
         // Delete button
@@ -87,7 +90,7 @@ fun PassCardBackHeader(
             onClick = onDeleteClick,
         ) {
             Icon(
-                Icons.Outlined.Delete,
+                painter = painterResource(R.drawable.delete),
                 contentDescription = "Delete",
                 tint = textColor,
             )

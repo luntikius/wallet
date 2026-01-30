@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,7 +26,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.designsystem.R
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 
 @Composable
 fun DeleteZone(
@@ -46,7 +47,7 @@ fun DeleteZone(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 32.dp, vertical = 24.dp)
+                .padding(horizontal = MaterialTheme.spacing.huge, vertical = MaterialTheme.spacing.extraLarge)
                 .onGloballyPositioned { coordinates ->
                     val position = coordinates.positionInWindow()
                     val size = coordinates.size
@@ -76,15 +77,15 @@ fun DeleteZone(
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 24.dp),
+                    modifier = Modifier.padding(horizontal = MaterialTheme.spacing.extraLarge),
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Delete,
+                        painter = painterResource(R.drawable.delete),
                         contentDescription = "Delete",
                         tint = Color.White,
                         modifier = Modifier.size(24.dp),
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(MaterialTheme.spacing.medium))
                     Text(
                         text = "Drag here to delete",
                         style = MaterialTheme.typography.bodyLarge,

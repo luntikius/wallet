@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
+import com.luntikius.wallet.designsystem.foundation.typography.textStyles
 import com.luntikius.wallet.ui.components.HtmlText
 
 /**
@@ -28,20 +30,20 @@ internal fun InfoBlock(title: String, htmlContent: String, textColor: Color, mod
         shape = RoundedCornerShape(12.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(MaterialTheme.spacing.mediumLarge),
         ) {
             // Block title/label (only if not blank)
             if (title.isNotBlank()) {
                 SelectionContainer {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.Black.copy(alpha = 0.6f),
+                        style = MaterialTheme.textStyles.labelSecondary,
+                        color = Color.Black,
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
             }
 
             // HTML content with clickable links - selectable
