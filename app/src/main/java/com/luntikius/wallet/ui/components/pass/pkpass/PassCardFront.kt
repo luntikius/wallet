@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +30,6 @@ import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
-import com.luntikius.wallet.designsystem.foundation.typography.textStyles
 import com.luntikius.wallet.ui.components.BarcodeDisplay
 import com.luntikius.wallet.ui.utils.rememberCardColors
 import com.luntikius.wallet.ui.utils.stripHtml
@@ -46,7 +47,8 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(backgroundColor, RoundedCornerShape(16.dp)),
+            .background(backgroundColor, RoundedCornerShape(16.dp))
+            .verticalScroll(state = rememberScrollState()),
     ) {
         // 1. HEADER ROW: Logo (left) + Header Fields (right)
         val structure = pkPassJson?.let { json ->
@@ -62,7 +64,7 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                     top = MaterialTheme.spacing.medium,
                     bottom = MaterialTheme.spacing.medium,
                 ),
-            verticalAlignment = Alignment.Top,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Logo (prioritize logo over icon)
             val logoPath = pass.logoPath ?: pass.iconPath
@@ -96,7 +98,7 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: ""),
-                                    style = MaterialTheme.textStyles.labelSecondary,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = textColor,
                                     textAlign = TextAlign.End,
                                 )
@@ -143,9 +145,10 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                 if (fields.isNotEmpty()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = when {
-                            fields.size == 1 -> Arrangement.Start
-                            fields.size == 2 -> Arrangement.SpaceBetween
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = when (fields.size) {
+                            1 -> Arrangement.Start
+                            2 -> Arrangement.SpaceBetween
                             else -> Arrangement.SpaceEvenly
                         },
                     ) {
@@ -159,14 +162,14 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: field.key),
-                                    style = MaterialTheme.textStyles.labelSecondary,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = textColor,
                                 )
                                 Text(
                                     text = stripHtml(field.value?.toString() ?: ""),
-                                    style = MaterialTheme.typography.titleLarge,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = textColor,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.SemiBold,
                                 )
                             }
                         }
@@ -180,9 +183,10 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                 if (fields.isNotEmpty()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = when {
-                            fields.size == 1 -> Arrangement.Start
-                            fields.size == 2 -> Arrangement.SpaceBetween
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = when (fields.size) {
+                            1 -> Arrangement.Start
+                            2 -> Arrangement.SpaceBetween
                             else -> Arrangement.SpaceEvenly
                         },
                     ) {
@@ -195,14 +199,14 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: field.key),
-                                    style = MaterialTheme.textStyles.labelSecondary,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = textColor,
                                 )
                                 Text(
                                     text = stripHtml(field.value?.toString() ?: ""),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = textColor,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = FontWeight.SemiBold,
                                 )
                             }
                         }

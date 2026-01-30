@@ -25,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 
@@ -83,7 +82,7 @@ private fun SkeletonCard(alpha: Float, modifier: Modifier = Modifier) {
                     .height(60.dp)
                     .fillMaxWidth(0.6f)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White.copy(alpha = 0.3f)),
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)),
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -94,7 +93,7 @@ private fun SkeletonCard(alpha: Float, modifier: Modifier = Modifier) {
                     .height(MaterialTheme.spacing.mediumLarge)
                     .fillMaxWidth(0.8f)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color.White.copy(alpha = 0.3f)),
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)),
             )
         }
     }

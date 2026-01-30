@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,12 +46,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
+import com.luntikius.wallet.designsystem.R
 import com.luntikius.wallet.designsystem.foundation.animation.AnimationTokens
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.designsystem.theme.WalletTheme
@@ -116,6 +118,9 @@ fun PassCardExpansion(
         val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
 
         val coroutineScope = rememberCoroutineScope()
+
+        // Pull-to-refresh state
+        val pullToRefreshState = rememberPullToRefreshState()
 
         // Load pass data
         LaunchedEffect(passId) {
@@ -293,6 +298,17 @@ fun PassCardExpansion(
                             (refreshStatus as? RefreshStatus.Loading)?.passId == passId,
                     onRefresh = { viewModel.refreshPass(passId) },
                     modifier = Modifier.fillMaxSize(),
+                    state = pullToRefreshState,
+                    indicator = {
+                        PullToRefreshDefaults.Indicator(
+                            state = pullToRefreshState,
+                            isRefreshing = refreshStatus is RefreshStatus.Loading &&
+                                (refreshStatus as? RefreshStatus.Loading)?.passId == passId,
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    },
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -408,7 +424,10 @@ private fun FlippableCardContent(
                     // Front side
                     when (passData) {
                         is PassData.PKPass -> {
-                            PassCardFront(pass = pass, pkPassJson = passData.pkPassJson)
+                            PassCardFront(
+                                pass = pass,
+                                pkPassJson = passData.pkPassJson,
+                            )
                         }
                         is PassData.Custom -> {
                             CustomPassCardFront(
@@ -485,7 +504,7 @@ private fun CardControls(
             ),
         ) {
             Icon(
-                Icons.Default.Refresh,
+                painter = painterResource(R.drawable.refresh),
                 contentDescription = "Flip card",
                 modifier = Modifier.size(16.dp),
                 tint = Color.White,

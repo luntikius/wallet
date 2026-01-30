@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,7 +26,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.designsystem.R
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 
 @Composable
@@ -80,7 +80,7 @@ fun DeleteZone(
                     modifier = Modifier.padding(horizontal = MaterialTheme.spacing.extraLarge),
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Delete,
+                        painter = painterResource(R.drawable.delete),
                         contentDescription = "Delete",
                         tint = Color.White,
                         modifier = Modifier.size(24.dp),

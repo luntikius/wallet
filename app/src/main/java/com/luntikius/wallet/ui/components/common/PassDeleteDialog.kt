@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import com.luntikius.wallet.designsystem.theme.WalletTheme
 
 /**
  * Reusable delete confirmation dialog for passes.
@@ -20,30 +21,32 @@ import androidx.compose.runtime.Composable
 @Composable
 fun PassDeleteDialog(showDialog: Boolean, onDelete: () -> Unit, onDismiss: () -> Unit) {
     if (showDialog) {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = {
-                Text(text = "Delete Pass")
-            },
-            text = {
-                Text(text = "Are you sure you want to delete this pass? This action cannot be undone.")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                    ),
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismiss) {
-                    Text("Cancel")
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        )
+        WalletTheme {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = {
+                    Text(text = "Delete Pass")
+                },
+                text = {
+                    Text(text = "Are you sure you want to delete this pass? This action cannot be undone.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = onDelete,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+        }
     }
 }

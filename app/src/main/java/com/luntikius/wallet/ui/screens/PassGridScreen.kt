@@ -36,6 +36,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -140,6 +142,9 @@ fun PassGridScreen(
         fingerPositionX > deleteZoneLeft &&
         fingerPositionX < deleteZoneRight
 
+    // Pull-to-refresh state
+    val pullToRefreshState = rememberPullToRefreshState()
+
     // Reorderable state with move callback
     val reorderableState = rememberReorderableLazyGridState(gridState) { from, to ->
         // Only allow reordering when not importing and not over delete zone
@@ -178,6 +183,16 @@ fun PassGridScreen(
             refreshStatus is RefreshStatus.Loading && (refreshStatus as? RefreshStatus.Loading)?.passId == null,
             onRefresh = { viewModel.refreshAllPasses() },
             modifier = Modifier.fillMaxSize(),
+            state = pullToRefreshState,
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    state = pullToRefreshState,
+                    isRefreshing = refreshStatus is RefreshStatus.Loading && (refreshStatus as? RefreshStatus.Loading)?.passId == null,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            },
         ) {
             Scaffold(
                 topBar = {
@@ -287,7 +302,7 @@ fun PassGridScreen(
                                 start = MaterialTheme.spacing.mediumLarge,
                                 end = MaterialTheme.spacing.mediumLarge,
                                 top = MaterialTheme.spacing.mediumLarge,
-                                bottom = MaterialTheme.spacing.mediumLarge,
+                                bottom = MaterialTheme.spacing.mediumLarge + paddingValues.calculateBottomPadding(),
                             ),
                             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
                             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
@@ -376,7 +391,7 @@ fun PassGridScreen(
                         )
                     }
 
-                    if (importStatus is ImportStatus.Loading) {
+                    if (importStatus is ImportStatus.Loading && !isInitialLoading) {
                         WalletCircularProgressIndicator(
                             modifier = Modifier.align(Alignment.Center),
                         )

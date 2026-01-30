@@ -55,13 +55,13 @@ fun PassNavGraph(
                     intentUri = intentUri,
                     onNavigateToGrid = {
                         navController.navigate(Routes.GRID) {
-                            popUpTo(Routes.GRID) { inclusive = true }
+                            popUpTo(Routes.INITIAL) { inclusive = true }
                             launchSingleTop = true
                         }
                     },
                     onNavigateToPreview = {
                         navController.navigate(Routes.PREVIEW) {
-                            popUpTo(Routes.PREVIEW) { inclusive = true }
+                            popUpTo(Routes.INITIAL) { inclusive = true }
                             launchSingleTop = true
                         }
                     },
