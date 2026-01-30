@@ -1,6 +1,5 @@
 package com.luntikius.wallet.ui.screens
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,13 +31,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.builder.CustomPassBuilder
-import com.luntikius.wallet.designsystem.components.branding.AppLogo
 import com.luntikius.wallet.designsystem.components.button.WalletFilledButton
 import com.luntikius.wallet.designsystem.components.button.WalletOutlinedButton
 import com.luntikius.wallet.designsystem.components.navigation.WalletTopAppBar
 import com.luntikius.wallet.designsystem.components.picker.ColorPicker
 import com.luntikius.wallet.designsystem.foundation.color.DefaultPassColors
-import com.luntikius.wallet.designsystem.foundation.color.ensureContrast
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCard
 import com.luntikius.wallet.ui.components.picker.IconPicker
@@ -91,14 +88,7 @@ fun CustomPassBuilderScreen(
             val colorPalette = DefaultPassColors[selectedColorIndex]
             val backgroundColor = colorPalette.background
             val foregroundColor = colorPalette.foreground
-            val isDarkTheme = isSystemInDarkTheme()
-            val textColor = ensureContrast(
-                foregroundColor = foregroundColor,
-                backgroundColor = backgroundColor,
-                isDarkTheme = isDarkTheme,
-                lightFallback = MaterialTheme.colorScheme.onSurface,
-                darkFallback = MaterialTheme.colorScheme.onSurface,
-            )
+            val textColor = colorPalette.foreground
 
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -195,10 +185,7 @@ fun CustomPassBuilderScreen(
                     modifier = Modifier.weight(1f),
                     enabled = cardName.isNotBlank(),
                 ) {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text("Add to ")
-                        AppLogo()
-                    }
+                    Text("Add to Wallet")
                 }
             }
         }

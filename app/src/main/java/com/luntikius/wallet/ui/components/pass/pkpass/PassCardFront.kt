@@ -43,6 +43,7 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
     val cardColors = rememberCardColors(pass)
     val backgroundColor = cardColors.background
     val textColor = cardColors.text
+    val labelColor = cardColors.label
 
     Column(
         modifier = modifier
@@ -98,15 +99,16 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: ""),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = textColor,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = labelColor,
+                                    fontWeight = FontWeight.SemiBold,
                                     textAlign = TextAlign.End,
                                 )
                                 Text(
                                     text = stripHtml(field.value?.toString() ?: ""),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = textColor,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.End,
                                 )
                             }
@@ -143,6 +145,8 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
             // Primary fields
             structure?.primaryFields?.let { fields ->
                 if (fields.isNotEmpty()) {
+                    val hasValues = fields.any { !it.value?.toString().isNullOrBlank() }
+                    val fieldHorizontalAlignment = if (hasValues) Alignment.Start else Alignment.CenterHorizontally
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -154,22 +158,23 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                     ) {
                         fields.forEachIndexed { index, field ->
                             Column(
-                                horizontalAlignment = Alignment.Start,
                                 modifier = when {
                                     fields.size > 2 -> Modifier.weight(1f)
                                     else -> Modifier
                                 },
+                                horizontalAlignment = fieldHorizontalAlignment,
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: field.key),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = textColor,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = labelColor,
+                                    fontWeight = FontWeight.SemiBold,
                                 )
                                 Text(
                                     text = stripHtml(field.value?.toString() ?: ""),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = textColor,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Bold,
                                 )
                             }
                         }
@@ -180,6 +185,8 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
 
             // Secondary fields
             structure?.secondaryFields?.let { fields ->
+                val hasValues = fields.any { !it.value?.toString().isNullOrBlank() }
+                val fieldHorizontalAlignment = if (hasValues) Alignment.Start else Alignment.CenterHorizontally
                 if (fields.isNotEmpty()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -196,17 +203,19 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                                     fields.size > 2 -> Modifier.weight(1f)
                                     else -> Modifier
                                 },
+                                horizontalAlignment = fieldHorizontalAlignment,
                             ) {
                                 Text(
                                     text = stripHtml(field.label ?: field.key),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = textColor,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = labelColor,
+                                    fontWeight = FontWeight.SemiBold,
                                 )
                                 Text(
                                     text = stripHtml(field.value?.toString() ?: ""),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = textColor,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Bold,
                                 )
                             }
                         }
