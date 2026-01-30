@@ -22,10 +22,7 @@ import com.luntikius.wallet.designsystem.theme.AppNameTextStyle
  * @param modifier Optional modifier for the text
  */
 @Composable
-fun AppLogo(
-    modifier: Modifier = Modifier,
-    color: Color? = null,
-) {
+fun AppLogo(modifier: Modifier = Modifier, color: Color? = null) {
     Text(
         text = ".wallet",
         style = if (color != null) {

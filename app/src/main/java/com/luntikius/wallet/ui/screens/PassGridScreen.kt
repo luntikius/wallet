@@ -90,9 +90,9 @@ import com.luntikius.wallet.ui.utils.IconMapper
 import com.luntikius.wallet.ui.utils.stripHtml
 import com.luntikius.wallet.ui.viewmodel.ImportStatus
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import java.io.File
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
-import java.io.File
 
 /**
  * Grid screen displaying all passes.
@@ -189,7 +189,8 @@ fun PassGridScreen(
             indicator = {
                 PullToRefreshDefaults.Indicator(
                     state = pullToRefreshState,
-                    isRefreshing = refreshStatus is RefreshStatus.Loading && (refreshStatus as? RefreshStatus.Loading)?.passId == null,
+                    isRefreshing = refreshStatus is RefreshStatus.Loading &&
+                        (refreshStatus as? RefreshStatus.Loading)?.passId == null,
                     modifier = Modifier.align(Alignment.TopCenter),
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -276,97 +277,50 @@ fun PassGridScreen(
                         PassGridSkeleton()
                     } else if (localPasses.isEmpty()) {
                         // Empty state
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = MaterialTheme.spacing.huge),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Text(
-                                text = "No passes yet",
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
-                            Text(
-                                text = "Tap + to add a pass",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        EmptyPassGridState()
                     } else {
                         // Grid of passes
-                        LazyVerticalGrid(
-                            state = gridState,
-                            columns = GridCells.Adaptive(160.dp),
-                            contentPadding = PaddingValues(
-                                start = MaterialTheme.spacing.mediumLarge,
-                                end = MaterialTheme.spacing.mediumLarge,
-                                top = MaterialTheme.spacing.mediumLarge,
-                                bottom = MaterialTheme.spacing.mediumLarge + paddingValues.calculateBottomPadding(),
-                            ),
-                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
-                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            items(localPasses, key = { it.id }) { pass ->
-                                ReorderableItem(reorderableState, key = pass.id) { itemIsDragging ->
-                                    // Track when any item starts/stops dragging
-                                    LaunchedEffect(itemIsDragging) {
-                                        if (itemIsDragging) {
-                                            isDragging = true
-                                            passToDelete = pass
-                                            dragStartedPasses = localPasses
-                                        } else if (isDragging && passToDelete?.id == pass.id) {
-                                            // This item just stopped dragging (finger lifted)
-                                            isDragging = false
-
-                                            // Handle deletion or reordering based on where finger was lifted
-                                            if (isOverDeleteZone && passToDelete != null) {
-                                                // Delete the pass - finger was lifted over delete zone
-                                                viewModel.deletePass(passToDelete!!)
-                                                localPasses = localPasses.filter { it.id != passToDelete!!.id }
-                                                // Trigger haptic feedback
-                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            } else if (localPasses != dragStartedPasses) {
-                                                // Reorder passes (only if order changed and not deleted)
-                                                viewModel.updatePassOrder(
-                                                    localPasses.mapIndexed { index, p ->
-                                                        p.id to index
-                                                    }.toMap(),
-                                                )
-                                            }
-
-                                            // Reset state
-                                            passToDelete = null
-                                            fingerPositionY = 0f
-                                            fingerPositionX = 0f
-                                            dragStartedPasses = emptyList()
-                                        }
+                        PassGridContent(
+                            localPasses = localPasses,
+                            gridState = gridState,
+                            reorderableState = reorderableState,
+                            paddingValues = paddingValues,
+                            hideTileId = hideTileId,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            haptic = haptic,
+                            isDragging = isDragging,
+                            passToDelete = passToDelete,
+                            isOverDeleteZone = isOverDeleteZone,
+                            dragStartedPasses = dragStartedPasses,
+                            onDragStart = { pass ->
+                                isDragging = true
+                                passToDelete = pass
+                                dragStartedPasses = localPasses
+                            },
+                            onDragEnd = { pass, shouldDelete ->
+                                if (isDragging && passToDelete?.id == pass.id) {
+                                    isDragging = false
+                                    if (shouldDelete && passToDelete != null) {
+                                        viewModel.deletePass(passToDelete!!)
+                                        localPasses = localPasses.filter { it.id != passToDelete!!.id }
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    } else if (localPasses != dragStartedPasses) {
+                                        viewModel.updatePassOrder(
+                                            localPasses.mapIndexed { index, p ->
+                                                p.id to index
+                                            }.toMap(),
+                                        )
                                     }
-
-                                    PassTile(
-                                        pass = pass,
-                                        isDragging = itemIsDragging,
-                                        isExpanded = hideTileId == pass.id,
-                                        modifier = Modifier
-                                            .longPressDraggableHandle(
-                                                onDragStarted = {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                },
-                                                onDragStopped = {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                },
-                                            ),
-                                        onClick = { selectedPassId = pass.id },
-                                        onPositioned = { rect -> tilePositionCache = rect },
-                                        sharedTransitionScope = sharedTransitionScope,
-                                        animatedVisibilityScope = animatedVisibilityScope,
-                                    )
+                                    passToDelete = null
+                                    fingerPositionY = 0f
+                                    fingerPositionX = 0f
+                                    dragStartedPasses = emptyList()
                                 }
-                            }
-                        }
+                            },
+                            onTileClick = { pass -> selectedPassId = pass.id },
+                            onTilePositioned = { rect -> tilePositionCache = rect },
+                        )
                     }
 
                     // Delete zone at bottom (only visible during drag)
@@ -583,6 +537,105 @@ fun PassTile(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Empty state shown when there are no passes.
+ */
+@Composable
+private fun EmptyPassGridState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = MaterialTheme.spacing.huge),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = "No passes yet",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
+        Text(
+            text = "Tap + to add a pass",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * Grid content showing the list of passes with reordering support.
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+@Suppress("LongParameterList")
+private fun PassGridContent(
+    localPasses: List<Pass>,
+    gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
+    reorderableState: sh.calvin.reorderable.ReorderableLazyGridState,
+    paddingValues: PaddingValues,
+    hideTileId: String?,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback,
+    isDragging: Boolean,
+    passToDelete: Pass?,
+    isOverDeleteZone: Boolean,
+    dragStartedPasses: List<Pass>,
+    onDragStart: (Pass) -> Unit,
+    onDragEnd: (Pass, Boolean) -> Unit,
+    onTileClick: (Pass) -> Unit,
+    onTilePositioned: (IntRect) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyVerticalGrid(
+        state = gridState,
+        columns = GridCells.Adaptive(160.dp),
+        contentPadding = PaddingValues(
+            start = MaterialTheme.spacing.mediumLarge,
+            end = MaterialTheme.spacing.mediumLarge,
+            top = MaterialTheme.spacing.mediumLarge,
+            bottom = MaterialTheme.spacing.mediumLarge + paddingValues.calculateBottomPadding(),
+        ),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
+        modifier = modifier.fillMaxSize(),
+    ) {
+        items(localPasses, key = { it.id }) { pass ->
+            ReorderableItem(reorderableState, key = pass.id) { itemIsDragging ->
+                // Track when any item starts/stops dragging
+                LaunchedEffect(itemIsDragging) {
+                    if (itemIsDragging) {
+                        onDragStart(pass)
+                    } else if (isDragging && passToDelete?.id == pass.id) {
+                        // This item just stopped dragging (finger lifted)
+                        onDragEnd(pass, isOverDeleteZone && passToDelete != null)
+                    }
+                }
+
+                PassTile(
+                    pass = pass,
+                    isDragging = itemIsDragging,
+                    isExpanded = hideTileId == pass.id,
+                    modifier = Modifier
+                        .longPressDraggableHandle(
+                            onDragStarted = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                            onDragStopped = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                        ),
+                    onClick = { onTileClick(pass) },
+                    onPositioned = { rect -> onTilePositioned(rect) },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
                 )
             }
         }

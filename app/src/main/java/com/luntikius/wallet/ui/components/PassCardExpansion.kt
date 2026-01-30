@@ -62,8 +62,8 @@ import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardBack
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlinx.coroutines.launch
 
 /**
  * Overlay that animates a pass card expanding from its tile position to full screen.
@@ -294,8 +294,8 @@ fun PassCardExpansion(
                 // Pull-to-refresh wrapping the card
                 PullToRefreshBox(
                     isRefreshing =
-                        refreshStatus is RefreshStatus.Loading &&
-                            (refreshStatus as? RefreshStatus.Loading)?.passId == passId,
+                    refreshStatus is RefreshStatus.Loading &&
+                        (refreshStatus as? RefreshStatus.Loading)?.passId == passId,
                     onRefresh = { viewModel.refreshPass(passId) },
                     modifier = Modifier.fillMaxSize(),
                     state = pullToRefreshState,
