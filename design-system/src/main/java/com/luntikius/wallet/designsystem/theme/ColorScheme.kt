@@ -87,7 +87,7 @@ internal val DarkColorScheme = darkColorScheme(
 
     surface = Color.Black,
     onSurface = Color.White,
-    surfaceVariant = Color(0xFF44474F),
+    surfaceVariant = Color(0xFF1A1A1A),
     onSurfaceVariant = Color(0xFFC4C6D0),
 
     outline = Color(0xFF8D9199),

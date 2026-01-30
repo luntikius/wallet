@@ -45,7 +45,9 @@ fun WalletIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
+    colors: IconButtonColors = IconButtonDefaults
+        .iconButtonColors()
+        .copy(contentColor = MaterialTheme.colorScheme.onSurface),
     content: @Composable () -> Unit,
 ) {
     IconButton(

@@ -96,8 +96,8 @@ fun BarcodeDisplay(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
             Text(
                 text = displayText,
-                style = MaterialTheme.textStyles.bodySecondary,
-                color = textColor,
+                style = MaterialTheme.textStyles.labelSecondary,
+                color = textColor.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )

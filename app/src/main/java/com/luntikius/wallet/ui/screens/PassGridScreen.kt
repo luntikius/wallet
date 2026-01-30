@@ -27,14 +27,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -60,6 +57,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -68,6 +66,9 @@ import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
+import com.luntikius.wallet.designsystem.R
+import com.luntikius.wallet.designsystem.components.branding.AppLogo
+import com.luntikius.wallet.designsystem.components.button.WalletIconButton
 import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
 import com.luntikius.wallet.designsystem.components.feedback.WalletSnackbar
 import com.luntikius.wallet.designsystem.components.menu.WalletDropdownMenu
@@ -76,7 +77,6 @@ import com.luntikius.wallet.designsystem.foundation.color.createCustomPassGradie
 import com.luntikius.wallet.designsystem.foundation.color.ensureContrast
 import com.luntikius.wallet.designsystem.foundation.color.parseColor
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
-import com.luntikius.wallet.designsystem.theme.AppNameTextStyle
 import com.luntikius.wallet.ui.components.DeleteZone
 import com.luntikius.wallet.ui.components.PassCardExpansion
 import com.luntikius.wallet.ui.components.PassGridSkeleton
@@ -183,16 +183,15 @@ fun PassGridScreen(
                 topBar = {
                     WalletTopAppBar(
                         title = {
-                            Text(
-                                text = ".wallet",
-                                style = AppNameTextStyle,
-                            )
+                            AppLogo()
                         },
                         actions = {
                             Box {
-                                IconButton(onClick = { showAddMenu = true }) {
+                                WalletIconButton(onClick = { showAddMenu = true }) {
                                     Icon(
-                                        Icons.Default.Add,
+                                        painter = painterResource(
+                                            id = R.drawable.plus,
+                                        ),
                                         contentDescription = "Add Pass",
                                     )
                                 }
@@ -201,6 +200,14 @@ fun PassGridScreen(
                                     onDismissRequest = { showAddMenu = false },
                                 ) {
                                     DropdownMenuItem(
+                                        leadingIcon = {
+                                            Icon(
+                                                painter = painterResource(
+                                                    id = R.drawable.file,
+                                                ),
+                                                contentDescription = null,
+                                            )
+                                        },
                                         text = { Text("Add from Files") },
                                         onClick = {
                                             showAddMenu = false
@@ -209,6 +216,14 @@ fun PassGridScreen(
                                         },
                                     )
                                     DropdownMenuItem(
+                                        leadingIcon = {
+                                            Icon(
+                                                painter = painterResource(
+                                                    id = R.drawable.camera,
+                                                ),
+                                                contentDescription = null,
+                                            )
+                                        },
                                         text = { Text("Add from Camera") },
                                         onClick = {
                                             showAddMenu = false
@@ -500,10 +515,10 @@ fun PassTile(
                 // Logo/Icon - check if custom pass or PKPass
                 when (passData) {
                     is PassData.Custom -> {
-                        // Show Material Icon for custom passes
-                        val icon = IconMapper.getIconByName(passData.customPassJson.iconName)
+                        // Show custom icon for custom passes
+                        val iconRes = IconMapper.getIconByName(passData.customPassJson.iconName)
                         Icon(
-                            imageVector = icon,
+                            painter = painterResource(id = iconRes),
                             contentDescription = null,
                             modifier = Modifier
                                 .size(60.dp)

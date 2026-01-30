@@ -40,32 +40,32 @@ val DefaultPassColors = listOf(
         name = "Orange",
     ),
     PassColorPalette(
-        background = Color(0xFFFDFFB6),
+        background = Color(0xFFFFFEA0),
         foreground = Color(0xFFCACC63),
         name = "Yellow",
     ),
     PassColorPalette(
-        background = Color(0xFFCAFFBF),
+        background = Color(0xFF9ED294),
         foreground = Color(0xFF77CC6C),
         name = "Green",
     ),
     PassColorPalette(
-        background = Color(0xFF9BF6FF),
+        background = Color(0xFF6EAFB6),
         foreground = Color(0xFF48C3CC),
         name = "Cyan",
     ),
     PassColorPalette(
-        background = Color(0xFFA0C4FF),
+        background = Color(0xFF748DB6),
         foreground = Color(0xFF4D77CC),
         name = "Blue",
     ),
     PassColorPalette(
-        background = Color(0xFFBDB2FF),
+        background = Color(0xFF857DB2),
         foreground = Color(0xFF6A5FCC),
         name = "Purple",
     ),
     PassColorPalette(
-        background = Color(0xFFFFC6FF),
+        background = Color(0xFFC99DC9),
         foreground = Color(0xFFCC73CC),
         name = "Pink",
     ),

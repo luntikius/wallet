@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +29,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.getPassData
+import com.luntikius.wallet.designsystem.components.branding.AppLogo
+import com.luntikius.wallet.designsystem.components.button.WalletFilledButton
 import com.luntikius.wallet.designsystem.components.button.WalletOutlinedButton
 import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
@@ -86,12 +87,17 @@ fun PassPreviewScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         // Title
-                        Text(
-                            text = "Add to Wallet",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
+                        Row(
                             modifier = Modifier.padding(bottom = MaterialTheme.spacing.mediumLarge),
-                        )
+                            verticalAlignment = Alignment.Bottom,
+                        ) {
+                            Text(
+                                text = "Add to ",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            AppLogo(color = MaterialTheme.colorScheme.onSurface)
+                        }
 
                         // Card preview
                         Card(
@@ -137,15 +143,11 @@ fun PassPreviewScreen(
                             }
 
                             // Add button - vibrant green
-                            androidx.compose.material3.Button(
+                            WalletFilledButton(
                                 onClick = onAdd,
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF66BB6A),
-                                    contentColor = Color.White,
-                                ),
                             ) {
                                 Text(
                                     text = "Add",

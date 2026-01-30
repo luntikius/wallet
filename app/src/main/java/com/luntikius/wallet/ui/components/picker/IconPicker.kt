@@ -1,5 +1,6 @@
 package com.luntikius.wallet.ui.components.picker
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,7 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 
@@ -28,7 +29,7 @@ import com.luntikius.wallet.designsystem.foundation.spacing.spacing
  */
 @Composable
 fun IconPicker(
-    icons: List<Pair<String, ImageVector>>,
+    icons: List<Pair<String, Int>>,
     selectedIndex: Int,
     onIconSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -42,9 +43,9 @@ fun IconPicker(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
     ) {
         Spacer(modifier = Modifier.width(MaterialTheme.spacing.extraSmall))
-        icons.forEachIndexed { index, (name, icon) ->
+        icons.forEachIndexed { index, (name, iconRes) ->
             IconCircle(
-                icon = icon,
+                iconRes = iconRes,
                 isSelected = index == selectedIndex,
                 onClick = { onIconSelected(index) },
             )
@@ -57,7 +58,7 @@ fun IconPicker(
  * Individual circular icon button.
  */
 @Composable
-fun IconCircle(icon: ImageVector, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun IconCircle(@DrawableRes iconRes: Int, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(48.dp)
@@ -82,7 +83,7 @@ fun IconCircle(icon: ImageVector, isSelected: Boolean, onClick: () -> Unit, modi
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = icon,
+            painter = painterResource(id = iconRes),
             contentDescription = null,
             modifier = Modifier.size(32.dp),
             tint = if (isSelected) {

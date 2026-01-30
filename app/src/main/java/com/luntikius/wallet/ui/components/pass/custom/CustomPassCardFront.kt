@@ -14,17 +14,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.data.model.CustomPassJson
 import com.luntikius.wallet.data.model.Pass
-import com.luntikius.wallet.designsystem.components.input.WalletTransparentTextField
 import com.luntikius.wallet.designsystem.foundation.color.createCustomPassGradient
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.BarcodeDisplay
@@ -42,11 +43,11 @@ fun CustomPassCardFront(pass: Pass, customPassJson: CustomPassJson, modifier: Mo
     val foregroundColor = cardColors.foreground ?: MaterialTheme.colorScheme.onSurface
     val textColor = cardColors.text
 
-    val icon = IconMapper.getIconByName(customPassJson.iconName)
+    val iconRes = IconMapper.getIconByName(customPassJson.iconName)
 
     CustomPassCard(
         cardName = pass.organizationName,
-        icon = icon,
+        icon = iconRes,
         backgroundColor = backgroundColor,
         foregroundColor = foregroundColor,
         textColor = textColor,
@@ -66,7 +67,7 @@ fun CustomPassCardFront(pass: Pass, customPassJson: CustomPassJson, modifier: Mo
 @Composable
 fun CustomPassCard(
     cardName: String,
-    icon: ImageVector,
+    icon: Int,
     backgroundColor: Color,
     foregroundColor: Color,
     textColor: Color,
@@ -97,7 +98,7 @@ fun CustomPassCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = icon,
+                painter = painterResource(id = icon),
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
                 tint = textColor,
@@ -105,22 +106,32 @@ fun CustomPassCard(
             Spacer(modifier = Modifier.size(MaterialTheme.spacing.extraSmall))
 
             if (isEditable) {
-                WalletTransparentTextField(
+                val textStyle = MaterialTheme.typography.titleLarge.copy(
+                    color = textColor,
+                    fontWeight = FontWeight.Bold,
+                )
+
+                TextField(
                     value = cardName,
                     onValueChange = onCardNameChange,
                     placeholder = {
                         Text(
                             text = "Enter Card Name",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = textColor.copy(alpha = 0.6f),
+                            style = textStyle.copy(color = textColor.copy(alpha = 0.5f)),
                         )
                     },
-                    textColor = textColor,
+                    textStyle = textStyle,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        cursorColor = textColor,
+                    ),
+                    modifier = Modifier.weight(1f),
                     singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
                 )
             } else {
                 Text(

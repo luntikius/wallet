@@ -54,13 +54,14 @@ import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
 import com.luntikius.wallet.designsystem.foundation.animation.AnimationTokens
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
+import com.luntikius.wallet.designsystem.theme.WalletTheme
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardBack
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardBack
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import kotlin.math.abs
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 /**
  * Overlay that animates a pass card expanding from its tile position to full screen.
@@ -82,268 +83,272 @@ fun PassCardExpansion(
     modifier: Modifier = Modifier,
     onTileVisibilityChange: (visible: Boolean) -> Unit = {},
 ) {
-    var pass by remember { mutableStateOf<Pass?>(null) }
-    var passData by remember { mutableStateOf<PassData?>(null) }
-    var isDismissing by remember { mutableStateOf(false) }
-    val refreshStatus by viewModel.refreshStatus.collectAsState()
+    WalletTheme(
+        darkTheme = false,
+    ) {
+        var pass by remember { mutableStateOf<Pass?>(null) }
+        var passData by remember { mutableStateOf<PassData?>(null) }
+        var isDismissing by remember { mutableStateOf(false) }
+        val refreshStatus by viewModel.refreshStatus.collectAsState()
 
-    // Animation states
-    val scale = remember { Animatable(0f) }
-    val offsetX = remember { Animatable(0f) }
-    val offsetY = remember { Animatable(0f) }
-    val scrimAlpha = remember { Animatable(0f) }
-    val buttonSlide = remember { Animatable(1f) } // 1 = off screen, 0 = visible
-    val contentAlpha = remember { Animatable(0f) } // Card content fade-in
+        // Animation states
+        val scale = remember { Animatable(0f) }
+        val offsetX = remember { Animatable(0f) }
+        val offsetY = remember { Animatable(0f) }
+        val scrimAlpha = remember { Animatable(0f) }
+        val buttonSlide = remember { Animatable(1f) } // 1 = off screen, 0 = visible
+        val contentAlpha = remember { Animatable(0f) } // Card content fade-in
 
-    // Card flip rotation - tracks cumulative rotation in degrees
-    var targetRotation by remember { mutableFloatStateOf(0f) }
-    val rotation by animateFloatAsState(
-        targetValue = targetRotation,
-        animationSpec = tween(
-            durationMillis = AnimationTokens.FLIP_DURATION_MS,
-            easing = FastOutSlowInEasing,
-        ),
-        label = "card flip",
-    )
+        // Card flip rotation - tracks cumulative rotation in degrees
+        var targetRotation by remember { mutableFloatStateOf(0f) }
+        val rotation by animateFloatAsState(
+            targetValue = targetRotation,
+            animationSpec = tween(
+                durationMillis = AnimationTokens.FLIP_DURATION_MS,
+                easing = FastOutSlowInEasing,
+            ),
+            label = "card flip",
+        )
 
-    val density = LocalDensity.current
-    val configuration = LocalConfiguration.current
-    val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
-    val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
+        val density = LocalDensity.current
+        val configuration = LocalConfiguration.current
+        val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
+        val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
 
-    val coroutineScope = rememberCoroutineScope()
+        val coroutineScope = rememberCoroutineScope()
 
-    // Load pass data
-    LaunchedEffect(passId) {
-        pass = viewModel.getPassById(passId)
-        pass?.let { p ->
-            passData = p.getPassData()
+        // Load pass data
+        LaunchedEffect(passId) {
+            pass = viewModel.getPassById(passId)
+            pass?.let { p ->
+                passData = p.getPassData()
+            }
         }
-    }
 
-    // Two-phase expansion animation on first composition
-    LaunchedEffect(Unit) {
-        if (tilePosition != null) {
-            // Calculate scale and position
-            val targetCardWidth = screenWidth * 0.9f
-            val tileScale = tilePosition.width.toFloat() / targetCardWidth
-            val targetCenterX = screenWidth / 2f
-            val targetCenterY = screenHeight / 2f
-            val tileCenterX = tilePosition.left + tilePosition.width / 2f
-            val tileCenterY = tilePosition.top + tilePosition.height / 2f
-
-            // PHASE 1: Fade in card at tile size (100ms)
-            // Set initial state: card at tile position, scaled to tile size, invisible
-            scale.snapTo(tileScale)
-            offsetX.snapTo(tileCenterX - targetCenterX)
-            offsetY.snapTo(tileCenterY - targetCenterY)
-            contentAlpha.snapTo(0f)
-            scrimAlpha.snapTo(0f)
-            buttonSlide.snapTo(1f)
-
-            // Fade in the full card content at tile size
-            launch {
-                contentAlpha.animateTo(1f, AnimationTokens.phaseOneCardFadeIn)
-            }
-
-            // Wait for phase 1 to complete, then delay before phase 2
-            kotlinx.coroutines.delay(
-                (AnimationTokens.PHASE_1_DURATION_MS + AnimationTokens.INTER_PHASE_DELAY_MS).toLong(),
-            )
-
-            // Hide tile before Phase 2 starts
-            onTileVisibilityChange(false)
-
-            // PHASE 2: Scale up, add scrim, show buttons (300ms)
-            launch {
-                scale.animateTo(1f, AnimationTokens.phaseTwoScale)
-            }
-            launch {
-                offsetX.animateTo(0f, AnimationTokens.phaseTwoScale)
-            }
-            launch {
-                offsetY.animateTo(0f, AnimationTokens.phaseTwoScale)
-            }
-            launch {
-                scrimAlpha.animateTo(0.6f, AnimationTokens.phaseTwoScrim)
-            }
-            launch {
-                buttonSlide.animateTo(0f, AnimationTokens.phaseTwoButtons)
-            }
-        } else {
-            // No tile position, just fade in instantly
-            scale.snapTo(1f)
-            offsetX.snapTo(0f)
-            offsetY.snapTo(0f)
-            scrimAlpha.snapTo(0.6f)
-            buttonSlide.snapTo(0f)
-            contentAlpha.snapTo(1f)
-        }
-    }
-
-    // Dismissal handler
-    fun dismiss() {
-        if (isDismissing) return
-        isDismissing = true
-
-        coroutineScope.launch {
+        // Two-phase expansion animation on first composition
+        LaunchedEffect(Unit) {
             if (tilePosition != null) {
+                // Calculate scale and position
                 val targetCardWidth = screenWidth * 0.9f
-
-                val targetScale = tilePosition.width.toFloat() / targetCardWidth
+                val tileScale = tilePosition.width.toFloat() / targetCardWidth
                 val targetCenterX = screenWidth / 2f
                 val targetCenterY = screenHeight / 2f
+                val tileCenterX = tilePosition.left + tilePosition.width / 2f
+                val tileCenterY = tilePosition.top + tilePosition.height / 2f
 
-                val targetOffsetX = (tilePosition.left + tilePosition.width / 2f) - targetCenterX
-                val targetOffsetY = (tilePosition.top + tilePosition.height / 2f) - targetCenterY
+                // PHASE 1: Fade in card at tile size (100ms)
+                // Set initial state: card at tile position, scaled to tile size, invisible
+                scale.snapTo(tileScale)
+                offsetX.snapTo(tileCenterX - targetCenterX)
+                offsetY.snapTo(tileCenterY - targetCenterY)
+                contentAlpha.snapTo(0f)
+                scrimAlpha.snapTo(0f)
+                buttonSlide.snapTo(1f)
 
-                // Two-phase dismissal (mirrors expansion)
-                // Phase 1: Scale down to tile size (250ms) with content visible
+                // Fade in the full card content at tile size
                 launch {
-                    scale.animateTo(targetScale, AnimationTokens.dismissalPhaseOneScale)
-                }
-                launch {
-                    offsetX.animateTo(targetOffsetX, AnimationTokens.dismissalPhaseOneScale)
-                }
-                launch {
-                    offsetY.animateTo(targetOffsetY, AnimationTokens.dismissalPhaseOneScale)
-                }
-                launch {
-                    scrimAlpha.animateTo(0f, AnimationTokens.dismissalPhaseOneScale)
-                }
-                launch {
-                    buttonSlide.animateTo(
-                        1f,
-                        tween(
-                            AnimationTokens.DISMISSAL_PHASE_1_DURATION_MS - 50,
-                            easing = FastOutSlowInEasing,
-                        ),
-                    )
+                    contentAlpha.animateTo(1f, AnimationTokens.phaseOneCardFadeIn)
                 }
 
-                // Wait for Phase 1 to complete, then delay before Phase 2
+                // Wait for phase 1 to complete, then delay before phase 2
+                kotlinx.coroutines.delay(
+                    (AnimationTokens.PHASE_1_DURATION_MS + AnimationTokens.INTER_PHASE_DELAY_MS).toLong(),
+                )
+
+                // Hide tile before Phase 2 starts
+                onTileVisibilityChange(false)
+
+                // PHASE 2: Scale up, add scrim, show buttons (300ms)
                 launch {
-                    kotlinx.coroutines.delay(
-                        (
-                            AnimationTokens.DISMISSAL_PHASE_1_DURATION_MS +
-                                AnimationTokens.INTER_PHASE_DELAY_MS
-                            ).toLong(),
-                    )
-
-                    // Show tile at start of Phase 2
-                    onTileVisibilityChange(true)
-
-                    // Phase 2: Fade out content at tile size (100ms)
-                    contentAlpha.animateTo(0f, AnimationTokens.dismissalPhaseTwoFade)
+                    scale.animateTo(1f, AnimationTokens.phaseTwoScale)
                 }
-
-                // Wait for all animations to complete before calling onDismiss
                 launch {
-                    kotlinx.coroutines.delay(AnimationTokens.DISMISSAL_TOTAL_MS.toLong())
-                    onDismiss()
+                    offsetX.animateTo(0f, AnimationTokens.phaseTwoScale)
+                }
+                launch {
+                    offsetY.animateTo(0f, AnimationTokens.phaseTwoScale)
+                }
+                launch {
+                    scrimAlpha.animateTo(0.6f, AnimationTokens.phaseTwoScrim)
+                }
+                launch {
+                    buttonSlide.animateTo(0f, AnimationTokens.phaseTwoButtons)
                 }
             } else {
-                // Just fade out (no tile position)
-                launch {
-                    scrimAlpha.animateTo(0f, AnimationTokens.dismissalPhaseOneScale)
-                }
-                launch {
-                    kotlinx.coroutines.delay(
-                        (
-                            AnimationTokens.DISMISSAL_PHASE_1_DURATION_MS +
-                                AnimationTokens.INTER_PHASE_DELAY_MS
-                            ).toLong(),
-                    )
-                    onTileVisibilityChange(true)
-                    contentAlpha.animateTo(0f, AnimationTokens.dismissalPhaseTwoFade)
-                }
-                launch {
-                    kotlinx.coroutines.delay(AnimationTokens.DISMISSAL_TOTAL_MS.toLong())
-                    onDismiss()
+                // No tile position, just fade in instantly
+                scale.snapTo(1f)
+                offsetX.snapTo(0f)
+                offsetY.snapTo(0f)
+                scrimAlpha.snapTo(0.6f)
+                buttonSlide.snapTo(0f)
+                contentAlpha.snapTo(1f)
+            }
+        }
+
+        // Dismissal handler
+        fun dismiss() {
+            if (isDismissing) return
+            isDismissing = true
+
+            coroutineScope.launch {
+                if (tilePosition != null) {
+                    val targetCardWidth = screenWidth * 0.9f
+
+                    val targetScale = tilePosition.width.toFloat() / targetCardWidth
+                    val targetCenterX = screenWidth / 2f
+                    val targetCenterY = screenHeight / 2f
+
+                    val targetOffsetX = (tilePosition.left + tilePosition.width / 2f) - targetCenterX
+                    val targetOffsetY = (tilePosition.top + tilePosition.height / 2f) - targetCenterY
+
+                    // Two-phase dismissal (mirrors expansion)
+                    // Phase 1: Scale down to tile size (250ms) with content visible
+                    launch {
+                        scale.animateTo(targetScale, AnimationTokens.dismissalPhaseOneScale)
+                    }
+                    launch {
+                        offsetX.animateTo(targetOffsetX, AnimationTokens.dismissalPhaseOneScale)
+                    }
+                    launch {
+                        offsetY.animateTo(targetOffsetY, AnimationTokens.dismissalPhaseOneScale)
+                    }
+                    launch {
+                        scrimAlpha.animateTo(0f, AnimationTokens.dismissalPhaseOneScale)
+                    }
+                    launch {
+                        buttonSlide.animateTo(
+                            1f,
+                            tween(
+                                AnimationTokens.DISMISSAL_PHASE_1_DURATION_MS - 50,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        )
+                    }
+
+                    // Wait for Phase 1 to complete, then delay before Phase 2
+                    launch {
+                        kotlinx.coroutines.delay(
+                            (
+                                AnimationTokens.DISMISSAL_PHASE_1_DURATION_MS +
+                                    AnimationTokens.INTER_PHASE_DELAY_MS
+                                ).toLong(),
+                        )
+
+                        // Show tile at start of Phase 2
+                        onTileVisibilityChange(true)
+
+                        // Phase 2: Fade out content at tile size (100ms)
+                        contentAlpha.animateTo(0f, AnimationTokens.dismissalPhaseTwoFade)
+                    }
+
+                    // Wait for all animations to complete before calling onDismiss
+                    launch {
+                        kotlinx.coroutines.delay(AnimationTokens.DISMISSAL_TOTAL_MS.toLong())
+                        onDismiss()
+                    }
+                } else {
+                    // Just fade out (no tile position)
+                    launch {
+                        scrimAlpha.animateTo(0f, AnimationTokens.dismissalPhaseOneScale)
+                    }
+                    launch {
+                        kotlinx.coroutines.delay(
+                            (
+                                AnimationTokens.DISMISSAL_PHASE_1_DURATION_MS +
+                                    AnimationTokens.INTER_PHASE_DELAY_MS
+                                ).toLong(),
+                        )
+                        onTileVisibilityChange(true)
+                        contentAlpha.animateTo(0f, AnimationTokens.dismissalPhaseTwoFade)
+                    }
+                    launch {
+                        kotlinx.coroutines.delay(AnimationTokens.DISMISSAL_TOTAL_MS.toLong())
+                        onDismiss()
+                    }
                 }
             }
         }
-    }
 
-    // Handle back button
-    BackHandler(enabled = !isDismissing) {
-        dismiss()
-    }
+        // Handle back button
+        BackHandler(enabled = !isDismissing) {
+            dismiss()
+        }
 
-    pass?.let { currentPass ->
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = scrimAlpha.value))
-                .clickable(
-                    onClick = { dismiss() },
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() },
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            // Pull-to-refresh wrapping the card
-            PullToRefreshBox(
-                isRefreshing =
-                refreshStatus is RefreshStatus.Loading &&
-                    (refreshStatus as? RefreshStatus.Loading)?.passId == passId,
-                onRefresh = { viewModel.refreshPass(passId) },
-                modifier = Modifier.fillMaxSize(),
+        pass?.let { currentPass ->
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = scrimAlpha.value))
+                    .clickable(
+                        onClick = { dismiss() },
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                    ),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
+                // Pull-to-refresh wrapping the card
+                PullToRefreshBox(
+                    isRefreshing =
+                        refreshStatus is RefreshStatus.Loading &&
+                            (refreshStatus as? RefreshStatus.Loading)?.passId == passId,
+                    onRefresh = { viewModel.refreshPass(passId) },
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
                 ) {
-                    passData?.let { data ->
-                        Box(
-                            modifier = Modifier
-                                .graphicsLayer {
-                                    scaleX = scale.value
-                                    scaleY = scale.value
-                                    translationX = offsetX.value
-                                    translationY = offsetY.value
-                                }
-                                .pointerInput(targetRotation) {
-                                    var dragOffset = 0f
-                                    detectHorizontalDragGestures(
-                                        onDragEnd = {
-                                            if (abs(dragOffset) >
-                                                AnimationTokens.SWIPE_THRESHOLD_DP * density.density
-                                            ) {
-                                                val flipDirection =
-                                                    if (dragOffset > 0) 180f else -180f
-                                                targetRotation += flipDirection
-                                            }
-                                            dragOffset = 0f
-                                        },
-                                        onDragCancel = { dragOffset = 0f },
-                                        onHorizontalDrag = { change, dragAmount ->
-                                            change.consume()
-                                            dragOffset += dragAmount
-                                        },
-                                    )
-                                },
-                        ) {
-                            FlippableCardContent(
-                                pass = currentPass,
-                                passData = data,
-                                rotation = rotation,
-                                contentAlpha = contentAlpha.value,
-                                density = density,
-                                viewModel = viewModel,
-                                onDismiss = { dismiss() },
-                            )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        passData?.let { data ->
+                            Box(
+                                modifier = Modifier
+                                    .graphicsLayer {
+                                        scaleX = scale.value
+                                        scaleY = scale.value
+                                        translationX = offsetX.value
+                                        translationY = offsetY.value
+                                    }
+                                    .pointerInput(targetRotation) {
+                                        var dragOffset = 0f
+                                        detectHorizontalDragGestures(
+                                            onDragEnd = {
+                                                if (abs(dragOffset) >
+                                                    AnimationTokens.SWIPE_THRESHOLD_DP * density.density
+                                                ) {
+                                                    val flipDirection =
+                                                        if (dragOffset > 0) 180f else -180f
+                                                    targetRotation += flipDirection
+                                                }
+                                                dragOffset = 0f
+                                            },
+                                            onDragCancel = { dragOffset = 0f },
+                                            onHorizontalDrag = { change, dragAmount ->
+                                                change.consume()
+                                                dragOffset += dragAmount
+                                            },
+                                        )
+                                    },
+                            ) {
+                                FlippableCardContent(
+                                    pass = currentPass,
+                                    passData = data,
+                                    rotation = rotation,
+                                    contentAlpha = contentAlpha.value,
+                                    density = density,
+                                    viewModel = viewModel,
+                                    onDismiss = { dismiss() },
+                                )
+                            }
                         }
-                    }
 
-                    // Buttons that slide up from bottom
-                    CardControls(
-                        buttonSlide = buttonSlide.value,
-                        density = density,
-                        onFlip = { targetRotation += 180f },
-                        onClose = { dismiss() },
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                    )
+                        // Buttons that slide up from bottom
+                        CardControls(
+                            buttonSlide = buttonSlide.value,
+                            density = density,
+                            onFlip = { targetRotation += 180f },
+                            onClose = { dismiss() },
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
+                    }
                 }
             }
         }

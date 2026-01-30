@@ -2,6 +2,7 @@ package com.luntikius.wallet.designsystem.components.input
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextField
@@ -10,6 +11,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 
 /**
@@ -140,6 +142,7 @@ fun WalletTransparentTextField(
     singleLine: Boolean = false,
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     minLines: Int = 1,
+    textStyle: TextStyle = LocalTextStyle.current,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     TextField(
@@ -156,6 +159,7 @@ fun WalletTransparentTextField(
         singleLine = singleLine,
         maxLines = maxLines,
         minLines = minLines,
+        textStyle = textStyle,
         colors = TextFieldDefaults.colors(
             focusedTextColor = textColor,
             unfocusedTextColor = textColor,

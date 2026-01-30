@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -20,7 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.designsystem.R
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import java.io.File
 
@@ -78,7 +77,7 @@ fun PassCardBackHeader(
             onClick = onShareClick,
         ) {
             Icon(
-                Icons.Outlined.Share,
+                painter = painterResource(R.drawable.share),
                 contentDescription = "Share",
                 tint = textColor,
             )
@@ -89,7 +88,7 @@ fun PassCardBackHeader(
             onClick = onDeleteClick,
         ) {
             Icon(
-                Icons.Outlined.Delete,
+                painter = painterResource(R.drawable.delete),
                 contentDescription = "Delete",
                 tint = textColor,
             )

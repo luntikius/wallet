@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -12,33 +13,22 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,13 +36,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.luntikius.wallet.designsystem.components.branding.AppLogo
+import com.luntikius.wallet.designsystem.components.button.WalletIconButton
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 
@@ -113,111 +107,100 @@ fun CameraScanScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Snackbar host at top
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 48.dp)
-        ) {
-            SnackbarHost(snackbarHostState)
-        }
         // Full screen camera preview
         AndroidView(
             factory = { ctx ->
                 val previewView = PreviewView(ctx)
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
+                cameraProviderFuture.addListener(
+                    {
+                        val cameraProvider = cameraProviderFuture.get()
 
-                    // Preview use case
-                    val preview = Preview.Builder()
-                        .build()
-                        .also {
-                            it.setSurfaceProvider(previewView.surfaceProvider)
-                        }
+                        // Preview use case
+                        val preview = Preview.Builder()
+                            .build()
+                            .also {
+                                it.setSurfaceProvider(previewView.surfaceProvider)
+                            }
 
-                    // Image analysis use case for barcode scanning
-                    val imageAnalysis = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .also {
-                            it.setAnalyzer(
-                                cameraExecutor,
-                                barcodeScanner.createAnalyzer(
-                                    onBarcodeDetected = { scanResult ->
-                                        if (!hasScanned) {
-                                            hasScanned = true
-                                            onScanResult(scanResult)
+                        // Image analysis use case for barcode scanning
+                        val imageAnalysis = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+                            .also {
+                                it.setAnalyzer(
+                                    cameraExecutor,
+                                    barcodeScanner.createAnalyzer(
+                                        onBarcodeDetected = { scanResult ->
+                                            if (!hasScanned) {
+                                                hasScanned = true
+                                                onScanResult(scanResult)
+                                            }
+                                        },
+                                        onError = { message ->
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar(message)
+                                            }
                                         }
-                                    },
-                                    onError = { message ->
-                                        coroutineScope.launch {
-                                            snackbarHostState.showSnackbar(message)
-                                        }
-                                    }
+                                    )
                                 )
+                            }
+
+                        // Select back camera
+                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+                        try {
+                            cameraProvider.unbindAll()
+                            cameraProvider.bindToLifecycle(
+                                lifecycleOwner,
+                                cameraSelector,
+                                preview,
+                                imageAnalysis
                             )
+                        } catch (e: Exception) {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Camera initialization failed")
+                            }
                         }
-
-                    // Select back camera
-                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-                    try {
-                        cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview,
-                            imageAnalysis
-                        )
-                    } catch (e: Exception) {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Camera initialization failed")
-                        }
-                    }
-                }, ContextCompat.getMainExecutor(ctx))
+                    },
+                    ContextCompat.getMainExecutor(ctx)
+                )
 
                 previewView
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        // Top center: App logo
+        AppLogo(
+            color = Color.White,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 56.dp),
         )
 
         // Top left: Close button
-        IconButton(
+        TintedButton(
+            icon = com.luntikius.wallet.designsystem.R.drawable.cross,
+            contentDescription = "Close",
             onClick = onCancel,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 16.dp, top = 48.dp)
-        ) {
-            Icon(
-                Icons.Default.Close,
-                contentDescription = "Close",
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-            )
-        }
+            modifier = Modifier.align(Alignment.TopStart),
+        )
 
         // Top right: Gallery button
-        IconButton(
+        TintedButton(
+            icon = com.luntikius.wallet.designsystem.R.drawable.image,
+            contentDescription = "Pick from gallery",
             onClick = {
                 galleryLauncher.launch(
                     PickVisualMediaRequest(
-                        ActivityResultContracts.PickVisualMedia.ImageOnly
-                    )
+                        mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly,
+                    ),
                 )
             },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 16.dp, top = 48.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Add,
-                contentDescription = "Pick from gallery",
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-            )
-        }
+            modifier = Modifier.align(Alignment.TopEnd),
+        )
 
         // Center: Scanning frame
         Box(
@@ -249,8 +232,17 @@ fun CameraScanScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
             )
+        }
+
+        // Snackbar host
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 100.dp),
+        ) {
+            SnackbarHost(snackbarHostState)
         }
 
         // Loading indicator
@@ -266,6 +258,35 @@ fun CameraScanScreen(
                     color = Color.White
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun TintedButton(
+    @DrawableRes icon: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    WalletIconButton(
+        onClick = onClick,
+        modifier = modifier
+            .padding(start = 16.dp, end = 16.dp, top = 48.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(color = Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = contentDescription,
+                modifier = Modifier.size(24.dp),
+                tint = Color.White,
+            )
         }
     }
 }

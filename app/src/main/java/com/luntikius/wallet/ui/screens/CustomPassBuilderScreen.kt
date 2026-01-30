@@ -1,6 +1,5 @@
 package com.luntikius.wallet.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,9 +28,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.builder.CustomPassBuilder
+import com.luntikius.wallet.designsystem.components.branding.AppLogo
 import com.luntikius.wallet.designsystem.components.button.WalletFilledButton
 import com.luntikius.wallet.designsystem.components.button.WalletOutlinedButton
 import com.luntikius.wallet.designsystem.components.navigation.WalletTopAppBar
@@ -70,7 +69,10 @@ fun CustomPassBuilderScreen(
                 title = { Text("Create Card") },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.Default.Close, contentDescription = "Cancel")
+                        Icon(
+                            painter = painterResource(id = com.luntikius.wallet.designsystem.R.drawable.cross),
+                            contentDescription = "Cancel",
+                        )
                     }
                 },
             )
@@ -85,7 +87,7 @@ fun CustomPassBuilderScreen(
                 .verticalScroll(scrollState),
         ) {
             // Preview card at the top with editable name
-            val (_, selectedIcon) = IconMapper.availableIcons[selectedIconIndex]
+            val (_, selectedIconRes) = IconMapper.availableIcons[selectedIconIndex]
             val colorPalette = DefaultPassColors[selectedColorIndex]
             val backgroundColor = colorPalette.background
             val foregroundColor = colorPalette.foreground
@@ -105,7 +107,7 @@ fun CustomPassBuilderScreen(
                 CustomPassCard(
                     cardName = cardName,
                     onCardNameChange = { cardName = it },
-                    icon = selectedIcon,
+                    icon = selectedIconRes,
                     backgroundColor = backgroundColor,
                     foregroundColor = foregroundColor,
                     textColor = textColor,
@@ -193,7 +195,10 @@ fun CustomPassBuilderScreen(
                     modifier = Modifier.weight(1f),
                     enabled = cardName.isNotBlank(),
                 ) {
-                    Text("Add to Wallet")
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text("Add to ")
+                        AppLogo()
+                    }
                 }
             }
         }
