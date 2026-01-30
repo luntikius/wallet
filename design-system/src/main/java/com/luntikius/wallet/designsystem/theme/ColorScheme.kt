@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
  * - Red error (#FFB3261E)
  */
 internal val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF0077b6),
+    primary = Color(0xFF1850C3),
     onPrimary = Color.White,
     primaryContainer = Color(0xFF90CAF9),
     onPrimaryContainer = Color(0xFF001D35),
@@ -62,7 +62,7 @@ internal val LightColorScheme = lightColorScheme(
  * - Red error (#F2B8B5)
  */
 internal val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF0077b6),
+    primary = Color(0xFF1850C3),
     onPrimary = Color.White,
     primaryContainer = Color(0xFF004A77),
     onPrimaryContainer = Color(0xFFCAE6FF),

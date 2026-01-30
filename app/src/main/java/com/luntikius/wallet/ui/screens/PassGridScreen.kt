@@ -31,7 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -71,11 +70,13 @@ import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
 import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
 import com.luntikius.wallet.designsystem.components.feedback.WalletSnackbar
+import com.luntikius.wallet.designsystem.components.menu.WalletDropdownMenu
 import com.luntikius.wallet.designsystem.components.navigation.WalletTopAppBar
 import com.luntikius.wallet.designsystem.foundation.color.createCustomPassGradient
 import com.luntikius.wallet.designsystem.foundation.color.ensureContrast
 import com.luntikius.wallet.designsystem.foundation.color.parseColor
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
+import com.luntikius.wallet.designsystem.theme.AppNameTextStyle
 import com.luntikius.wallet.ui.components.DeleteZone
 import com.luntikius.wallet.ui.components.PassCardExpansion
 import com.luntikius.wallet.ui.components.PassGridSkeleton
@@ -85,9 +86,9 @@ import com.luntikius.wallet.ui.utils.IconMapper
 import com.luntikius.wallet.ui.utils.stripHtml
 import com.luntikius.wallet.ui.viewmodel.ImportStatus
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
-import java.io.File
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
+import java.io.File
 
 /**
  * Grid screen displaying all passes.
@@ -181,7 +182,12 @@ fun PassGridScreen(
             Scaffold(
                 topBar = {
                     WalletTopAppBar(
-                        title = { Text("wallet") },
+                        title = {
+                            Text(
+                                text = ".wallet",
+                                style = AppNameTextStyle,
+                            )
+                        },
                         actions = {
                             Box {
                                 IconButton(onClick = { showAddMenu = true }) {
@@ -190,7 +196,7 @@ fun PassGridScreen(
                                         contentDescription = "Add Pass",
                                     )
                                 }
-                                DropdownMenu(
+                                WalletDropdownMenu(
                                     expanded = showAddMenu,
                                     onDismissRequest = { showAddMenu = false },
                                 ) {
