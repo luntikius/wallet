@@ -103,6 +103,20 @@ object Dimensions {
      */
     val bottomBarHeight: Dp = 80.dp
 
+    // ========== Pass Card Dimensions ==========
+
+    /**
+     * Minimum pass card width in detail/preview views (280dp).
+     * Ensures readability on compact devices (~320dp screen width).
+     */
+    val passCardMinWidth: Dp = 280.dp
+
+    /**
+     * Maximum pass card width in detail/preview views (500dp).
+     * Prevents cards from becoming unwieldy on tablets and foldables.
+     */
+    val passCardMaxWidth: Dp = 500.dp
+
     // ========== Misc ==========
 
     /**

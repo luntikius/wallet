@@ -38,6 +38,9 @@ data class PKPassJson(
     // Web service for updates
     val webServiceURL: String?,
     val authenticationToken: String?,
+
+    // Localization
+    val localizations: PKPassLocalizations?,
 )
 
 /**
@@ -72,3 +75,14 @@ data class PKBarcode(val format: String, val message: String, val messageEncodin
  * Location for relevance
  */
 data class PKLocation(val latitude: Double, val longitude: Double, val altitude: Double?, val relevantText: String?)
+
+/**
+ * Localization data for PKPass
+ * Contains locale-specific string translations from .lproj directories
+ *
+ * Format: Map of locale codes to translation maps (locale -> key -> value)
+ */
+data class PKPassLocalizations(
+    val defaultLocale: String = "en",
+    val localizations: Map<String, Map<String, String>> = emptyMap(),
+)

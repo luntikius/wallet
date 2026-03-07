@@ -4,6 +4,7 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,9 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +31,7 @@ import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.BarcodeDisplay
 import com.luntikius.wallet.ui.utils.rememberCardColors
+import com.luntikius.wallet.ui.utils.rememberLocalizedValue
 import com.luntikius.wallet.ui.utils.stripHtml
 import java.io.File
 
@@ -48,8 +48,8 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(backgroundColor, RoundedCornerShape(16.dp))
-            .verticalScroll(state = rememberScrollState()),
+            .background(backgroundColor, RoundedCornerShape(16.dp)),
+        // .verticalScroll(state = rememberScrollState()),
     ) {
         // 1. HEADER ROW: Logo (left) + Header Fields (right)
         val structure = pkPassJson?.let { json ->
@@ -97,15 +97,17 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                             Column(
                                 horizontalAlignment = Alignment.End,
                             ) {
+                                val localizedLabel = rememberLocalizedValue(field.label, pkPassJson)
+                                val localizedValue = rememberLocalizedValue(field.value?.toString(), pkPassJson)
                                 Text(
-                                    text = stripHtml(field.label ?: ""),
+                                    text = stripHtml(localizedLabel),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = labelColor,
                                     fontWeight = FontWeight.SemiBold,
                                     textAlign = TextAlign.End,
                                 )
                                 Text(
-                                    text = stripHtml(field.value?.toString() ?: ""),
+                                    text = stripHtml(localizedValue),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = textColor,
                                     fontWeight = FontWeight.Bold,
@@ -164,14 +166,16 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                                 },
                                 horizontalAlignment = fieldHorizontalAlignment,
                             ) {
+                                val localizedLabel = rememberLocalizedValue(field.label, pkPassJson)
+                                val localizedValue = rememberLocalizedValue(field.value?.toString(), pkPassJson)
                                 Text(
-                                    text = stripHtml(field.label ?: field.key),
+                                    text = stripHtml(localizedLabel.ifEmpty { field.key }),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = labelColor,
                                     fontWeight = FontWeight.SemiBold,
                                 )
                                 Text(
-                                    text = stripHtml(field.value?.toString() ?: ""),
+                                    text = stripHtml(localizedValue),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = textColor,
                                     fontWeight = FontWeight.Bold,
@@ -205,14 +209,16 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
                                 },
                                 horizontalAlignment = fieldHorizontalAlignment,
                             ) {
+                                val localizedLabel = rememberLocalizedValue(field.label, pkPassJson)
+                                val localizedValue = rememberLocalizedValue(field.value?.toString(), pkPassJson)
                                 Text(
-                                    text = stripHtml(field.label ?: field.key),
+                                    text = stripHtml(localizedLabel.ifEmpty { field.key }),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = labelColor,
                                     fontWeight = FontWeight.SemiBold,
                                 )
                                 Text(
-                                    text = stripHtml(field.value?.toString() ?: ""),
+                                    text = stripHtml(localizedValue),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = textColor,
                                     fontWeight = FontWeight.Bold,
@@ -224,25 +230,24 @@ fun PassCardFront(pass: Pass, pkPassJson: PKPassJson?, modifier: Modifier = Modi
             }
         }
 
-        // Flexible spacer to push barcode to center of remaining space
-        Spacer(modifier = Modifier.weight(1f))
-
-        // 4. BARCODE SECTION - Centered in bottom portion
-        pkPassJson?.let { json ->
-            val barcode = json.barcodes?.firstOrNull() ?: json.barcode
-            barcode?.let { barcodeData ->
-                BarcodeFormatType.fromPKPassFormat(barcodeData.format)?.let { format ->
-                    BarcodeDisplay(
-                        barcodeValue = barcodeData.message,
-                        barcodeFormat = format,
-                        textColor = textColor,
-                        altText = barcodeData.altText,
-                    )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            pkPassJson?.let { json ->
+                val barcode = json.barcodes?.firstOrNull() ?: json.barcode
+                barcode?.let { barcodeData ->
+                    BarcodeFormatType.fromPKPassFormat(barcodeData.format)?.let { format ->
+                        val localizedAltText = rememberLocalizedValue(barcodeData.altText, pkPassJson)
+                        BarcodeDisplay(
+                            barcodeValue = barcodeData.message,
+                            barcodeFormat = format,
+                            textColor = textColor,
+                            altText = localizedAltText,
+                        )
+                    }
                 }
             }
         }
-
-        // Flexible spacer to balance and center barcode
-        Spacer(modifier = Modifier.weight(1f))
     }
 }

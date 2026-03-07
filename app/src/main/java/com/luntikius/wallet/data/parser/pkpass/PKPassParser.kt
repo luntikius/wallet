@@ -40,6 +40,7 @@ class PKPassParser(private val context: Context) : PassParser {
             val zipInputStream = ZipInputStream(inputStream)
             var passJson: PKPassJson? = null
             val extractedFiles = mutableMapOf<String, ByteArray>()
+            val localizationFiles = mutableMapOf<String, ByteArray>() // locale -> .strings content
 
             var entry = zipInputStream.nextEntry
             while (entry != null) {
@@ -58,6 +59,11 @@ class PKPassParser(private val context: Context) : PassParser {
                             fileName.matches(Regex("background(@\\dx)?\\.png")) -> {
                             extractedFiles[fileName] = bytes
                         }
+                        fileName.matches(Regex(".*\\.lproj/.*\\.strings")) -> {
+                            // Extract locale from path: en.lproj/pass.strings -> "en"
+                            val locale = fileName.substringBefore(".lproj").substringAfterLast("/")
+                            localizationFiles[locale] = bytes
+                        }
                     }
                 }
 
@@ -71,10 +77,40 @@ class PKPassParser(private val context: Context) : PassParser {
                 return@withContext null
             }
 
+            // Parse localization files
+            val localizations = if (localizationFiles.isNotEmpty()) {
+                val localizationMap = mutableMapOf<String, Map<String, String>>()
+                localizationFiles.forEach { (locale, bytes) ->
+                    try {
+                        val content = String(bytes, Charsets.UTF_8)
+                        val parsed = PKPassStringsParser.parse(content)
+                        if (parsed.isNotEmpty()) {
+                            localizationMap[locale] = parsed
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                if (localizationMap.isNotEmpty()) {
+                    PKPassLocalizations(localizations = localizationMap)
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
+
+            // Add localizations to passJson
+            val passJsonWithLocalizations = passJson.copy(localizations = localizations)
+
+            if (passJson == null) {
+                return@withContext null
+            }
+
             // Create directory for this pass (temp or permanent)
             val baseDir = if (useTemp) context.cacheDir else context.filesDir
             val subPath = if (useTemp) "preview_passes" else "passes/pkpass"
-            val passDir = File(baseDir, "$subPath/${passJson.serialNumber}")
+            val passDir = File(baseDir, "$subPath/${passJsonWithLocalizations.serialNumber}")
             passDir.mkdirs()
 
             // Save extracted files
@@ -91,33 +127,33 @@ class PKPassParser(private val context: Context) : PassParser {
 
             // Determine pass category
             val category = when {
-                passJson.boardingPass != null -> PassCategory.BOARDING_PASS
-                passJson.eventTicket != null -> PassCategory.EVENT_TICKET
-                passJson.coupon != null -> PassCategory.COUPON
-                passJson.storeCard != null -> PassCategory.STORE_CARD
+                passJsonWithLocalizations.boardingPass != null -> PassCategory.BOARDING_PASS
+                passJsonWithLocalizations.eventTicket != null -> PassCategory.EVENT_TICKET
+                passJsonWithLocalizations.coupon != null -> PassCategory.COUPON
+                passJsonWithLocalizations.storeCard != null -> PassCategory.STORE_CARD
                 else -> PassCategory.GENERIC
             }
 
             // Convert to common Pass entity
             val pass = Pass(
-                id = passJson.serialNumber,
+                id = passJsonWithLocalizations.serialNumber,
                 format = PassFormat.PKPASS,
-                organizationName = passJson.organizationName,
-                description = passJson.description,
+                organizationName = passJsonWithLocalizations.organizationName,
+                description = passJsonWithLocalizations.description,
                 iconPath = iconPath,
                 logoPath = logoPath,
                 stripPath = stripPath,
                 backgroundPath = backgroundPath,
-                foregroundColor = normalizeColor(passJson.foregroundColor),
-                backgroundColor = normalizeColor(passJson.backgroundColor),
-                labelColor = normalizeColor(passJson.labelColor),
+                foregroundColor = normalizeColor(passJsonWithLocalizations.foregroundColor),
+                backgroundColor = normalizeColor(passJsonWithLocalizations.backgroundColor),
+                labelColor = normalizeColor(passJsonWithLocalizations.labelColor),
                 assetsDirectory = passDir.absolutePath,
-                rawData = gson.toJson(passJson),
+                rawData = gson.toJson(passJsonWithLocalizations),
                 importedDate = System.currentTimeMillis(),
                 category = category,
             )
 
-            ParseResult(pass, gson.toJson(passJson))
+            ParseResult(pass, gson.toJson(passJsonWithLocalizations))
         } catch (e: Exception) {
             e.printStackTrace()
             null

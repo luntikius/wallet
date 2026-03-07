@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.data.model.PassCategory
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.getPassData
 import com.luntikius.wallet.designsystem.components.branding.AppLogo
@@ -36,6 +37,7 @@ import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgr
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
+import com.luntikius.wallet.ui.components.pass.pkpass.ticket.TicketCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import com.luntikius.wallet.ui.viewmodel.PreviewStatus
 
@@ -82,7 +84,10 @@ fun PassPreviewScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth(0.9f)
-                            .widthIn(max = 600.dp)
+                            .widthIn(
+                                min = com.luntikius.wallet.designsystem.theme.Dimensions.passCardMinWidth,
+                                max = com.luntikius.wallet.designsystem.theme.Dimensions.passCardMaxWidth,
+                            )
                             .padding(vertical = MaterialTheme.spacing.extraLarge),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -113,7 +118,13 @@ fun PassPreviewScreen(
                         ) {
                             when (passData) {
                                 is PassData.PKPass -> {
-                                    PassCardFront(pass = pass, pkPassJson = passData.pkPassJson)
+                                    when (pass.category) {
+                                        PassCategory.EVENT_TICKET -> TicketCardFront(
+                                            pass = pass,
+                                            pkPassJson = passData.pkPassJson,
+                                        )
+                                        else -> PassCardFront(pass = pass, pkPassJson = passData.pkPassJson)
+                                    }
                                 }
 
                                 is PassData.Custom -> {
