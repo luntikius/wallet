@@ -67,6 +67,22 @@ import kotlin.math.abs
 import kotlinx.coroutines.launch
 
 /**
+ * Holds card dimension calculation data for pass card rendering.
+ */
+private data class CardDimensions(
+    val density: androidx.compose.ui.unit.Density,
+    val screenHeightPx: Float,
+    val constrainedCardWidthPx: Float,
+    val constrainedCardWidthFraction: Float,
+)
+
+/**
+ * Maximum height percentage that a card can occupy in the available space.
+ * Value is a fraction (0.0-1.0) of the available screen height (excluding button area).
+ */
+private const val CARD_MAX_HEIGHT_FRACTION = 0.85f
+
+/**
  * Overlay that animates a pass card expanding from its tile position to full screen.
  *
  * Features:
@@ -92,6 +108,7 @@ fun PassCardExpansion(
         var pass by remember { mutableStateOf<Pass?>(null) }
         var passData by remember { mutableStateOf<PassData?>(null) }
         var isDismissing by remember { mutableStateOf(false) }
+        var finalCardWidthPx by remember { mutableFloatStateOf(0f) }
         val refreshStatus by viewModel.refreshStatus.collectAsState()
 
         // Animation states
@@ -118,76 +135,110 @@ fun PassCardExpansion(
         val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
         val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
 
+        // Calculate button area height (flip button + spacer + close button + padding)
+        val buttonAreaHeightPx = with(density) {
+            (40.dp + MaterialTheme.spacing.medium + 48.dp + MaterialTheme.spacing.extraLarge).toPx()
+        }
+
+        // Available height for card (excluding button area)
+        val availableHeightPx = screenHeight - buttonAreaHeightPx
+
+        // Calculate constrained card dimensions
+        val baseCardWidthPx = screenWidth * 0.9f
+        val minWidthPx = with(density) { com.luntikius.wallet.designsystem.theme.Dimensions.passCardMinWidth.toPx() }
+        val maxWidthPx = with(density) { com.luntikius.wallet.designsystem.theme.Dimensions.passCardMaxWidth.toPx() }
+        val constrainedCardWidthPx = baseCardWidthPx.coerceIn(minWidthPx, maxWidthPx)
+        val constrainedCardWidthFraction = constrainedCardWidthPx / screenWidth
+
         val coroutineScope = rememberCoroutineScope()
 
         // Pull-to-refresh state
         val pullToRefreshState = rememberPullToRefreshState()
 
-        // Load pass data
+        // Load pass data and calculate final card width with height constraints
         LaunchedEffect(passId) {
             pass = viewModel.getPassById(passId)
             pass?.let { p ->
                 passData = p.getPassData()
+
+                // Calculate final width accounting for height constraints
+                val aspectRatio = when (passData) {
+                    is PassData.PKPass -> 0.7f
+                    is PassData.Custom -> 1.25f
+                    else -> 0.7f
+                }
+
+                val calculatedHeightPx = constrainedCardWidthPx / aspectRatio
+                val maxHeightPx = availableHeightPx * CARD_MAX_HEIGHT_FRACTION
+
+                finalCardWidthPx = if (calculatedHeightPx > maxHeightPx) {
+                    maxHeightPx * aspectRatio
+                } else {
+                    constrainedCardWidthPx
+                }
             }
         }
 
         // Two-phase expansion animation on first composition
-        LaunchedEffect(Unit) {
-            if (tilePosition != null) {
-                // Calculate scale and position
-                val targetCardWidth = screenWidth * 0.9f
-                val tileScale = tilePosition.width.toFloat() / targetCardWidth
-                val targetCenterX = screenWidth / 2f
-                val targetCenterY = screenHeight / 2f
-                val tileCenterX = tilePosition.left + tilePosition.width / 2f
-                val tileCenterY = tilePosition.top + tilePosition.height / 2f
+        LaunchedEffect(finalCardWidthPx) {
+            if (finalCardWidthPx > 0f) {
+                if (tilePosition != null) {
+                    // Calculate scale and position
+                    val targetCardWidth = finalCardWidthPx
+                    val tileScale = tilePosition.width.toFloat() / targetCardWidth
+                    val targetCenterX = screenWidth / 2f
+                    val targetCenterY = screenHeight / 2f
+                    val tileCenterX = tilePosition.left + tilePosition.width / 2f
+                    val tileCenterY = tilePosition.top + tilePosition.height / 2f
 
-                // PHASE 1: Fade in card at tile size (100ms)
-                // Set initial state: card at tile position, scaled to tile size, invisible
-                scale.snapTo(tileScale)
-                offsetX.snapTo(tileCenterX - targetCenterX)
-                offsetY.snapTo(tileCenterY - targetCenterY)
-                contentAlpha.snapTo(0f)
-                scrimAlpha.snapTo(0f)
-                buttonSlide.snapTo(1f)
+                    // PHASE 1: Fade in card at tile size (100ms)
+                    // Set initial state: card at tile position, scaled to tile size, invisible
+                    scale.snapTo(tileScale)
+                    offsetX.snapTo(tileCenterX - targetCenterX)
+                    offsetY.snapTo(tileCenterY - targetCenterY)
+                    contentAlpha.snapTo(0f)
+                    scrimAlpha.snapTo(0f)
+                    buttonSlide.snapTo(1f)
 
-                // Fade in the full card content at tile size
-                launch {
-                    contentAlpha.animateTo(1f, AnimationTokens.phaseOneCardFadeIn)
-                }
+                    // Fade in the full card content at tile size
+                    launch {
+                        contentAlpha.animateTo(1f, AnimationTokens.phaseOneCardFadeIn)
+                    }
 
-                // Wait for phase 1 to complete, then delay before phase 2
-                kotlinx.coroutines.delay(
-                    (AnimationTokens.PHASE_1_DURATION_MS + AnimationTokens.INTER_PHASE_DELAY_MS).toLong(),
-                )
+                    // Wait for phase 1 to complete, then delay before phase 2
+                    kotlinx.coroutines.delay(
+                        (AnimationTokens.PHASE_1_DURATION_MS + AnimationTokens.INTER_PHASE_DELAY_MS).toLong(),
+                    )
 
-                // Hide tile before Phase 2 starts
-                onTileVisibilityChange(false)
+                    // Hide tile before Phase 2 starts
+                    onTileVisibilityChange(false)
 
-                // PHASE 2: Scale up, add scrim, show buttons (300ms)
-                launch {
-                    scale.animateTo(1f, AnimationTokens.phaseTwoScale)
+                    // PHASE 2: Scale up, add scrim, show buttons (300ms)
+                    launch {
+                        scale.animateTo(1f, AnimationTokens.phaseTwoScale)
+                    }
+                    launch {
+                        offsetX.animateTo(0f, AnimationTokens.phaseTwoScale)
+                    }
+                    launch {
+                        // Animate to position that centers card in available space
+                        offsetY.animateTo(-buttonAreaHeightPx / 2f, AnimationTokens.phaseTwoScale)
+                    }
+                    launch {
+                        scrimAlpha.animateTo(0.6f, AnimationTokens.phaseTwoScrim)
+                    }
+                    launch {
+                        buttonSlide.animateTo(0f, AnimationTokens.phaseTwoButtons)
+                    }
+                } else {
+                    // No tile position, just fade in instantly
+                    scale.snapTo(1f)
+                    offsetX.snapTo(0f)
+                    offsetY.snapTo(-buttonAreaHeightPx / 2f)
+                    scrimAlpha.snapTo(0.6f)
+                    buttonSlide.snapTo(0f)
+                    contentAlpha.snapTo(1f)
                 }
-                launch {
-                    offsetX.animateTo(0f, AnimationTokens.phaseTwoScale)
-                }
-                launch {
-                    offsetY.animateTo(0f, AnimationTokens.phaseTwoScale)
-                }
-                launch {
-                    scrimAlpha.animateTo(0.6f, AnimationTokens.phaseTwoScrim)
-                }
-                launch {
-                    buttonSlide.animateTo(0f, AnimationTokens.phaseTwoButtons)
-                }
-            } else {
-                // No tile position, just fade in instantly
-                scale.snapTo(1f)
-                offsetX.snapTo(0f)
-                offsetY.snapTo(0f)
-                scrimAlpha.snapTo(0.6f)
-                buttonSlide.snapTo(0f)
-                contentAlpha.snapTo(1f)
             }
         }
 
@@ -198,7 +249,7 @@ fun PassCardExpansion(
 
             coroutineScope.launch {
                 if (tilePosition != null) {
-                    val targetCardWidth = screenWidth * 0.9f
+                    val targetCardWidth = finalCardWidthPx
 
                     val targetScale = tilePosition.width.toFloat() / targetCardWidth
                     val targetCenterX = screenWidth / 2f
@@ -350,7 +401,12 @@ fun PassCardExpansion(
                                     passData = data,
                                     rotation = rotation,
                                     contentAlpha = contentAlpha.value,
-                                    density = density,
+                                    dimensions = CardDimensions(
+                                        density = density,
+                                        screenHeightPx = availableHeightPx,
+                                        constrainedCardWidthPx = constrainedCardWidthPx,
+                                        constrainedCardWidthFraction = constrainedCardWidthFraction,
+                                    ),
                                     viewModel = viewModel,
                                     onDismiss = { dismiss() },
                                 )
@@ -361,6 +417,7 @@ fun PassCardExpansion(
                         CardControls(
                             buttonSlide = buttonSlide.value,
                             density = density,
+                            constrainedCardWidthFraction = constrainedCardWidthFraction,
                             onFlip = { targetRotation += 180f },
                             onClose = { dismiss() },
                             modifier = Modifier.align(Alignment.BottomCenter),
@@ -381,7 +438,7 @@ private fun FlippableCardContent(
     passData: PassData,
     rotation: Float,
     contentAlpha: Float,
-    density: androidx.compose.ui.unit.Density,
+    dimensions: CardDimensions,
     viewModel: PassViewModel,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -391,9 +448,24 @@ private fun FlippableCardContent(
         is PassData.Custom -> 1.25f
     }
 
+    // Calculate height based on constrained width and aspect ratio
+    val calculatedHeightPx = dimensions.constrainedCardWidthPx / aspectRatio
+
+    // Max height is determined by CARD_MAX_HEIGHT_FRACTION of available screen height
+    val maxHeightPx = dimensions.screenHeightPx * CARD_MAX_HEIGHT_FRACTION
+
+    // If calculated height exceeds max, adjust width to fit while maintaining aspect ratio
+    val finalWidthPx = if (calculatedHeightPx > maxHeightPx) {
+        maxHeightPx * aspectRatio
+    } else {
+        dimensions.constrainedCardWidthPx
+    }
+
+    val finalWidthDp = with(dimensions.density) { finalWidthPx.toDp() }
+
     Box(
         modifier = modifier
-            .fillMaxWidth(0.9f)
+            .width(finalWidthDp)
             .aspectRatio(aspectRatio),
     ) {
         // Flippable card with swipe gesture
@@ -402,7 +474,7 @@ private fun FlippableCardContent(
                 .fillMaxSize()
                 .graphicsLayer {
                     rotationY = rotation
-                    cameraDistance = 12f * density.density
+                    cameraDistance = 12f * dimensions.density.density
                 }
                 .clickable(enabled = false) { /* Prevent dismissing when clicking card */ },
             shape = RoundedCornerShape(16.dp),
@@ -482,13 +554,14 @@ private fun FlippableCardContent(
 private fun CardControls(
     buttonSlide: Float,
     density: androidx.compose.ui.unit.Density,
+    constrainedCardWidthFraction: Float,
     onFlip: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
-            .fillMaxWidth(0.9f)
+            .fillMaxWidth(constrainedCardWidthFraction)
             .graphicsLayer {
                 translationY = buttonSlide * 200f * density.density
                 alpha = 1f - buttonSlide

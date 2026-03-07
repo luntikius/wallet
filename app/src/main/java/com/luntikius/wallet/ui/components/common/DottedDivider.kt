@@ -34,7 +34,7 @@ fun DottedDivider(
     ) {
         val canvasWidth = size.width
         if (canvasWidth <= 0f || dotRadius <= 0f) return@Canvas
-        
+
         val targetSpacing = dotRadius * 4f
         val numDots = max(2, (canvasWidth / targetSpacing).toInt() + 1)
         val actualSpacing = canvasWidth / (numDots - 1)

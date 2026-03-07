@@ -84,7 +84,10 @@ fun PassPreviewScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth(0.9f)
-                            .widthIn(max = 600.dp)
+                            .widthIn(
+                                min = com.luntikius.wallet.designsystem.theme.Dimensions.passCardMinWidth,
+                                max = com.luntikius.wallet.designsystem.theme.Dimensions.passCardMaxWidth,
+                            )
                             .padding(vertical = MaterialTheme.spacing.extraLarge),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {

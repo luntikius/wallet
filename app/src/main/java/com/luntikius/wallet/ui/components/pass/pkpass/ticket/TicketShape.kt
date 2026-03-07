@@ -17,10 +17,7 @@ import androidx.compose.ui.unit.dp
  * @param cornerRadius Radius for the four corners
  * @param notchPosition Position of the notches as a percentage of height (0.0 to 1.0)
  */
-class TicketShape(
-    private val cornerRadius: Dp = 16.dp,
-    private val notchPosition: Float = 0.6f,
-) : Shape {
+class TicketShape(private val cornerRadius: Dp = 16.dp, private val notchPosition: Float = 0.6f) : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val cornerRadiusPx = with(density) { cornerRadius.toPx() }
         val notchY = size.height * notchPosition
@@ -50,7 +47,6 @@ class TicketShape(
                     sweepAngleDegrees = 90f,
                     forceMoveTo = false,
                 )
-
 
                 lineTo(size.width, notchY - cornerRadiusPx * 2)
 
@@ -133,7 +129,7 @@ class TicketShape(
                 )
 
                 close()
-            }
+            },
         )
     }
 }

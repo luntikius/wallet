@@ -194,7 +194,7 @@ private fun TicketHeaderRow(
                     fields.forEach { field ->
                         Column(
                             horizontalAlignment = Alignment.End,
-                            verticalArrangement = Arrangement.Center
+                            verticalArrangement = Arrangement.Center,
                         ) {
                             val localizedLabel = rememberLocalizedValue(field.label, pkPassJson)
                             val localizedValue = rememberLocalizedValue(
