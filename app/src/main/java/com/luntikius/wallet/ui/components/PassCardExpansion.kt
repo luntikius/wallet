@@ -61,6 +61,7 @@ import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardBack
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardBack
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
+import com.luntikius.wallet.ui.components.pass.pkpass.ticket.TicketCardFront
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import kotlin.math.abs
 import kotlinx.coroutines.launch
@@ -424,10 +425,17 @@ private fun FlippableCardContent(
                     // Front side
                     when (passData) {
                         is PassData.PKPass -> {
-                            PassCardFront(
-                                pass = pass,
-                                pkPassJson = passData.pkPassJson,
-                            )
+                            if (pass.category == com.luntikius.wallet.data.model.PassCategory.EVENT_TICKET) {
+                                TicketCardFront(
+                                    pass = pass,
+                                    pkPassJson = passData.pkPassJson,
+                                )
+                            } else {
+                                PassCardFront(
+                                    pass = pass,
+                                    pkPassJson = passData.pkPassJson,
+                                )
+                            }
                         }
                         is PassData.Custom -> {
                             CustomPassCardFront(

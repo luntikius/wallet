@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -39,11 +40,13 @@ fun BarcodeDisplay(
     modifier: Modifier = Modifier,
     altText: String? = null,
 ) {
+    val padding = MaterialTheme.spacing.mediumLarge
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = MaterialTheme.spacing.mediumLarge),
+            .heightIn(max = (if (barcodeFormat.isQRCode) 200.dp else 150.dp) + padding * 2)
+            .padding(all = MaterialTheme.spacing.mediumLarge),
     ) {
         val barcodeBitmap = remember(barcodeValue, barcodeFormat) {
             generateBarcodeBitmap(
@@ -56,9 +59,7 @@ fun BarcodeDisplay(
 
         barcodeBitmap?.let { bitmap ->
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(if (barcodeFormat.isQRCode) 180.dp else 130.dp),
+                modifier = Modifier.weight(1f),
                 color = Color.White,
                 shape = RoundedCornerShape(12.dp),
             ) {
@@ -73,9 +74,7 @@ fun BarcodeDisplay(
             }
         } ?: run {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(if (barcodeFormat.isQRCode) 180.dp else 130.dp)
+                modifier = Modifier.weight(1f)
                     .background(
                         color = textColor.copy(alpha = 0.2f),
                         shape = RoundedCornerShape(12.dp),

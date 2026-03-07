@@ -39,6 +39,7 @@ import com.luntikius.wallet.ui.components.common.EmptyStateMessage
 import com.luntikius.wallet.ui.components.common.PassDeleteDialog
 import com.luntikius.wallet.ui.components.pass.PassCardBackHeader
 import com.luntikius.wallet.ui.utils.rememberCardColors
+import com.luntikius.wallet.ui.utils.rememberLocalizedValue
 import com.luntikius.wallet.ui.utils.sharePassFile
 import com.luntikius.wallet.ui.viewmodel.PassViewModel
 import kotlinx.coroutines.launch
@@ -184,9 +185,11 @@ fun PassCardBack(
                         items(fields) { field ->
                             val content = field.value?.toString() ?: ""
                             if (content.isNotBlank()) {
+                                val localizedLabel = rememberLocalizedValue(field.label, pkPassJson)
+                                val localizedValue = rememberLocalizedValue(content, pkPassJson)
                                 InfoBlock(
-                                    title = field.label ?: "",
-                                    htmlContent = content,
+                                    title = localizedLabel,
+                                    htmlContent = localizedValue,
                                     textColor = textColor,
                                 )
                                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
