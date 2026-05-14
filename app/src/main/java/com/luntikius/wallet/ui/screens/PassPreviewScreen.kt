@@ -38,7 +38,7 @@ import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.ticket.TicketCardFront
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
 import com.luntikius.wallet.ui.viewmodel.PreviewStatus
 
 /**
@@ -47,7 +47,7 @@ import com.luntikius.wallet.ui.viewmodel.PreviewStatus
  */
 @Composable
 fun PassPreviewScreen(
-    viewModel: PassViewModel,
+    viewModel: PassPreviewViewModel,
     onAdd: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,

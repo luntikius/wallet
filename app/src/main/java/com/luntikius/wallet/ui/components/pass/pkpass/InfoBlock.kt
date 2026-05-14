@@ -12,21 +12,25 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.designsystem.foundation.color.ColorTokens
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.designsystem.foundation.typography.textStyles
 import com.luntikius.wallet.ui.components.HtmlText
 
 /**
  * Info block for displaying back field with HTML content.
+ *
+ * These blocks intentionally use a fixed white surface to replicate the "paper card on
+ * coloured pass background" appearance of Apple Wallet. Theme surfaces are NOT used here
+ * because the containing card already provides the coloured background.
  */
 @Composable
-internal fun InfoBlock(title: String, htmlContent: String, textColor: Color, modifier: Modifier = Modifier) {
+internal fun InfoBlock(title: String, htmlContent: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = Color.White,
+        color = ColorTokens.pkPassBackSurface,
         shape = RoundedCornerShape(12.dp),
     ) {
         Column(
@@ -38,7 +42,7 @@ internal fun InfoBlock(title: String, htmlContent: String, textColor: Color, mod
                     Text(
                         text = title,
                         style = MaterialTheme.textStyles.labelSecondary,
-                        color = Color.Black,
+                        color = ColorTokens.pkPassBackContent,
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
@@ -51,7 +55,8 @@ internal fun InfoBlock(title: String, htmlContent: String, textColor: Color, mod
                 HtmlText(
                     html = htmlContent,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black,
+                    color = ColorTokens.pkPassBackContent,
+                    linkColor = ColorTokens.pkPassBackLink,
                 )
             }
         }

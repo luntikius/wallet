@@ -2,6 +2,7 @@ package com.luntikius.wallet.ui.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -30,17 +31,6 @@ import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 
 @Composable
 fun PassGridSkeleton(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "skeleton")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "skeleton_alpha",
-    )
-
     LazyVerticalGrid(
         columns = GridCells.Adaptive(160.dp),
         contentPadding = PaddingValues(
@@ -53,14 +43,25 @@ fun PassGridSkeleton(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
         modifier = modifier.fillMaxSize(),
     ) {
-        items(6) {
-            SkeletonCard(alpha = alpha)
+        items(6) { index ->
+            SkeletonCard(delayMillis = index * 120)
         }
     }
 }
 
 @Composable
-private fun SkeletonCard(alpha: Float, modifier: Modifier = Modifier) {
+private fun SkeletonCard(delayMillis: Int, modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "skeleton_$delayMillis")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+            initialStartOffset = StartOffset(delayMillis),
+        ),
+        label = "skeleton_alpha_$delayMillis",
+    )
     Box(
         modifier = modifier
             .fillMaxWidth()

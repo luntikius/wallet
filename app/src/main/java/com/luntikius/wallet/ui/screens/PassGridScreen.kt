@@ -64,7 +64,7 @@ import com.luntikius.wallet.ui.components.pass.PassTile
 import com.luntikius.wallet.ui.components.pass.pkpass.ticket.TicketGridTile
 import com.luntikius.wallet.ui.navigation.Routes
 import com.luntikius.wallet.ui.viewmodel.ImportStatus
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
 
@@ -74,10 +74,11 @@ import sh.calvin.reorderable.rememberReorderableLazyGridState
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun PassGridScreen(
-    viewModel: PassViewModel,
+    viewModel: PassGridViewModel,
     navController: NavHostController,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    onPreviewPass: (android.net.Uri) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val passes by viewModel.passes.collectAsState()
@@ -139,7 +140,7 @@ fun PassGridScreen(
         contract = ActivityResultContracts.GetContent(),
     ) { uri ->
         uri?.let {
-            viewModel.previewPass(it)
+            onPreviewPass(it)
             navController.navigate(Routes.PREVIEW)
         }
     }

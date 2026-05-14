@@ -16,14 +16,14 @@ import com.luntikius.wallet.ui.components.common.EmptyStateMessage
 import com.luntikius.wallet.ui.components.common.PassDeleteDialog
 import com.luntikius.wallet.ui.components.pass.PassCardBackHeader
 import com.luntikius.wallet.ui.utils.rememberCardColors
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 
 /**
  * Back side of a custom pass card.
  * Shows auto-refresh toggle (always disabled) and empty state.
  */
 @Composable
-fun CustomPassCardBack(pass: Pass, viewModel: PassViewModel, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+fun CustomPassCardBack(pass: Pass, viewModel: PassGridViewModel, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     val cardColors = rememberCardColors(pass)
     val backgroundColor = cardColors.background
     val textColor = cardColors.text

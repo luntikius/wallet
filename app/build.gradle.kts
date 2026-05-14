@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktlint)
 }
@@ -115,8 +116,12 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // Gson
-    implementation(libs.gson)
+    // Koin
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+
+    // kotlinx.serialization
+    implementation(libs.kotlinx.serialization.json)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -138,7 +143,6 @@ dependencies {
 
     // Retrofit (HTTP client)
     implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
 
@@ -149,6 +153,8 @@ dependencies {
     implementation(libs.mlkit.barcode)
 
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

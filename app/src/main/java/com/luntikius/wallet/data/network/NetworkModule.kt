@@ -1,25 +1,13 @@
 package com.luntikius.wallet.data.network
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 
 /**
  * Singleton providing network-related dependencies.
- * Provides OkHttpClient and Gson instances for HTTP operations.
  */
 object NetworkModule {
-
-    /**
-     * Provides a configured Gson instance.
-     */
-    val gson: Gson by lazy {
-        GsonBuilder()
-            .setLenient()
-            .create()
-    }
 
     /**
      * Provides a configured OkHttpClient with:

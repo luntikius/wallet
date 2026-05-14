@@ -1,0 +1,96 @@
+package com.luntikius.wallet.ui.viewmodel
+
+import android.net.Uri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.repository.PassRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+class PassPreviewViewModel(
+    private val passRepository: PassRepository,
+    private val importStatusHolder: ImportStatusHolder,
+) : ViewModel() {
+
+    private val _previewPass = MutableStateFlow<Pass?>(null)
+    val previewPass: StateFlow<Pass?> = _previewPass.asStateFlow()
+
+    private val _previewStatus = MutableStateFlow<PreviewStatus>(PreviewStatus.Idle)
+    val previewStatus: StateFlow<PreviewStatus> = _previewStatus.asStateFlow()
+
+    fun previewPass(uri: Uri) {
+        viewModelScope.launch {
+            _previewPass.value?.let { existingPass ->
+                passRepository.cleanupPreviewAssets(existingPass)
+            }
+
+            _previewStatus.value = PreviewStatus.Loading
+            val result = passRepository.parsePassForPreview(uri)
+
+            if (result.isSuccess) {
+                _previewPass.value = result.getOrThrow()
+                _previewStatus.value = PreviewStatus.Ready
+            } else {
+                _previewPass.value = null
+                _previewStatus.value = PreviewStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to load pass",
+                )
+            }
+        }
+    }
+
+    fun confirmAddPass() {
+        viewModelScope.launch {
+            val pass = _previewPass.value ?: return@launch
+
+            _previewStatus.value = PreviewStatus.Loading
+            val result = passRepository.finalizePassImport(pass)
+
+            if (result.isSuccess) {
+                _previewPass.value = null
+                _previewStatus.value = PreviewStatus.Idle
+                importStatusHolder.setImportStatus(ImportStatus.Success)
+                kotlinx.coroutines.delay(2000)
+                importStatusHolder.setImportStatus(ImportStatus.Idle)
+            } else {
+                _previewStatus.value = PreviewStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to add pass",
+                )
+            }
+        }
+    }
+
+    fun cancelPreview() {
+        viewModelScope.launch {
+            _previewPass.value?.let { pass ->
+                passRepository.cleanupPreviewAssets(pass)
+            }
+            _previewPass.value = null
+            _previewStatus.value = PreviewStatus.Idle
+        }
+    }
+
+    fun downloadAndPreviewPass(url: String) {
+        viewModelScope.launch {
+            _previewPass.value?.let { existingPass ->
+                passRepository.cleanupPreviewAssets(existingPass)
+            }
+
+            _previewStatus.value = PreviewStatus.Loading
+            val result = passRepository.downloadAndPreviewPass(url)
+
+            if (result.isSuccess) {
+                _previewPass.value = result.getOrThrow()
+                _previewStatus.value = PreviewStatus.Ready
+            } else {
+                _previewPass.value = null
+                _previewStatus.value = PreviewStatus.Error(
+                    result.exceptionOrNull()?.message ?: "Failed to download pass",
+                )
+            }
+        }
+    }
+}

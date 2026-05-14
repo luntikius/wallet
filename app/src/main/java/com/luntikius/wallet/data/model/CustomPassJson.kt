@@ -1,9 +1,12 @@
 package com.luntikius.wallet.data.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * JSON structure for custom passes created from scanned barcodes.
  * Stored in Pass.rawData field when format is PassFormat.CUSTOM.
  */
+@Serializable
 data class CustomPassJson(
     /** Schema version for future migrations */
     val version: Int = 1,

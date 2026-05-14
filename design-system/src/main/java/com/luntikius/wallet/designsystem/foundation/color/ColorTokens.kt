@@ -110,4 +110,37 @@ object ColorTokens {
         @Composable
         @ReadOnlyComposable
         get() = MaterialTheme.colorScheme.scrim
+
+    /**
+     * Delete zone background while a pass is hovering over it.
+     */
+    val deleteZoneHoverBackground: Color = Color.Red
+
+    /**
+     * Delete zone background while idle.
+     */
+    val deleteZoneIdleBackground: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.surfaceVariant
+
+    /**
+     * Delete zone icon and text color.
+     */
+    val deleteZoneContent: Color = Color.White
+
+    /**
+     * Fixed surface used for PKPass back-side paper cards.
+     */
+    val pkPassBackSurface: Color = Color.White
+
+    /**
+     * Fixed text color used on PKPass back-side paper cards.
+     */
+    val pkPassBackContent: Color = Color.Black
+
+    /**
+     * Fixed link color used on PKPass back-side paper cards.
+     */
+    val pkPassBackLink: Color = Color(0xFF2196F3)
 }

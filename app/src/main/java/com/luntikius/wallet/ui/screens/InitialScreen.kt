@@ -2,15 +2,20 @@ package com.luntikius.wallet.ui.screens
 
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import com.luntikius.wallet.designsystem.components.branding.AppLogo
+import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
+import com.luntikius.wallet.designsystem.foundation.spacing.spacing
+import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
 
 /**
  * Initial loading screen that decides whether to navigate to grid or preview.
@@ -18,19 +23,22 @@ import com.luntikius.wallet.ui.viewmodel.PassViewModel
  */
 @Composable
 fun InitialScreen(
-    viewModel: PassViewModel,
+    viewModel: PassPreviewViewModel,
     intentUri: Uri?,
     onNavigateToGrid: () -> Unit,
     onNavigateToPreview: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
             .background(color = MaterialTheme.colorScheme.surface),
-        contentAlignment = Alignment.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        CircularProgressIndicator()
+        AppLogo(color = MaterialTheme.colorScheme.onSurface)
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.extraLarge))
+        WalletCircularProgressIndicator()
     }
 
     LaunchedEffect(Unit) {

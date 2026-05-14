@@ -10,6 +10,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.SocketTimeoutException
+import kotlinx.serialization.json.Json
 import retrofit2.Retrofit
 
 /**
@@ -17,6 +18,8 @@ import retrofit2.Retrofit
  * Handles dynamic Retrofit instance creation and API communication.
  */
 class PKPassUpdateService(private val context: Context, private val pkPassParser: PKPassParser) {
+
+    private val json = Json { ignoreUnknownKeys = true }
 
     /**
      * Result of a pass update operation.
@@ -50,7 +53,7 @@ class PKPassUpdateService(private val context: Context, private val pkPassParser
     suspend fun updatePass(pass: Pass): UpdateResult {
         return try {
             // Parse rawData JSON to extract web service info
-            val passJson = NetworkModule.gson.fromJson(pass.rawData, PKPassJson::class.java)
+            val passJson = json.decodeFromString<PKPassJson>(pass.rawData)
 
             // Check if pass has web service configured
             val webServiceURL = passJson.webServiceURL
@@ -105,10 +108,7 @@ class PKPassUpdateService(private val context: Context, private val pkPassParser
 
                             if (parseResult != null) {
                                 // Extract PKPassJson from rawData
-                                val updatedPassJson = NetworkModule.gson.fromJson(
-                                    parseResult.pass.rawData,
-                                    PKPassJson::class.java,
-                                )
+                                val updatedPassJson = json.decodeFromString<PKPassJson>(parseResult.pass.rawData)
 
                                 UpdateResult.Updated(updatedPassJson)
                             } else {

@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.designsystem.foundation.color.ensureContrast
 import com.luntikius.wallet.designsystem.foundation.color.parseColor
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.common.DottedDivider
@@ -58,8 +60,16 @@ fun TicketGridTile(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
     val backgroundColor = pass.backgroundColor?.let { parseColor(it) }
         ?: MaterialTheme.colorScheme.surfaceVariant
+    val textColor = ensureContrast(
+        foregroundColor = pass.foregroundColor?.let { parseColor(it) },
+        backgroundColor = backgroundColor,
+        isDarkTheme = isDarkTheme,
+        lightFallback = MaterialTheme.colorScheme.onSurface,
+        darkFallback = MaterialTheme.colorScheme.onSurface,
+    )
     var currentPosition by remember { mutableStateOf<IntRect?>(null) }
 
     with(sharedTransitionScope) {
@@ -154,7 +164,7 @@ fun TicketGridTile(
                         text = stripHtml(pass.organizationName),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = textColor,
                         textAlign = TextAlign.Center,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
