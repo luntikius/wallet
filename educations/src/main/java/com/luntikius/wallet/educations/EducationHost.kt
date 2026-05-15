@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -94,7 +93,6 @@ fun EducationHost(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .testTag("education_scrim")
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = { onFinish() })
                 },
