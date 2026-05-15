@@ -7,7 +7,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,7 +65,7 @@ import com.luntikius.wallet.ui.components.pass.custom.CustomPassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardBack
 import com.luntikius.wallet.ui.components.pass.pkpass.PassCardFront
 import com.luntikius.wallet.ui.components.pass.pkpass.ticket.TicketCardFront
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import kotlin.math.abs
 import kotlinx.coroutines.launch
 
@@ -97,7 +100,7 @@ private const val CARD_MAX_HEIGHT_FRACTION = 0.85f
 fun PassCardExpansion(
     passId: String,
     tilePosition: IntRect?,
-    viewModel: PassViewModel,
+    viewModel: PassGridViewModel,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     onTileVisibilityChange: (visible: Boolean) -> Unit = {},
@@ -367,6 +370,13 @@ fun PassCardExpansion(
                         contentAlignment = Alignment.Center,
                     ) {
                         passData?.let { data ->
+                            // rememberScrollableState { 0f } consumes zero scroll delta, so all
+                            // vertical drag events are forwarded to the parent PullToRefreshBox
+                            // via the nested-scroll chain. Without this, non-scrollable front-side
+                            // cards (plain Columns) dispatch no nested-scroll events at all and
+                            // PullToRefreshBox never sees the gesture. The back side is unaffected
+                            // because LazyColumn already participates in nested scrolling.
+                            val noOpScrollState = rememberScrollableState { 0f }
                             Box(
                                 modifier = Modifier
                                     .graphicsLayer {
@@ -375,6 +385,10 @@ fun PassCardExpansion(
                                         translationX = offsetX.value
                                         translationY = offsetY.value
                                     }
+                                    .scrollable(
+                                        orientation = Orientation.Vertical,
+                                        state = noOpScrollState,
+                                    )
                                     .pointerInput(targetRotation) {
                                         var dragOffset = 0f
                                         detectHorizontalDragGestures(
@@ -439,7 +453,7 @@ private fun FlippableCardContent(
     rotation: Float,
     contentAlpha: Float,
     dimensions: CardDimensions,
-    viewModel: PassViewModel,
+    viewModel: PassGridViewModel,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

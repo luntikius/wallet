@@ -40,7 +40,8 @@ import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCard
 import com.luntikius.wallet.ui.components.picker.IconPicker
 import com.luntikius.wallet.ui.utils.IconMapper
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import com.luntikius.wallet.ui.viewmodel.CustomPassBuilderViewModel
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Screen for building custom passes from scanned barcodes.
@@ -50,10 +51,10 @@ import com.luntikius.wallet.ui.viewmodel.PassViewModel
 fun CustomPassBuilderScreen(
     barcodeValue: String,
     barcodeFormat: String,
-    viewModel: PassViewModel,
     onCancel: () -> Unit,
     onPassCreated: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: CustomPassBuilderViewModel = koinViewModel(),
 ) {
     var cardName by remember { mutableStateOf("") }
     var selectedIconIndex by remember { mutableStateOf(0) }

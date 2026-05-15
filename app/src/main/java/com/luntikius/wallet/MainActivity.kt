@@ -21,21 +21,24 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
-import com.luntikius.wallet.data.local.PassDatabase
-import com.luntikius.wallet.data.parser.ParserRegistry
-import com.luntikius.wallet.data.repository.PassRepositoryImpl
 import com.luntikius.wallet.data.worker.PassRefreshWorker
 import com.luntikius.wallet.designsystem.theme.WalletTheme
 import com.luntikius.wallet.ui.navigation.PassNavGraph
 import com.luntikius.wallet.ui.navigation.Routes
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import com.luntikius.wallet.ui.viewmodel.EducationViewModel
+import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
+import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.launch
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var viewModel: PassViewModel
+    private val gridViewModel: PassGridViewModel by viewModel()
+    private val previewViewModel: PassPreviewViewModel by viewModel()
+    private val educationViewModel: EducationViewModel by viewModel()
+
     private var intentUri by mutableStateOf<Uri?>(null)
     private var newIntentUri by mutableStateOf<Uri?>(null)
 
@@ -55,16 +58,6 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge()
-
-        // Initialize database, repository, and ViewModel
-        val database = PassDatabase.getInstance(applicationContext)
-        val parserRegistry = ParserRegistry(applicationContext)
-        val repository = PassRepositoryImpl(
-            passDao = database.passDao(),
-            parserRegistry = parserRegistry,
-            context = applicationContext,
-        )
-        viewModel = PassViewModel(repository)
 
         // Clean up temporary preview files on startup
         lifecycleScope.launch {
@@ -88,7 +81,9 @@ class MainActivity : ComponentActivity() {
 
                 PassNavGraph(
                     navController = navController,
-                    viewModel = viewModel,
+                    gridViewModel = gridViewModel,
+                    previewViewModel = previewViewModel,
+                    educationViewModel = educationViewModel,
                     intentUri = intentUri,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -96,7 +91,8 @@ class MainActivity : ComponentActivity() {
                 // Handle new intents while app is running
                 LaunchedEffect(newIntentUri) {
                     newIntentUri?.let { uri ->
-                        viewModel.previewPass(uri)
+                        educationViewModel.startAppEntry(isExternalImport = true)
+                        previewViewModel.previewPass(uri)
                         navController.navigate(Routes.PREVIEW) {
                             popUpTo(Routes.GRID) { inclusive = false }
                             launchSingleTop = true

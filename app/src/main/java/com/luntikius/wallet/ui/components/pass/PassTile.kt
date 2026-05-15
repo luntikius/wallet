@@ -85,9 +85,7 @@ fun PassTile(
     // Track this tile's position
     var currentPosition by remember { mutableStateOf<IntRect?>(null) }
 
-    // Check pass type for gradient
     val passData = remember(pass) { pass.getPassData() }
-    val isCustomPass = passData is PassData.Custom
 
     with(sharedTransitionScope) {
         Card(
@@ -114,7 +112,7 @@ fun PassTile(
                     animatedVisibilityScope = animatedVisibilityScope,
                 ),
             colors = CardDefaults.cardColors(
-                containerColor = if (isCustomPass) Color.Transparent else backgroundColor,
+                containerColor = if (passData is PassData.Custom) Color.Transparent else backgroundColor,
             ),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = if (isDragging) {
@@ -130,8 +128,8 @@ fun PassTile(
                 onClick()
             },
         ) {
-            // Create gradient for custom passes
-            val gradient = if (isCustomPass) {
+            // Gradient only for custom passes; PKPass tiles use their issuer-defined solid colour
+            val gradient = if (passData is PassData.Custom) {
                 createCustomPassGradient(backgroundColor, foregroundColor)
             } else {
                 null

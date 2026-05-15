@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,6 +56,10 @@ import com.luntikius.wallet.designsystem.components.feedback.WalletSnackbar
 import com.luntikius.wallet.designsystem.components.menu.WalletDropdownMenu
 import com.luntikius.wallet.designsystem.components.navigation.WalletTopAppBar
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
+import com.luntikius.wallet.education.PassGridEducationTarget
+import com.luntikius.wallet.educations.EducationHost
+import com.luntikius.wallet.educations.EducationTargetProvider
+import com.luntikius.wallet.educations.educationTarget
 import com.luntikius.wallet.ui.components.DeleteZone
 import com.luntikius.wallet.ui.components.PassCardExpansion
 import com.luntikius.wallet.ui.components.PassGridSkeleton
@@ -63,8 +67,9 @@ import com.luntikius.wallet.ui.components.RefreshLoadingSnackbar
 import com.luntikius.wallet.ui.components.pass.PassTile
 import com.luntikius.wallet.ui.components.pass.pkpass.ticket.TicketGridTile
 import com.luntikius.wallet.ui.navigation.Routes
+import com.luntikius.wallet.ui.viewmodel.EducationViewModel
 import com.luntikius.wallet.ui.viewmodel.ImportStatus
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
 
@@ -74,16 +79,19 @@ import sh.calvin.reorderable.rememberReorderableLazyGridState
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun PassGridScreen(
-    viewModel: PassViewModel,
+    viewModel: PassGridViewModel,
+    educationViewModel: EducationViewModel,
     navController: NavHostController,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    onPreviewPass: (android.net.Uri) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val passes by viewModel.passes.collectAsState()
     val importStatus by viewModel.importStatus.collectAsState()
     val refreshStatus by viewModel.refreshStatus.collectAsState()
     val isInitialLoading by viewModel.isInitialLoading.collectAsState()
+    val activeEducation by educationViewModel.activeEducation.collectAsState()
     var selectedPassId by remember { mutableStateOf<String?>(null) }
     var tilePositionCache by remember { mutableStateOf<IntRect?>(null) }
     var hideTileId by remember { mutableStateOf<String?>(null) }
@@ -95,6 +103,13 @@ fun PassGridScreen(
     // Sync local state with ViewModel
     LaunchedEffect(passes) {
         localPasses = passes
+    }
+
+    LaunchedEffect(isInitialLoading, localPasses.size, activeEducation) {
+        educationViewModel.showPassGridEducationIfNeeded(
+            passCount = localPasses.size,
+            isInitialLoading = isInitialLoading,
+        )
     }
 
     // Lazy grid state for reorderable
@@ -139,7 +154,7 @@ fun PassGridScreen(
         contract = ActivityResultContracts.GetContent(),
     ) { uri ->
         uri?.let {
-            viewModel.previewPass(it)
+            onPreviewPass(it)
             navController.navigate(Routes.PREVIEW)
         }
     }
@@ -153,207 +168,232 @@ fun PassGridScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        PullToRefreshBox(
-            isRefreshing =
-            refreshStatus is RefreshStatus.Loading && (refreshStatus as? RefreshStatus.Loading)?.passId == null,
-            onRefresh = { viewModel.refreshAllPasses() },
-            modifier = Modifier.fillMaxSize(),
-            state = pullToRefreshState,
-            indicator = {
-                PullToRefreshDefaults.Indicator(
-                    state = pullToRefreshState,
-                    isRefreshing = refreshStatus is RefreshStatus.Loading &&
-                        (refreshStatus as? RefreshStatus.Loading)?.passId == null,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            },
-        ) {
-            Scaffold(
-                topBar = {
-                    WalletTopAppBar(
-                        title = {
-                            AppLogo()
-                        },
-                        actions = {
-                            Box {
-                                WalletIconButton(onClick = { showAddMenu = true }) {
-                                    Icon(
-                                        painter = painterResource(
-                                            id = R.drawable.plus,
-                                        ),
-                                        contentDescription = "Add Pass",
-                                    )
-                                }
-                                WalletDropdownMenu(
-                                    expanded = showAddMenu,
-                                    onDismissRequest = { showAddMenu = false },
-                                ) {
-                                    DropdownMenuItem(
-                                        leadingIcon = {
-                                            Icon(
-                                                painter = painterResource(
-                                                    id = R.drawable.file,
-                                                ),
-                                                contentDescription = null,
-                                            )
-                                        },
-                                        text = { Text("Add from Files") },
-                                        onClick = {
-                                            showAddMenu = false
-                                            // Use */* to show all files (parser will validate format)
-                                            pickFileLauncher.launch("*/*")
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        leadingIcon = {
-                                            Icon(
-                                                painter = painterResource(
-                                                    id = R.drawable.camera,
-                                                ),
-                                                contentDescription = null,
-                                            )
-                                        },
-                                        text = { Text("Add from Camera") },
-                                        onClick = {
-                                            showAddMenu = false
-                                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                                        },
-                                    )
-                                }
-                            }
-                        },
+    EducationTargetProvider {
+        Box(modifier = modifier.fillMaxSize()) {
+            PullToRefreshBox(
+                isRefreshing =
+                refreshStatus is RefreshStatus.Loading && (refreshStatus as? RefreshStatus.Loading)?.passId == null,
+                onRefresh = { viewModel.refreshAllPasses() },
+                modifier = Modifier.fillMaxSize(),
+                state = pullToRefreshState,
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullToRefreshState,
+                        isRefreshing = refreshStatus is RefreshStatus.Loading &&
+                            (refreshStatus as? RefreshStatus.Loading)?.passId == null,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 },
-                modifier = Modifier.fillMaxSize(),
-            ) { paddingValues ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = paddingValues.calculateTopPadding())
-                        .pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    val event = awaitPointerEvent(PointerEventPass.Initial)
-                                    // Track finger position without consuming events
-                                    event.changes.firstOrNull()?.let { change ->
-                                        fingerPositionX = change.position.x
-                                        fingerPositionY = change.position.y + paddingValues.calculateTopPadding().toPx()
+            ) {
+                Scaffold(
+                    topBar = {
+                        WalletTopAppBar(
+                            title = {
+                                AppLogo()
+                            },
+                            actions = {
+                                AddPassActions(
+                                    showAddMenu = showAddMenu,
+                                    onShowAddMenuChange = { showAddMenu = it },
+                                    onPickFile = { pickFileLauncher.launch("*/*") },
+                                    onRequestCamera = {
+                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    },
+                                )
+                            },
+                        )
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                ) { paddingValues ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = paddingValues.calculateTopPadding())
+                            .pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        // Track finger position without consuming events
+                                        event.changes.firstOrNull()?.let { change ->
+                                            fingerPositionX = change.position.x
+                                            fingerPositionY =
+                                                change.position.y + paddingValues.calculateTopPadding().toPx()
+                                        }
                                     }
                                 }
-                            }
-                        },
-                ) {
-                    if (isInitialLoading) {
-                        // Loading skeleton while fetching initial data
-                        PassGridSkeleton()
-                    } else if (localPasses.isEmpty()) {
-                        // Empty state
-                        EmptyPassGridState()
-                    } else {
-                        // Grid of passes
-                        PassGridContent(
-                            localPasses = localPasses,
-                            gridState = gridState,
-                            reorderableState = reorderableState,
-                            paddingValues = paddingValues,
-                            hideTileId = hideTileId,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            haptic = haptic,
-                            isDragging = isDragging,
-                            passToDelete = passToDelete,
-                            isOverDeleteZone = isOverDeleteZone,
-                            dragStartedPasses = dragStartedPasses,
-                            onDragStart = { pass ->
-                                isDragging = true
-                                passToDelete = pass
-                                dragStartedPasses = localPasses
                             },
-                            onDragEnd = { pass, shouldDelete ->
-                                if (isDragging && passToDelete?.id == pass.id) {
-                                    isDragging = false
-                                    if (shouldDelete && passToDelete != null) {
-                                        viewModel.deletePass(passToDelete!!)
-                                        localPasses = localPasses.filter { it.id != passToDelete!!.id }
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    } else if (localPasses != dragStartedPasses) {
-                                        viewModel.updatePassOrder(
-                                            localPasses.mapIndexed { index, p ->
-                                                p.id to index
-                                            }.toMap(),
-                                        )
+                    ) {
+                        if (isInitialLoading) {
+                            // Loading skeleton while fetching initial data
+                            PassGridSkeleton()
+                        } else if (localPasses.isEmpty()) {
+                            // Empty state
+                            EmptyPassGridState()
+                        } else {
+                            // Grid of passes
+                            PassGridContent(
+                                localPasses = localPasses,
+                                gridState = gridState,
+                                reorderableState = reorderableState,
+                                paddingValues = paddingValues,
+                                hideTileId = hideTileId,
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                haptic = haptic,
+                                isDragging = isDragging,
+                                passToDelete = passToDelete,
+                                isOverDeleteZone = isOverDeleteZone,
+                                dragStartedPasses = dragStartedPasses,
+                                onDragStart = { pass ->
+                                    isDragging = true
+                                    passToDelete = pass
+                                    dragStartedPasses = localPasses
+                                },
+                                onDragEnd = { pass, shouldDelete ->
+                                    if (isDragging && passToDelete?.id == pass.id) {
+                                        isDragging = false
+                                        if (shouldDelete && passToDelete != null) {
+                                            viewModel.deletePass(passToDelete!!)
+                                            localPasses = localPasses.filter { it.id != passToDelete!!.id }
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        } else if (localPasses != dragStartedPasses) {
+                                            viewModel.updatePassOrder(
+                                                localPasses.mapIndexed { index, p ->
+                                                    p.id to index
+                                                }.toMap(),
+                                            )
+                                        }
+                                        passToDelete = null
+                                        fingerPositionY = 0f
+                                        fingerPositionX = 0f
+                                        dragStartedPasses = emptyList()
                                     }
-                                    passToDelete = null
-                                    fingerPositionY = 0f
-                                    fingerPositionX = 0f
-                                    dragStartedPasses = emptyList()
-                                }
+                                },
+                                onTileClick = { pass -> selectedPassId = pass.id },
+                                onTilePositioned = { rect -> tilePositionCache = rect },
+                            )
+                        }
+
+                        // Delete zone at bottom (only visible during drag)
+                        DeleteZone(
+                            isVisible = isDragging,
+                            isHovering = isOverDeleteZone,
+                            onPositioned = { left, top, right, bottom ->
+                                deleteZoneLeft = left
+                                deleteZoneTop = top
+                                deleteZoneRight = right
+                                deleteZoneBottom = bottom
                             },
-                            onTileClick = { pass -> selectedPassId = pass.id },
-                            onTilePositioned = { rect -> tilePositionCache = rect },
+                            modifier = Modifier.align(Alignment.BottomCenter),
                         )
-                    }
 
-                    // Delete zone at bottom (only visible during drag)
-                    DeleteZone(
-                        isVisible = isDragging,
-                        isHovering = isOverDeleteZone,
-                        onPositioned = { left, top, right, bottom ->
-                            deleteZoneLeft = left
-                            deleteZoneTop = top
-                            deleteZoneRight = right
-                            deleteZoneBottom = bottom
-                        },
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                    )
+                        // Import status snackbar
+                        if (importStatus is ImportStatus.Error) {
+                            WalletSnackbar(
+                                message = (importStatus as ImportStatus.Error).message,
+                                status = com.luntikius.wallet.designsystem.components.feedback.SnackbarStatus.ERROR,
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(MaterialTheme.spacing.mediumLarge),
+                            )
+                        }
 
-                    // Import status snackbar
-                    if (importStatus is ImportStatus.Error) {
-                        WalletSnackbar(
-                            message = (importStatus as ImportStatus.Error).message,
-                            status = com.luntikius.wallet.designsystem.components.feedback.SnackbarStatus.ERROR,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(MaterialTheme.spacing.mediumLarge),
-                        )
-                    }
-
-                    if (importStatus is ImportStatus.Loading && !isInitialLoading) {
-                        WalletCircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center),
-                        )
+                        if (importStatus is ImportStatus.Loading && !isInitialLoading) {
+                            WalletCircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.Center),
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // Show expansion overlay if a pass is selected (rendered on top of Scaffold)
-        selectedPassId?.let { passId ->
-            PassCardExpansion(
-                passId = passId,
-                tilePosition = tilePositionCache,
-                viewModel = viewModel,
-                onTileVisibilityChange = { visible ->
-                    // Animation controls tile visibility timing
-                    hideTileId = if (visible) null else passId
+            // Show expansion overlay if a pass is selected (rendered on top of Scaffold)
+            selectedPassId?.let { passId ->
+                PassCardExpansion(
+                    passId = passId,
+                    tilePosition = tilePositionCache,
+                    viewModel = viewModel,
+                    onTileVisibilityChange = { visible ->
+                        // Animation controls tile visibility timing
+                        hideTileId = if (visible) null else passId
+                    },
+                    onDismiss = {
+                        selectedPassId = null
+                        tilePositionCache = null
+                    },
+                )
+            }
+
+            // Refresh status snackbar (rendered on top of everything)
+            RefreshLoadingSnackbar(
+                refreshStatus = refreshStatus,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        bottom = if (importStatus is ImportStatus.Error) 80.dp else MaterialTheme.spacing.mediumLarge,
+                    ),
+            )
+
+            EducationHost(
+                activeEducation = activeEducation,
+                onNext = educationViewModel::nextEducationStep,
+                onBack = educationViewModel::previousEducationStep,
+                onFinish = educationViewModel::finishActiveEducation,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddPassActions(
+    showAddMenu: Boolean,
+    onShowAddMenuChange: (Boolean) -> Unit,
+    onPickFile: () -> Unit,
+    onRequestCamera: () -> Unit,
+) {
+    Box {
+        WalletIconButton(
+            onClick = { onShowAddMenuChange(true) },
+            modifier = Modifier.educationTarget(PassGridEducationTarget.ADD_BUTTON),
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.plus),
+                contentDescription = "Add Pass",
+            )
+        }
+        WalletDropdownMenu(
+            expanded = showAddMenu,
+            onDismissRequest = { onShowAddMenuChange(false) },
+        ) {
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.file),
+                        contentDescription = null,
+                    )
                 },
-                onDismiss = {
-                    selectedPassId = null
-                    tilePositionCache = null
+                text = { Text("Add from Files") },
+                onClick = {
+                    onShowAddMenuChange(false)
+                    onPickFile()
+                },
+            )
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.camera),
+                        contentDescription = null,
+                    )
+                },
+                text = { Text("Add from Camera") },
+                onClick = {
+                    onShowAddMenuChange(false)
+                    onRequestCamera()
                 },
             )
         }
-
-        // Refresh status snackbar (rendered on top of everything)
-        RefreshLoadingSnackbar(
-            refreshStatus = refreshStatus,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = if (importStatus is ImportStatus.Error) 80.dp else MaterialTheme.spacing.mediumLarge),
-        )
     }
 }
 
@@ -421,7 +461,7 @@ private fun PassGridContent(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.mediumLarge),
         modifier = modifier.fillMaxSize(),
     ) {
-        items(localPasses, key = { it.id }) { pass ->
+        itemsIndexed(localPasses, key = { _, pass -> pass.id }) { index, pass ->
             ReorderableItem(reorderableState, key = pass.id) { itemIsDragging ->
                 // Track when any item starts/stops dragging
                 LaunchedEffect(itemIsDragging) {
@@ -439,6 +479,7 @@ private fun PassGridContent(
                         isDragging = itemIsDragging,
                         isExpanded = hideTileId == pass.id,
                         modifier = Modifier
+                            .then(firstCardEducationModifier(index))
                             .longPressDraggableHandle(
                                 onDragStarted = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -458,6 +499,7 @@ private fun PassGridContent(
                         isDragging = itemIsDragging,
                         isExpanded = hideTileId == pass.id,
                         modifier = Modifier
+                            .then(firstCardEducationModifier(index))
                             .longPressDraggableHandle(
                                 onDragStarted = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -475,4 +517,10 @@ private fun PassGridContent(
             }
         }
     }
+}
+
+private fun firstCardEducationModifier(index: Int): Modifier = if (index == 0) {
+    Modifier.educationTarget(PassGridEducationTarget.FIRST_PASS_CARD)
+} else {
+    Modifier
 }

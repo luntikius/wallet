@@ -23,3 +23,4 @@ rootProject.name = "wallet"
 include(":app")
 include(":camera")
 include(":design-system")
+include(":educations")

@@ -24,10 +24,16 @@ import androidx.compose.ui.text.style.TextDecoration
  * Supports basic HTML tags: <a>, <b>, <i>, <br>
  */
 @Composable
-fun HtmlText(html: String, style: TextStyle, color: Color, modifier: Modifier = Modifier) {
+fun HtmlText(
+    html: String,
+    style: TextStyle,
+    color: Color,
+    modifier: Modifier = Modifier,
+    linkColor: Color = Color(0xFF2196F3),
+) {
     val context = LocalContext.current
-    val annotatedString = remember(html, color) {
-        parseHtmlToAnnotatedString(html, color)
+    val annotatedString = remember(html, color, linkColor) {
+        parseHtmlToAnnotatedString(html, color, linkColor)
     }
 
     ClickableText(
@@ -53,7 +59,7 @@ fun HtmlText(html: String, style: TextStyle, color: Color, modifier: Modifier = 
 /**
  * Parse HTML string to AnnotatedString with formatting and clickable links.
  */
-private fun parseHtmlToAnnotatedString(html: String, baseColor: Color): AnnotatedString {
+private fun parseHtmlToAnnotatedString(html: String, baseColor: Color, linkColor: Color): AnnotatedString {
     // Convert plain newlines to <br> tags before parsing
     // This preserves line breaks that aren't already in HTML format
     val processedHtml = html.replace("\n", "<br>")
@@ -78,10 +84,10 @@ private fun parseHtmlToAnnotatedString(html: String, baseColor: Color): Annotate
                         start = start,
                         end = end,
                     )
-                    // Style links in blue with underline
+                    // Style links with the provided link colour and underline
                     addStyle(
                         style = SpanStyle(
-                            color = Color(0xFF2196F3), // Blue color for links
+                            color = linkColor,
                             textDecoration = TextDecoration.Underline,
                         ),
                         start = start,

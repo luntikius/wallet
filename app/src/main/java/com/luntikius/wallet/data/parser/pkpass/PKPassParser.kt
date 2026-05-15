@@ -2,7 +2,6 @@ package com.luntikius.wallet.data.parser.pkpass
 
 import android.content.Context
 import android.net.Uri
-import com.google.gson.Gson
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassCategory
 import com.luntikius.wallet.data.model.PassFormat
@@ -12,6 +11,8 @@ import java.io.File
 import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * Parser for Apple Wallet PKPass files (.pkpass).
@@ -19,7 +20,7 @@ import kotlinx.coroutines.withContext
  */
 class PKPassParser(private val context: Context) : PassParser {
 
-    private val gson = Gson()
+    private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun parse(uri: Uri): ParseResult? = parseInternal(uri, useTemp = false)
 
@@ -51,7 +52,7 @@ class PKPassParser(private val context: Context) : PassParser {
 
                     when {
                         fileName == "pass.json" -> {
-                            passJson = gson.fromJson(String(bytes), PKPassJson::class.java)
+                            passJson = json.decodeFromString<PKPassJson>(String(bytes))
                         }
                         fileName.matches(Regex("icon(@\\dx)?\\.png")) ||
                             fileName.matches(Regex("logo(@\\dx)?\\.png")) ||
@@ -148,12 +149,12 @@ class PKPassParser(private val context: Context) : PassParser {
                 backgroundColor = normalizeColor(passJsonWithLocalizations.backgroundColor),
                 labelColor = normalizeColor(passJsonWithLocalizations.labelColor),
                 assetsDirectory = passDir.absolutePath,
-                rawData = gson.toJson(passJsonWithLocalizations),
+                rawData = json.encodeToString(passJsonWithLocalizations),
                 importedDate = System.currentTimeMillis(),
                 category = category,
             )
 
-            ParseResult(pass, gson.toJson(passJsonWithLocalizations))
+            ParseResult(pass, json.encodeToString(passJsonWithLocalizations))
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -241,7 +242,7 @@ class PKPassParser(private val context: Context) : PassParser {
             foregroundColor = normalizeColor(newPassJson.foregroundColor),
             backgroundColor = normalizeColor(newPassJson.backgroundColor),
             labelColor = normalizeColor(newPassJson.labelColor),
-            rawData = gson.toJson(newPassJson),
+            rawData = json.encodeToString(newPassJson),
             lastRefreshDate = System.currentTimeMillis(),
             category = category,
         )

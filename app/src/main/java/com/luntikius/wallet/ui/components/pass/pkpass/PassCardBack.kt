@@ -27,13 +27,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassFormat
 import com.luntikius.wallet.data.model.ShareStatus
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
+import com.luntikius.wallet.designsystem.foundation.color.ColorTokens
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.common.EmptyStateMessage
 import com.luntikius.wallet.ui.components.common.PassDeleteDialog
@@ -41,7 +41,7 @@ import com.luntikius.wallet.ui.components.pass.PassCardBackHeader
 import com.luntikius.wallet.ui.utils.rememberCardColors
 import com.luntikius.wallet.ui.utils.rememberLocalizedValue
 import com.luntikius.wallet.ui.utils.sharePassFile
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 fun PassCardBack(
     pass: Pass,
     pkPassJson: PKPassJson?,
-    viewModel: PassViewModel,
+    viewModel: PassGridViewModel,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -121,7 +121,9 @@ fun PassCardBack(
 
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    color = Color.White,
+                    // Fixed white surface: intentional "paper card on coloured pass background"
+                    // design. Theme surface colours must not be used here.
+                    color = ColorTokens.pkPassBackSurface,
                     shape = RoundedCornerShape(12.dp),
                 ) {
                     Row(
@@ -190,7 +192,6 @@ fun PassCardBack(
                                 InfoBlock(
                                     title = localizedLabel,
                                     htmlContent = localizedValue,
-                                    textColor = textColor,
                                 )
                                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
                             }

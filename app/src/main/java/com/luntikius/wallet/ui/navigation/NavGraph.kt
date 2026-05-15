@@ -2,6 +2,7 @@ package com.luntikius.wallet.ui.navigation
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -12,17 +13,22 @@ import androidx.navigation.navArgument
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.luntikius.wallet.camera.CameraScanScreen
 import com.luntikius.wallet.camera.ScanResult
+import com.luntikius.wallet.designsystem.components.branding.AppLogo
+import com.luntikius.wallet.educations.OnboardingScreen
 import com.luntikius.wallet.ui.screens.CustomPassBuilderScreen
 import com.luntikius.wallet.ui.screens.InitialScreen
 import com.luntikius.wallet.ui.screens.PassGridScreen
 import com.luntikius.wallet.ui.screens.PassPreviewScreen
-import com.luntikius.wallet.ui.viewmodel.PassViewModel
+import com.luntikius.wallet.ui.viewmodel.EducationViewModel
+import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
+import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
 
 /**
  * Navigation routes for the app.
  */
 object Routes {
     const val INITIAL = "initial"
+    const val ONBOARDING = "onboarding"
     const val GRID = "grid"
     const val PREVIEW = "preview"
     const val CAMERA_SCAN = "camera_scan"
@@ -39,7 +45,9 @@ object Routes {
 @Composable
 fun PassNavGraph(
     navController: NavHostController,
-    viewModel: PassViewModel,
+    gridViewModel: PassGridViewModel,
+    previewViewModel: PassPreviewViewModel,
+    educationViewModel: EducationViewModel,
     intentUri: android.net.Uri?,
     modifier: Modifier = Modifier,
 ) {
@@ -51,8 +59,20 @@ fun PassNavGraph(
         ) {
             composable(Routes.INITIAL) {
                 InitialScreen(
-                    viewModel = viewModel,
+                    viewModel = previewViewModel,
                     intentUri = intentUri,
+                    shouldShowOnboarding = {
+                        educationViewModel.shouldShowOnboarding(isExternalImport = intentUri != null)
+                    },
+                    onAppEntryStarted = {
+                        educationViewModel.startAppEntry(isExternalImport = intentUri != null)
+                    },
+                    onNavigateToOnboarding = {
+                        navController.navigate(Routes.ONBOARDING) {
+                            popUpTo(Routes.INITIAL) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                     onNavigateToGrid = {
                         navController.navigate(Routes.GRID) {
                             popUpTo(Routes.INITIAL) { inclusive = true }
@@ -68,21 +88,42 @@ fun PassNavGraph(
                 )
             }
 
+            composable(Routes.ONBOARDING) {
+                OnboardingScreen(
+                    bullets = listOf(
+                        "Store Apple Wallet passes",
+                        "Create custom barcode passes",
+                        "Refresh and reorder passes",
+                    ),
+                    titleContent = {
+                        AppLogo(color = MaterialTheme.colorScheme.onSurface)
+                    },
+                    onContinue = {
+                        educationViewModel.completeOnboarding()
+                        navController.navigate(Routes.GRID) {
+                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+
             composable(Routes.GRID) {
                 PassGridScreen(
-                    viewModel = viewModel,
+                    viewModel = gridViewModel,
+                    educationViewModel = educationViewModel,
                     navController = navController,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this,
+                    onPreviewPass = { uri -> previewViewModel.previewPass(uri) },
                 )
             }
 
             composable(Routes.PREVIEW) {
                 PassPreviewScreen(
-                    viewModel = viewModel,
+                    viewModel = previewViewModel,
                     onAdd = {
-                        viewModel.confirmAddPass()
-                        // Navigate to GRID and clear backstack up to start destination
+                        previewViewModel.confirmAddPass()
                         navController.navigate(Routes.GRID) {
                             popUpTo(navController.graph.startDestinationId) {
                                 inclusive = false
@@ -91,7 +132,7 @@ fun PassNavGraph(
                         }
                     },
                     onCancel = {
-                        viewModel.cancelPreview()
+                        previewViewModel.cancelPreview()
                         navController.popBackStack()
                     },
                 )
@@ -100,19 +141,15 @@ fun PassNavGraph(
             composable(Routes.CAMERA_SCAN) {
                 CameraScanScreen(
                     onScanResult = { scanResult ->
-                        viewModel.handleScannedCode(scanResult)
-
                         when (scanResult) {
                             is ScanResult.UrlDetected -> {
-                                // Download and preview triggered in ViewModel
-                                // Navigate to preview when ready
+                                previewViewModel.downloadAndPreviewPass(scanResult.url)
                                 navController.navigate(Routes.PREVIEW) {
                                     popUpTo(Routes.GRID) { inclusive = false }
                                 }
                             }
 
                             is ScanResult.BarcodeDetected -> {
-                                // Navigate to custom pass builder
                                 val formatName = getBarcodeFormatName(scanResult.format)
                                 navController.navigate(
                                     Routes.customPassBuilder(
@@ -126,7 +163,6 @@ fun PassNavGraph(
                         }
                     },
                     onCancel = {
-                        viewModel.clearScanResult()
                         navController.popBackStack()
                     },
                 )
@@ -145,14 +181,10 @@ fun PassNavGraph(
                 CustomPassBuilderScreen(
                     barcodeValue = barcodeValue,
                     barcodeFormat = barcodeFormat,
-                    viewModel = viewModel,
                     onCancel = {
-                        viewModel.clearScanResult()
                         navController.popBackStack()
                     },
                     onPassCreated = {
-                        viewModel.clearScanResult()
-                        // Navigate back to grid
                         navController.navigate(Routes.GRID) {
                             popUpTo(navController.graph.startDestinationId) {
                                 inclusive = false
