@@ -3,6 +3,7 @@ package com.luntikius.wallet.data.network
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.luntikius.wallet.data.json.WalletJson
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.data.parser.pkpass.PKPassParser
@@ -10,7 +11,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.SocketTimeoutException
-import kotlinx.serialization.json.Json
 import retrofit2.Retrofit
 
 /**
@@ -18,8 +18,6 @@ import retrofit2.Retrofit
  * Handles dynamic Retrofit instance creation and API communication.
  */
 class PKPassUpdateService(private val context: Context, private val pkPassParser: PKPassParser) {
-
-    private val json = Json { ignoreUnknownKeys = true }
 
     /**
      * Result of a pass update operation.
@@ -53,7 +51,7 @@ class PKPassUpdateService(private val context: Context, private val pkPassParser
     suspend fun updatePass(pass: Pass): UpdateResult {
         return try {
             // Parse rawData JSON to extract web service info
-            val passJson = json.decodeFromString<PKPassJson>(pass.rawData)
+            val passJson = WalletJson.json.decodeFromString<PKPassJson>(pass.rawData)
 
             // Check if pass has web service configured
             val webServiceURL = passJson.webServiceURL
@@ -108,7 +106,8 @@ class PKPassUpdateService(private val context: Context, private val pkPassParser
 
                             if (parseResult != null) {
                                 // Extract PKPassJson from rawData
-                                val updatedPassJson = json.decodeFromString<PKPassJson>(parseResult.pass.rawData)
+                                val updatedPassJson =
+                                    WalletJson.json.decodeFromString<PKPassJson>(parseResult.pass.rawData)
 
                                 UpdateResult.Updated(updatedPassJson)
                             } else {

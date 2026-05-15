@@ -1,12 +1,11 @@
 package com.luntikius.wallet.wear.sync
 
 import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
-import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
-import com.luntikius.wallet.wear.data.WearPassDatabase
 import com.luntikius.wallet.wear.data.WearPassRepository
 import com.luntikius.wallet.wearsync.WearSyncDataKeys
 import com.luntikius.wallet.wearsync.WearSyncJson
@@ -17,15 +16,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import org.koin.android.ext.android.inject
 
 class WearPassDataListenerService : WearableListenerService() {
+    private val dataClient: DataClient by inject()
+    private val repository: WearPassRepository by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val repository by lazy {
-        WearPassRepository(
-            context = applicationContext,
-            dao = WearPassDatabase.getInstance(applicationContext).wearPassDao(),
-        )
-    }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
@@ -63,7 +59,7 @@ class WearPassDataListenerService : WearableListenerService() {
 
     private suspend fun readAssetBytes(asset: Asset?): ByteArray? = withContext(Dispatchers.IO) {
         asset ?: return@withContext null
-        val response = Wearable.getDataClient(applicationContext).getFdForAsset(asset).await()
+        val response = dataClient.getFdForAsset(asset).await()
         response.inputStream.use { inputStream ->
             inputStream.readBytes()
         }

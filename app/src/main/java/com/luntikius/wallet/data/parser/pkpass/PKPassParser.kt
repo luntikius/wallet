@@ -2,6 +2,7 @@ package com.luntikius.wallet.data.parser.pkpass
 
 import android.content.Context
 import android.net.Uri
+import com.luntikius.wallet.data.json.WalletJson
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassCategory
 import com.luntikius.wallet.data.model.PassFormat
@@ -12,15 +13,12 @@ import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 /**
  * Parser for Apple Wallet PKPass files (.pkpass).
  * Extracts ZIP archives and parses pass.json.
  */
 class PKPassParser(private val context: Context) : PassParser {
-
-    private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun parse(uri: Uri): ParseResult? = parseInternal(uri, useTemp = false)
 
@@ -52,7 +50,7 @@ class PKPassParser(private val context: Context) : PassParser {
 
                     when {
                         fileName == "pass.json" -> {
-                            passJson = json.decodeFromString<PKPassJson>(String(bytes))
+                            passJson = WalletJson.json.decodeFromString<PKPassJson>(String(bytes))
                         }
                         fileName.matches(Regex("icon(@\\dx)?\\.png")) ||
                             fileName.matches(Regex("logo(@\\dx)?\\.png")) ||
@@ -104,10 +102,6 @@ class PKPassParser(private val context: Context) : PassParser {
             // Add localizations to passJson
             val passJsonWithLocalizations = passJson.copy(localizations = localizations)
 
-            if (passJson == null) {
-                return@withContext null
-            }
-
             // Create directory for this pass (temp or permanent)
             val baseDir = if (useTemp) context.cacheDir else context.filesDir
             val subPath = if (useTemp) "preview_passes" else "passes/pkpass"
@@ -149,12 +143,12 @@ class PKPassParser(private val context: Context) : PassParser {
                 backgroundColor = normalizeColor(passJsonWithLocalizations.backgroundColor),
                 labelColor = normalizeColor(passJsonWithLocalizations.labelColor),
                 assetsDirectory = passDir.absolutePath,
-                rawData = json.encodeToString(passJsonWithLocalizations),
+                rawData = WalletJson.json.encodeToString(passJsonWithLocalizations),
                 importedDate = System.currentTimeMillis(),
                 category = category,
             )
 
-            ParseResult(pass, json.encodeToString(passJsonWithLocalizations))
+            ParseResult(pass, WalletJson.json.encodeToString(passJsonWithLocalizations))
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -242,7 +236,7 @@ class PKPassParser(private val context: Context) : PassParser {
             foregroundColor = normalizeColor(newPassJson.foregroundColor),
             backgroundColor = normalizeColor(newPassJson.backgroundColor),
             labelColor = normalizeColor(newPassJson.labelColor),
-            rawData = json.encodeToString(newPassJson),
+            rawData = WalletJson.json.encodeToString(newPassJson),
             lastRefreshDate = System.currentTimeMillis(),
             category = category,
         )

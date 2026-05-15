@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.luntikius.wallet.data.exporter.ExportResult
 import com.luntikius.wallet.data.exporter.ExporterRegistry
+import com.luntikius.wallet.data.json.WalletJson
 import com.luntikius.wallet.data.local.PassDao
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassFormat
@@ -17,7 +18,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 /**
  * Repository interface for pass operations.
@@ -117,7 +117,6 @@ class PassRepositoryImpl(
     private val updateService = PKPassUpdateService(context, pkPassParser)
     private val downloadService = PassDownloadService(context)
     private val exporterRegistry = ExporterRegistry(context)
-    private val json = Json { ignoreUnknownKeys = true }
 
     override fun getAllPasses(): Flow<List<Pass>> = passDao.getAllPasses()
 
@@ -203,10 +202,10 @@ class PassRepositoryImpl(
                     }
                     is PKPassUpdateService.UpdateResult.Deleted -> {
                         // Mark pass as voided in rawData JSON
-                        val passJson = json.decodeFromString<PKPassJson>(pass.rawData)
+                        val passJson = WalletJson.json.decodeFromString<PKPassJson>(pass.rawData)
                         val voidedPassJson = passJson.copy(voided = true)
                         val voidedPass = pass.copy(
-                            rawData = json.encodeToString(voidedPassJson),
+                            rawData = WalletJson.json.encodeToString(voidedPassJson),
                             lastRefreshDate = System.currentTimeMillis(),
                         )
                         passDao.updatePass(voidedPass)

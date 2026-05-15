@@ -1,5 +1,6 @@
 package com.luntikius.wallet.di
 
+import com.google.android.gms.wearable.Wearable
 import com.luntikius.wallet.BuildConfig
 import com.luntikius.wallet.data.local.PassDatabase
 import com.luntikius.wallet.data.parser.ParserRegistry
@@ -28,9 +29,10 @@ val dataModule = module {
             context = androidContext(),
         )
     }
+    single { Wearable.getDataClient(androidContext()) }
     single {
         PhoneWearSyncCoordinator(
-            context = androidContext(),
+            dataClient = get(),
             passRepository = get(),
         )
     }
