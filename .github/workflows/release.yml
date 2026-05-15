@@ -78,6 +78,7 @@ jobs:
           ./.github/scripts/bump-version.sh
           echo "NEW_VERSION=$(grep '^VERSION_NAME=' gradle.properties | cut -d'=' -f2)" >> $GITHUB_OUTPUT
           echo "NEW_VERSION_CODE=$(grep '^VERSION_CODE=' gradle.properties | cut -d'=' -f2)" >> $GITHUB_OUTPUT
+          echo "NEW_WEAR_VERSION_CODE=$(grep '^WEAR_VERSION_CODE=' gradle.properties | cut -d'=' -f2)" >> $GITHUB_OUTPUT
 
       - name: Setup keystore
         env:
@@ -132,7 +133,7 @@ jobs:
       - name: Commit version bump to main
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Bump version to ${{ steps.version.outputs.NEW_VERSION }} (code ${{ steps.version.outputs.NEW_VERSION_CODE }}) [skip ci]"
+          commit_message: "Bump version to ${{ steps.version.outputs.NEW_VERSION }} (phone code ${{ steps.version.outputs.NEW_VERSION_CODE }}, Wear code ${{ steps.version.outputs.NEW_WEAR_VERSION_CODE }}) [skip ci]"
           branch: main
           file_pattern: gradle.properties
           commit_user_name: GitHub Actions
@@ -146,14 +147,15 @@ jobs:
           tag: "v${{ steps.version.outputs.NEW_VERSION }}"
           name: "Release v${{ steps.version.outputs.NEW_VERSION }}"
           body: |
-            ## Release v${{ steps.version.outputs.NEW_VERSION }} (Build ${{ steps.version.outputs.NEW_VERSION_CODE }})
+            ## Release v${{ steps.version.outputs.NEW_VERSION }}
 
             ### What's New
             This release has been published to Google Play internal testing for phone and Wear OS.
 
             ### Build Information
             - **Version:** ${{ steps.version.outputs.NEW_VERSION }}
-            - **Version Code:** ${{ steps.version.outputs.NEW_VERSION_CODE }}
+            - **Phone Version Code:** ${{ steps.version.outputs.NEW_VERSION_CODE }}
+            - **Wear Version Code:** ${{ steps.version.outputs.NEW_WEAR_VERSION_CODE }}
             - **Phone Release Track:** ${{ env.PHONE_INTERNAL_TRACK }}
             - **Wear Release Track:** ${{ env.WEAR_INTERNAL_TRACK }}
             - **Build Date:** ${{ github.event.head_commit.timestamp }}

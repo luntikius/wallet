@@ -17,7 +17,7 @@ android {
         applicationId = "com.luntikius.wallet"
         minSdk = 30
         targetSdk = 36
-        versionCode = (project.findProperty("VERSION_CODE") as String?)?.toIntOrNull() ?: 1
+        versionCode = (project.findProperty("WEAR_VERSION_CODE") as String?)?.toIntOrNull() ?: 1001
         versionName = project.findProperty("VERSION_NAME") as String? ?: "1.0.0"
     }
 
