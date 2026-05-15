@@ -1,12 +1,12 @@
 package com.luntikius.wallet.data.builder
 
+import com.luntikius.wallet.data.json.WalletJson
 import com.luntikius.wallet.data.model.CustomPassJson
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassCategory
 import com.luntikius.wallet.data.model.PassFormat
 import java.util.UUID
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 /**
  * Builder for creating custom passes from scanned barcodes.
@@ -56,7 +56,7 @@ object CustomPassBuilder {
             backgroundColor = backgroundColor,
             labelColor = labelColor,
             assetsDirectory = "", // No assets for custom cards
-            rawData = Json.encodeToString(customPassJson),
+            rawData = WalletJson.json.encodeToString(customPassJson),
             importedDate = currentTime,
             lastRefreshDate = null,
             autoRefreshEnabled = false, // Custom cards cannot refresh

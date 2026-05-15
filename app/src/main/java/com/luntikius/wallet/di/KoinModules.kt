@@ -1,5 +1,6 @@
 package com.luntikius.wallet.di
 
+import com.google.android.gms.wearable.Wearable
 import com.luntikius.wallet.BuildConfig
 import com.luntikius.wallet.data.local.PassDatabase
 import com.luntikius.wallet.data.parser.ParserRegistry
@@ -13,6 +14,7 @@ import com.luntikius.wallet.ui.viewmodel.EducationViewModel
 import com.luntikius.wallet.ui.viewmodel.ImportStatusHolder
 import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
+import com.luntikius.wallet.wear.PhoneWearSyncCoordinator
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -25,6 +27,13 @@ val dataModule = module {
             passDao = get<PassDatabase>().passDao(),
             parserRegistry = get(),
             context = androidContext(),
+        )
+    }
+    single { Wearable.getDataClient(androidContext()) }
+    single {
+        PhoneWearSyncCoordinator(
+            dataClient = get(),
+            passRepository = get(),
         )
     }
 }
