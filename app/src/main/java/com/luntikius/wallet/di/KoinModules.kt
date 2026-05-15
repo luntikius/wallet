@@ -1,10 +1,15 @@
 package com.luntikius.wallet.di
 
+import com.luntikius.wallet.BuildConfig
 import com.luntikius.wallet.data.local.PassDatabase
 import com.luntikius.wallet.data.parser.ParserRegistry
 import com.luntikius.wallet.data.repository.PassRepository
 import com.luntikius.wallet.data.repository.PassRepositoryImpl
+import com.luntikius.wallet.education.EducationConfig
+import com.luntikius.wallet.education.EducationProgressRepository
+import com.luntikius.wallet.education.SharedPreferencesEducationProgressRepository
 import com.luntikius.wallet.ui.viewmodel.CustomPassBuilderViewModel
+import com.luntikius.wallet.ui.viewmodel.EducationViewModel
 import com.luntikius.wallet.ui.viewmodel.ImportStatusHolder
 import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
@@ -26,12 +31,15 @@ val dataModule = module {
 
 val domainModule = module {
     single { ImportStatusHolder() }
+    single { EducationConfig(forceShowEducations = BuildConfig.FORCE_SHOW_EDUCATIONS) }
+    single<EducationProgressRepository> { SharedPreferencesEducationProgressRepository(androidContext()) }
 }
 
 val uiModule = module {
     viewModel { PassGridViewModel(get(), get()) }
     viewModel { PassPreviewViewModel(get(), get()) }
     viewModel { CustomPassBuilderViewModel(get(), get()) }
+    viewModel { EducationViewModel(get(), get()) }
 }
 
 val appModules = listOf(dataModule, domainModule, uiModule)

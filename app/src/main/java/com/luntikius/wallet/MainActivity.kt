@@ -25,6 +25,7 @@ import com.luntikius.wallet.data.worker.PassRefreshWorker
 import com.luntikius.wallet.designsystem.theme.WalletTheme
 import com.luntikius.wallet.ui.navigation.PassNavGraph
 import com.luntikius.wallet.ui.navigation.Routes
+import com.luntikius.wallet.ui.viewmodel.EducationViewModel
 import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
 import java.io.File
@@ -36,6 +37,7 @@ class MainActivity : ComponentActivity() {
 
     private val gridViewModel: PassGridViewModel by viewModel()
     private val previewViewModel: PassPreviewViewModel by viewModel()
+    private val educationViewModel: EducationViewModel by viewModel()
 
     private var intentUri by mutableStateOf<Uri?>(null)
     private var newIntentUri by mutableStateOf<Uri?>(null)
@@ -81,6 +83,7 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     gridViewModel = gridViewModel,
                     previewViewModel = previewViewModel,
+                    educationViewModel = educationViewModel,
                     intentUri = intentUri,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -88,6 +91,7 @@ class MainActivity : ComponentActivity() {
                 // Handle new intents while app is running
                 LaunchedEffect(newIntentUri) {
                     newIntentUri?.let { uri ->
+                        educationViewModel.startAppEntry(isExternalImport = true)
                         previewViewModel.previewPass(uri)
                         navController.navigate(Routes.PREVIEW) {
                             popUpTo(Routes.GRID) { inclusive = false }

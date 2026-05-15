@@ -25,6 +25,9 @@ import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
 fun InitialScreen(
     viewModel: PassPreviewViewModel,
     intentUri: Uri?,
+    shouldShowOnboarding: () -> Boolean,
+    onAppEntryStarted: () -> Unit,
+    onNavigateToOnboarding: () -> Unit,
     onNavigateToGrid: () -> Unit,
     onNavigateToPreview: () -> Unit,
     modifier: Modifier = Modifier,
@@ -42,10 +45,13 @@ fun InitialScreen(
     }
 
     LaunchedEffect(Unit) {
+        onAppEntryStarted()
         if (intentUri != null) {
             // Launch with intent - start preview loading and navigate
             viewModel.previewPass(intentUri)
             onNavigateToPreview()
+        } else if (shouldShowOnboarding()) {
+            onNavigateToOnboarding()
         } else {
             // Normal launch - go straight to grid
             onNavigateToGrid()

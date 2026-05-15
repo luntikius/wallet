@@ -2,6 +2,7 @@ package com.luntikius.wallet.ui.navigation
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -12,10 +13,13 @@ import androidx.navigation.navArgument
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.luntikius.wallet.camera.CameraScanScreen
 import com.luntikius.wallet.camera.ScanResult
+import com.luntikius.wallet.designsystem.components.branding.AppLogo
+import com.luntikius.wallet.educations.OnboardingScreen
 import com.luntikius.wallet.ui.screens.CustomPassBuilderScreen
 import com.luntikius.wallet.ui.screens.InitialScreen
 import com.luntikius.wallet.ui.screens.PassGridScreen
 import com.luntikius.wallet.ui.screens.PassPreviewScreen
+import com.luntikius.wallet.ui.viewmodel.EducationViewModel
 import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
 
@@ -24,6 +28,7 @@ import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
  */
 object Routes {
     const val INITIAL = "initial"
+    const val ONBOARDING = "onboarding"
     const val GRID = "grid"
     const val PREVIEW = "preview"
     const val CAMERA_SCAN = "camera_scan"
@@ -42,6 +47,7 @@ fun PassNavGraph(
     navController: NavHostController,
     gridViewModel: PassGridViewModel,
     previewViewModel: PassPreviewViewModel,
+    educationViewModel: EducationViewModel,
     intentUri: android.net.Uri?,
     modifier: Modifier = Modifier,
 ) {
@@ -55,6 +61,18 @@ fun PassNavGraph(
                 InitialScreen(
                     viewModel = previewViewModel,
                     intentUri = intentUri,
+                    shouldShowOnboarding = {
+                        educationViewModel.shouldShowOnboarding(isExternalImport = intentUri != null)
+                    },
+                    onAppEntryStarted = {
+                        educationViewModel.startAppEntry(isExternalImport = intentUri != null)
+                    },
+                    onNavigateToOnboarding = {
+                        navController.navigate(Routes.ONBOARDING) {
+                            popUpTo(Routes.INITIAL) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                     onNavigateToGrid = {
                         navController.navigate(Routes.GRID) {
                             popUpTo(Routes.INITIAL) { inclusive = true }
@@ -70,9 +88,30 @@ fun PassNavGraph(
                 )
             }
 
+            composable(Routes.ONBOARDING) {
+                OnboardingScreen(
+                    bullets = listOf(
+                        "Store Apple Wallet passes",
+                        "Create custom barcode passes",
+                        "Refresh and reorder passes",
+                    ),
+                    titleContent = {
+                        AppLogo(color = MaterialTheme.colorScheme.onSurface)
+                    },
+                    onContinue = {
+                        educationViewModel.completeOnboarding()
+                        navController.navigate(Routes.GRID) {
+                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+
             composable(Routes.GRID) {
                 PassGridScreen(
                     viewModel = gridViewModel,
+                    educationViewModel = educationViewModel,
                     navController = navController,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this,

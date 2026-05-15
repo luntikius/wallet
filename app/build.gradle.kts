@@ -23,6 +23,7 @@ android {
         versionName = project.findProperty("VERSION_NAME") as String? ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("boolean", "FORCE_SHOW_EDUCATIONS", "false")
     }
 
     signingConfigs {
@@ -101,6 +102,7 @@ android {
 dependencies {
     implementation(project(":camera"))
     implementation(project(":design-system"))
+    implementation(project(":educations"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
