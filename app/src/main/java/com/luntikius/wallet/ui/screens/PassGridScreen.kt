@@ -194,55 +194,14 @@ fun PassGridScreen(
                                 AppLogo()
                             },
                             actions = {
-                                Box {
-                                    WalletIconButton(
-                                        onClick = { showAddMenu = true },
-                                        modifier = Modifier.educationTarget(PassGridEducationTarget.ADD_BUTTON),
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(
-                                                id = R.drawable.plus,
-                                            ),
-                                            contentDescription = "Add Pass",
-                                        )
-                                    }
-                                    WalletDropdownMenu(
-                                        expanded = showAddMenu,
-                                        onDismissRequest = { showAddMenu = false },
-                                    ) {
-                                        DropdownMenuItem(
-                                            leadingIcon = {
-                                                Icon(
-                                                    painter = painterResource(
-                                                        id = R.drawable.file,
-                                                    ),
-                                                    contentDescription = null,
-                                                )
-                                            },
-                                            text = { Text("Add from Files") },
-                                            onClick = {
-                                                showAddMenu = false
-                                                // Use */* to show all files (parser will validate format)
-                                                pickFileLauncher.launch("*/*")
-                                            },
-                                        )
-                                        DropdownMenuItem(
-                                            leadingIcon = {
-                                                Icon(
-                                                    painter = painterResource(
-                                                        id = R.drawable.camera,
-                                                    ),
-                                                    contentDescription = null,
-                                                )
-                                            },
-                                            text = { Text("Add from Camera") },
-                                            onClick = {
-                                                showAddMenu = false
-                                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                                            },
-                                        )
-                                    }
-                                }
+                                AddPassActions(
+                                    showAddMenu = showAddMenu,
+                                    onShowAddMenuChange = { showAddMenu = it },
+                                    onPickFile = { pickFileLauncher.launch("*/*") },
+                                    onRequestCamera = {
+                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    },
+                                )
                             },
                         )
                     },
@@ -382,6 +341,57 @@ fun PassGridScreen(
                 onNext = educationViewModel::nextEducationStep,
                 onBack = educationViewModel::previousEducationStep,
                 onFinish = educationViewModel::finishActiveEducation,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddPassActions(
+    showAddMenu: Boolean,
+    onShowAddMenuChange: (Boolean) -> Unit,
+    onPickFile: () -> Unit,
+    onRequestCamera: () -> Unit,
+) {
+    Box {
+        WalletIconButton(
+            onClick = { onShowAddMenuChange(true) },
+            modifier = Modifier.educationTarget(PassGridEducationTarget.ADD_BUTTON),
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.plus),
+                contentDescription = "Add Pass",
+            )
+        }
+        WalletDropdownMenu(
+            expanded = showAddMenu,
+            onDismissRequest = { onShowAddMenuChange(false) },
+        ) {
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.file),
+                        contentDescription = null,
+                    )
+                },
+                text = { Text("Add from Files") },
+                onClick = {
+                    onShowAddMenuChange(false)
+                    onPickFile()
+                },
+            )
+            DropdownMenuItem(
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.camera),
+                        contentDescription = null,
+                    )
+                },
+                text = { Text("Add from Camera") },
+                onClick = {
+                    onShowAddMenuChange(false)
+                    onRequestCamera()
+                },
             )
         }
     }
