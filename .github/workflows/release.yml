@@ -43,7 +43,7 @@ jobs:
       VERSION_BUMP: ${{ inputs.version_bump || 'patch' }}
       PACKAGE_NAME: com.luntikius.wallet
       PHONE_INTERNAL_TRACK: internal
-      WEAR_INTERNAL_TRACK: wear:qa
+      WEAR_INTERNAL_TRACK: wear:internal
 
     steps:
       - name: Checkout code with full history
@@ -179,7 +179,7 @@ jobs:
       PACKAGE_NAME: com.luntikius.wallet
       PHONE_INTERNAL_TRACK: internal
       PHONE_PRODUCTION_TRACK: production
-      WEAR_INTERNAL_TRACK: wear:qa
+      WEAR_INTERNAL_TRACK: wear:internal
       WEAR_PRODUCTION_TRACK: wear:production
 
     steps:
