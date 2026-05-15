@@ -1,7 +1,7 @@
 package com.luntikius.wallet.data.model
 
+import com.luntikius.wallet.data.json.WalletJson
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
-import kotlinx.serialization.json.Json
 
 /**
  * Sealed interface for type-safe pass data access.
@@ -27,18 +27,16 @@ sealed interface PassData {
     // data class GoogleWallet(val googleWalletJson: GoogleWalletJson) : PassData
 }
 
-private val passDataJson = Json { ignoreUnknownKeys = true }
-
 /**
  * Extension function to parse rawData JSON into typed PassData.
  * Uses the format field to determine which subtype to deserialize.
  */
 fun Pass.getPassData(): PassData = when (format) {
     PassFormat.PKPASS -> PassData.PKPass(
-        passDataJson.decodeFromString<PKPassJson>(rawData),
+        WalletJson.json.decodeFromString<PKPassJson>(rawData),
     )
     PassFormat.CUSTOM -> PassData.Custom(
-        passDataJson.decodeFromString<CustomPassJson>(rawData),
+        WalletJson.json.decodeFromString<CustomPassJson>(rawData),
     )
     PassFormat.GOOGLE_WALLET -> throw UnsupportedOperationException(
         "Google Wallet format not yet implemented",

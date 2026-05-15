@@ -1,7 +1,6 @@
 package com.luntikius.wallet
 
 import android.app.Application
-import com.luntikius.wallet.data.repository.PassRepository
 import com.luntikius.wallet.di.appModules
 import com.luntikius.wallet.wear.PhoneWearSyncCoordinator
 import org.koin.android.ext.koin.androidContext
@@ -17,10 +16,7 @@ class WalletApplication : Application() {
             modules(appModules)
         }
 
-        wearSyncCoordinator = PhoneWearSyncCoordinator(
-            context = this,
-            passRepository = koinApplication.koin.get<PassRepository>(),
-        )
+        wearSyncCoordinator = koinApplication.koin.get()
         wearSyncCoordinator.start()
     }
 }

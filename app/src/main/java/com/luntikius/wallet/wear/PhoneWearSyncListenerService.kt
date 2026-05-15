@@ -3,7 +3,6 @@ package com.luntikius.wallet.wear
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.WearableListenerService
-import com.luntikius.wallet.data.repository.PassRepository
 import com.luntikius.wallet.wearsync.WearSyncPaths
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +11,7 @@ import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
 class PhoneWearSyncListenerService : WearableListenerService() {
-    private val passRepository: PassRepository by inject()
+    private val wearSyncCoordinator: PhoneWearSyncCoordinator by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -22,7 +21,7 @@ class PhoneWearSyncListenerService : WearableListenerService() {
             }
         ) {
             scope.launch {
-                PhoneWearSyncCoordinator(applicationContext, passRepository).publishNow()
+                wearSyncCoordinator.publishNow()
             }
         }
     }
