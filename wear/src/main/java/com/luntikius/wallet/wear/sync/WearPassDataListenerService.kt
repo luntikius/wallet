@@ -1,0 +1,71 @@
+package com.luntikius.wallet.wear.sync
+
+import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.DataEvent
+import com.google.android.gms.wearable.DataEventBuffer
+import com.google.android.gms.wearable.DataMapItem
+import com.google.android.gms.wearable.Wearable
+import com.google.android.gms.wearable.WearableListenerService
+import com.luntikius.wallet.wear.data.WearPassDatabase
+import com.luntikius.wallet.wear.data.WearPassRepository
+import com.luntikius.wallet.wearsync.WearSyncDataKeys
+import com.luntikius.wallet.wearsync.WearSyncJson
+import com.luntikius.wallet.wearsync.WearSyncPaths
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+
+class WearPassDataListenerService : WearableListenerService() {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val repository by lazy {
+        WearPassRepository(
+            context = applicationContext,
+            dao = WearPassDatabase.getInstance(applicationContext).wearPassDao(),
+        )
+    }
+
+    override fun onDataChanged(dataEvents: DataEventBuffer) {
+        dataEvents.forEach { event ->
+            if (event.type != DataEvent.TYPE_CHANGED) return@forEach
+
+            val path = event.dataItem.uri.path ?: return@forEach
+            val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
+
+            when {
+                path == WearSyncPaths.PASSES_INDEX -> {
+                    val indexJson = dataMap.getString(WearSyncDataKeys.INDEX_JSON) ?: return@forEach
+                    scope.launch {
+                        runCatching {
+                            repository.applyIndex(WearSyncJson.decodeIndex(indexJson))
+                        }
+                    }
+                }
+                WearSyncPaths.passIdFromPath(path) != null -> {
+                    val snapshotJson = dataMap.getString(WearSyncDataKeys.SNAPSHOT_JSON) ?: return@forEach
+                    val iconAsset = dataMap.getAsset(WearSyncDataKeys.ICON_ASSET)
+                    val logoAsset = dataMap.getAsset(WearSyncDataKeys.LOGO_ASSET)
+                    scope.launch {
+                        runCatching {
+                            repository.upsertSnapshot(
+                                snapshot = WearSyncJson.decodeSnapshot(snapshotJson),
+                                iconBytes = readAssetBytes(iconAsset),
+                                logoBytes = readAssetBytes(logoAsset),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun readAssetBytes(asset: Asset?): ByteArray? = withContext(Dispatchers.IO) {
+        asset ?: return@withContext null
+        val response = Wearable.getDataClient(applicationContext).getFdForAsset(asset).await()
+        response.inputStream.use { inputStream ->
+            inputStream.readBytes()
+        }
+    }
+}

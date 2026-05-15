@@ -35,7 +35,7 @@ import com.luntikius.wallet.designsystem.components.button.WalletFilledButton
 import com.luntikius.wallet.designsystem.components.button.WalletOutlinedButton
 import com.luntikius.wallet.designsystem.components.navigation.WalletTopAppBar
 import com.luntikius.wallet.designsystem.components.picker.ColorPicker
-import com.luntikius.wallet.designsystem.foundation.color.DefaultPassColors
+import com.luntikius.wallet.designsystem.foundation.color.walletColors
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.ui.components.pass.custom.CustomPassCard
 import com.luntikius.wallet.ui.components.picker.IconPicker
@@ -60,6 +60,7 @@ fun CustomPassBuilderScreen(
     var selectedIconIndex by remember { mutableStateOf(0) }
     var selectedColorIndex by remember { mutableStateOf(0) }
     val scrollState = rememberScrollState()
+    val passColors = MaterialTheme.walletColors
 
     Scaffold(
         topBar = {
@@ -86,7 +87,7 @@ fun CustomPassBuilderScreen(
         ) {
             // Preview card at the top with editable name
             val (_, selectedIconRes) = IconMapper.availableIcons[selectedIconIndex]
-            val colorPalette = DefaultPassColors[selectedColorIndex]
+            val colorPalette = passColors[selectedColorIndex]
             val backgroundColor = colorPalette.background
             val foregroundColor = colorPalette.foreground
             val textColor = colorPalette.foreground
@@ -140,7 +141,7 @@ fun CustomPassBuilderScreen(
             )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
             ColorPicker(
-                colors = DefaultPassColors,
+                colors = passColors,
                 selectedIndex = selectedColorIndex,
                 onColorSelected = { selectedColorIndex = it },
             )
@@ -163,7 +164,7 @@ fun CustomPassBuilderScreen(
                 WalletFilledButton(
                     onClick = {
                         if (cardName.isNotBlank()) {
-                            val selectedColorPalette = DefaultPassColors[selectedColorIndex]
+                            val selectedColorPalette = passColors[selectedColorIndex]
                             val (iconName, _) = IconMapper.availableIcons[selectedIconIndex]
                             val pass = CustomPassBuilder.createCustomPass(
                                 cardName = cardName,
@@ -175,6 +176,10 @@ fun CustomPassBuilderScreen(
                                     0xFFFFFF and selectedColorPalette.background.toArgb(),
                                 ),
                                 foregroundColor = String.format(
+                                    "#%06X",
+                                    0xFFFFFF and selectedColorPalette.foreground.toArgb(),
+                                ),
+                                labelColor = String.format(
                                     "#%06X",
                                     0xFFFFFF and selectedColorPalette.foreground.toArgb(),
                                 ),
