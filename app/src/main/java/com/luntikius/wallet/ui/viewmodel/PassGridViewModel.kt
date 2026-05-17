@@ -1,5 +1,6 @@
 package com.luntikius.wallet.ui.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luntikius.wallet.data.model.Pass
@@ -15,8 +16,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class PassGridViewModel(private val passRepository: PassRepository, importStatusHolder: ImportStatusHolder) :
-    ViewModel() {
+class PassGridViewModel(
+    private val passRepository: PassRepository,
+    private val importStatusHolder: ImportStatusHolder,
+) : ViewModel() {
 
     val importStatus: StateFlow<ImportStatus> = importStatusHolder.importStatus
 
@@ -134,6 +137,23 @@ class PassGridViewModel(private val passRepository: PassRepository, importStatus
                     passId,
                 )
             }
+        }
+    }
+
+    fun importWalletArchive(uri: Uri) {
+        viewModelScope.launch {
+            importStatusHolder.setImportStatus(ImportStatus.Loading)
+            val result = passRepository.importWalletArchive(uri)
+            importStatusHolder.setImportStatus(
+                if (result.isSuccess) {
+                    ImportStatus.Summary(result.getOrThrow().summaryMessage)
+                } else {
+                    ImportStatus.Error(result.exceptionOrNull()?.message ?: "Failed to import wallet archive")
+                },
+            )
+
+            kotlinx.coroutines.delay(3000)
+            importStatusHolder.setImportStatus(ImportStatus.Idle)
         }
     }
 

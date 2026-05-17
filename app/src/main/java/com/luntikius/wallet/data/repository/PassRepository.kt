@@ -2,10 +2,14 @@ package com.luntikius.wallet.data.repository
 
 import android.content.Context
 import android.net.Uri
+import com.luntikius.wallet.data.archive.WalletArchive
+import com.luntikius.wallet.data.archive.WalletArchiveImportResult
+import com.luntikius.wallet.data.archive.WalletArchivePassMetadata
 import com.luntikius.wallet.data.exporter.ExportResult
 import com.luntikius.wallet.data.exporter.ExporterRegistry
 import com.luntikius.wallet.data.json.WalletJson
 import com.luntikius.wallet.data.local.PassDao
+import com.luntikius.wallet.data.model.CustomPassJson
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassFormat
 import com.luntikius.wallet.data.network.PKPassUpdateService
@@ -102,6 +106,16 @@ interface PassRepository {
      * Uses ExporterRegistry to find appropriate exporter for the pass format.
      */
     suspend fun exportPassForSharing(passId: String): Result<com.luntikius.wallet.data.exporter.ExportResult>
+
+    /**
+     * Export all supported passes as a wallet backup ZIP.
+     */
+    suspend fun exportAllPassesForSharing(): Result<ExportResult>
+
+    /**
+     * Import a wallet backup ZIP. Imported passes replace existing passes with the same IDs.
+     */
+    suspend fun importWalletArchive(uri: Uri): Result<WalletArchiveImportResult>
 }
 
 /**
@@ -389,6 +403,153 @@ class PassRepositoryImpl(
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun exportAllPassesForSharing(): Result<ExportResult> = withContext(Dispatchers.IO) {
+        try {
+            val passes = passDao.getAllPassesList()
+                .filter { pass -> pass.format == PassFormat.PKPASS || pass.format == PassFormat.CUSTOM }
+            if (passes.isEmpty()) {
+                return@withContext Result.failure(Exception("No passes available to export"))
+            }
+
+            Result.success(
+                WalletArchive.export(
+                    passes = passes,
+                    outputFile = WalletArchive.createExportFile(context.cacheDir),
+                ),
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun importWalletArchive(uri: Uri): Result<WalletArchiveImportResult> =
+        withContext(Dispatchers.IO) {
+            val tempDir = File(context.cacheDir, "archive_import")
+            try {
+                tempDir.deleteRecursively()
+                tempDir.mkdirs()
+
+                val readResult = context.contentResolver.openInputStream(uri).use { input ->
+                    if (input == null) {
+                        return@withContext Result.failure(Exception("Unable to open wallet archive"))
+                    }
+                    WalletArchive.read(input)
+                }
+
+                var importedCount = 0
+                var replacedCount = 0
+                var failedCount = 0
+                val importedIds = mutableListOf<String>()
+
+                readResult.passes.forEach { payload ->
+                    val metadata = payload.metadata
+                    try {
+                        val existingPass = passDao.getPassById(metadata.id)
+                        val pass = when (metadata.format) {
+                            PassFormat.PKPASS -> {
+                                val pkPassBytes = payload.pkPassBytes
+                                    ?: throw IllegalArgumentException("PKPass payload is missing")
+                                importPkPassFromArchive(metadata, pkPassBytes, tempDir)
+                            }
+                            PassFormat.CUSTOM -> {
+                                WalletJson.json.decodeFromString<CustomPassJson>(metadata.rawData)
+                                with(WalletArchive) { metadata.toCustomPass() }
+                            }
+                            PassFormat.GOOGLE_WALLET -> throw IllegalArgumentException("Unsupported pass format")
+                        }
+
+                        existingPass?.let { existing ->
+                            replacedCount++
+                            if (existing.assetsDirectory != pass.assetsDirectory) {
+                                deleteAssets(existing)
+                            }
+                        }
+                        passDao.insertPass(pass)
+                        importedIds += pass.id
+                        importedCount++
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        failedCount++
+                    }
+                }
+
+                if (importedCount == 0) {
+                    return@withContext Result.failure(Exception("No passes could be imported"))
+                }
+
+                normalizeDisplayOrderAfterArchiveImport(importedIds)
+
+                Result.success(
+                    WalletArchiveImportResult(
+                        importedCount = importedCount,
+                        replacedCount = replacedCount,
+                        failedCount = failedCount,
+                    ),
+                )
+            } catch (e: Exception) {
+                Result.failure(e)
+            } finally {
+                tempDir.deleteRecursively()
+            }
+        }
+
+    private suspend fun importPkPassFromArchive(
+        metadata: WalletArchivePassMetadata,
+        pkPassBytes: ByteArray,
+        tempDir: File,
+    ): Pass {
+        val archivePassFile = File(tempDir, "${metadata.id}.pkpass")
+        archivePassFile.writeBytes(pkPassBytes)
+
+        val parsedPass = pkPassParser.parseToTemp(Uri.fromFile(archivePassFile))?.pass
+            ?: throw IllegalArgumentException("Failed to parse PKPass payload")
+
+        if (parsedPass.id != metadata.id) {
+            cleanupPreviewAssets(parsedPass)
+            throw IllegalArgumentException("PKPass payload ID does not match archive metadata")
+        }
+
+        val tempAssetsDir = File(parsedPass.assetsDirectory)
+        val permanentDir = File(context.filesDir, "passes/pkpass/${parsedPass.id}")
+        permanentDir.deleteRecursively()
+        permanentDir.mkdirs()
+        tempAssetsDir.copyRecursively(permanentDir, overwrite = true)
+        tempAssetsDir.deleteRecursively()
+
+        return parsedPass.copy(
+            assetsDirectory = permanentDir.absolutePath,
+            iconPath = parsedPass.iconPath.replace(tempAssetsDir.absolutePath, permanentDir.absolutePath),
+            logoPath = parsedPass.logoPath?.replace(tempAssetsDir.absolutePath, permanentDir.absolutePath),
+            stripPath = parsedPass.stripPath?.replace(tempAssetsDir.absolutePath, permanentDir.absolutePath),
+            backgroundPath = parsedPass.backgroundPath?.replace(tempAssetsDir.absolutePath, permanentDir.absolutePath),
+            importedDate = metadata.importedDate,
+            lastRefreshDate = metadata.lastRefreshDate,
+            autoRefreshEnabled = metadata.autoRefreshEnabled,
+            displayOrder = metadata.displayOrder,
+        )
+    }
+
+    private suspend fun normalizeDisplayOrderAfterArchiveImport(importedIds: List<String>) {
+        val importedSet = importedIds.toSet()
+        val currentPasses = passDao.getAllPassesList()
+        val newOrder = importedIds + currentPasses
+            .filterNot { pass -> pass.id in importedSet }
+            .map { pass -> pass.id }
+
+        passDao.updateDisplayOrders(
+            newOrder.mapIndexed { index, passId -> passId to index },
+        )
+    }
+
+    private fun deleteAssets(pass: Pass) {
+        if (pass.assetsDirectory.isNotBlank()) {
+            val assetsDir = File(pass.assetsDirectory)
+            if (assetsDir.exists()) {
+                assetsDir.deleteRecursively()
+            }
         }
     }
 }

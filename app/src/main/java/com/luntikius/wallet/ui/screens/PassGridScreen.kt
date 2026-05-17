@@ -40,17 +40,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.luntikius.wallet.data.archive.WalletArchive
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassCategory
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.designsystem.R
 import com.luntikius.wallet.designsystem.components.branding.AppLogo
 import com.luntikius.wallet.designsystem.components.button.WalletIconButton
+import com.luntikius.wallet.designsystem.components.feedback.SnackbarStatus
 import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
 import com.luntikius.wallet.designsystem.components.feedback.WalletSnackbar
 import com.luntikius.wallet.designsystem.components.menu.WalletDropdownMenu
@@ -85,6 +88,7 @@ fun PassGridScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onPreviewPass: (android.net.Uri) -> Unit,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val passes by viewModel.passes.collectAsState()
@@ -92,6 +96,7 @@ fun PassGridScreen(
     val refreshStatus by viewModel.refreshStatus.collectAsState()
     val isInitialLoading by viewModel.isInitialLoading.collectAsState()
     val activeEducation by educationViewModel.activeEducation.collectAsState()
+    val context = LocalContext.current
     var selectedPassId by remember { mutableStateOf<String?>(null) }
     var tilePositionCache by remember { mutableStateOf<IntRect?>(null) }
     var hideTileId by remember { mutableStateOf<String?>(null) }
@@ -149,13 +154,17 @@ fun PassGridScreen(
     // Add method dropdown menu state
     var showAddMenu by remember { mutableStateOf(false) }
 
-    // File picker launcher - filtered to .pkpass files
+    // File picker launcher for pass preview. Keeps ZIP detection for broad file managers.
     val pickFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri ->
         uri?.let {
-            onPreviewPass(it)
-            navController.navigate(Routes.PREVIEW)
+            if (WalletArchive.isWalletArchiveUri(context, it)) {
+                viewModel.importWalletArchive(it)
+            } else {
+                onPreviewPass(it)
+                navController.navigate(Routes.PREVIEW)
+            }
         }
     }
 
@@ -194,6 +203,14 @@ fun PassGridScreen(
                                 AppLogo()
                             },
                             actions = {
+                                WalletIconButton(
+                                    onClick = onSettingsClick,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.settings),
+                                        contentDescription = "Settings",
+                                    )
+                                }
                                 AddPassActions(
                                     showAddMenu = showAddMenu,
                                     onShowAddMenuChange = { showAddMenu = it },
@@ -290,10 +307,20 @@ fun PassGridScreen(
                         )
 
                         // Import status snackbar
+                        if (importStatus is ImportStatus.Summary) {
+                            WalletSnackbar(
+                                message = (importStatus as ImportStatus.Summary).message,
+                                status = SnackbarStatus.SUCCESS,
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(MaterialTheme.spacing.mediumLarge),
+                            )
+                        }
+
                         if (importStatus is ImportStatus.Error) {
                             WalletSnackbar(
                                 message = (importStatus as ImportStatus.Error).message,
-                                status = com.luntikius.wallet.designsystem.components.feedback.SnackbarStatus.ERROR,
+                                status = SnackbarStatus.ERROR,
                                 modifier = Modifier
                                     .align(Alignment.BottomCenter)
                                     .padding(MaterialTheme.spacing.mediumLarge),

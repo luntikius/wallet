@@ -12,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.luntikius.wallet.data.archive.WalletArchive
 import com.luntikius.wallet.designsystem.components.branding.AppLogo
 import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
@@ -27,11 +29,14 @@ fun InitialScreen(
     intentUri: Uri?,
     shouldShowOnboarding: () -> Boolean,
     onAppEntryStarted: () -> Unit,
+    onImportArchive: (Uri) -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onNavigateToGrid: () -> Unit,
     onNavigateToPreview: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -47,9 +52,14 @@ fun InitialScreen(
     LaunchedEffect(Unit) {
         onAppEntryStarted()
         if (intentUri != null) {
-            // Launch with intent - start preview loading and navigate
-            viewModel.previewPass(intentUri)
-            onNavigateToPreview()
+            if (WalletArchive.isWalletArchiveUri(context, intentUri)) {
+                onImportArchive(intentUri)
+                onNavigateToGrid()
+            } else {
+                // Launch with intent - start preview loading and navigate
+                viewModel.previewPass(intentUri)
+                onNavigateToPreview()
+            }
         } else if (shouldShowOnboarding()) {
             onNavigateToOnboarding()
         } else {

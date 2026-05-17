@@ -1,19 +1,19 @@
 package com.luntikius.wallet.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.luntikius.wallet.education.EducationConfig
 import com.luntikius.wallet.education.EducationProgressRepository
 import com.luntikius.wallet.education.PassGridEducationIds
 import com.luntikius.wallet.education.createPassGridEmptyEducation
 import com.luntikius.wallet.education.createPassGridFirstCardEducation
 import com.luntikius.wallet.educations.ActiveEducation
+import com.luntikius.wallet.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class EducationViewModel(
     private val progressRepository: EducationProgressRepository,
-    private val config: EducationConfig,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val sessionDismissedEducationIds = mutableSetOf<String>()
@@ -28,11 +28,11 @@ class EducationViewModel(
 
     fun shouldShowOnboarding(isExternalImport: Boolean): Boolean {
         if (isExternalImport) return false
-        return config.forceShowEducations || !progressRepository.isOnboardingCompleted()
+        return forceShowEducations || !progressRepository.isOnboardingCompleted()
     }
 
     fun completeOnboarding() {
-        if (!config.forceShowEducations) {
+        if (!forceShowEducations) {
             progressRepository.setOnboardingCompleted()
         }
     }
@@ -69,7 +69,7 @@ class EducationViewModel(
 
     fun finishActiveEducation() {
         val educationId = _activeEducation.value?.education?.id ?: return
-        if (config.forceShowEducations) {
+        if (forceShowEducations) {
             sessionDismissedEducationIds += educationId
         } else {
             progressRepository.setEducationCompleted(educationId)
@@ -78,7 +78,7 @@ class EducationViewModel(
     }
 
     private fun shouldShowEducation(educationId: String): Boolean {
-        if (config.forceShowEducations) {
+        if (forceShowEducations) {
             return educationId !in sessionDismissedEducationIds
         }
 
@@ -92,4 +92,7 @@ class EducationViewModel(
             else -> false
         }
     }
+
+    private val forceShowEducations: Boolean
+        get() = settingsRepository.showEducations.value
 }

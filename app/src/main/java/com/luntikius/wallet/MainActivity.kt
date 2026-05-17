@@ -6,8 +6,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -21,13 +23,16 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
+import com.luntikius.wallet.data.archive.WalletArchive
 import com.luntikius.wallet.data.worker.PassRefreshWorker
 import com.luntikius.wallet.designsystem.theme.WalletTheme
+import com.luntikius.wallet.settings.AppThemeMode
 import com.luntikius.wallet.ui.navigation.PassNavGraph
 import com.luntikius.wallet.ui.navigation.Routes
 import com.luntikius.wallet.ui.viewmodel.EducationViewModel
 import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
+import com.luntikius.wallet.ui.viewmodel.SettingsViewModel
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.launch
@@ -38,6 +43,7 @@ class MainActivity : ComponentActivity() {
     private val gridViewModel: PassGridViewModel by viewModel()
     private val previewViewModel: PassPreviewViewModel by viewModel()
     private val educationViewModel: EducationViewModel by viewModel()
+    private val settingsViewModel: SettingsViewModel by viewModel()
 
     private var intentUri by mutableStateOf<Uri?>(null)
     private var newIntentUri by mutableStateOf<Uri?>(null)
@@ -76,7 +82,15 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            WalletTheme {
+            val themeMode by settingsViewModel.themeMode.collectAsState()
+            val systemDarkTheme = isSystemInDarkTheme()
+            val darkTheme = when (themeMode) {
+                AppThemeMode.LIGHT -> false
+                AppThemeMode.DARK -> true
+                AppThemeMode.SYSTEM -> systemDarkTheme
+            }
+
+            WalletTheme(darkTheme = darkTheme) {
                 val navController = rememberNavController()
 
                 PassNavGraph(
@@ -92,10 +106,18 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(newIntentUri) {
                     newIntentUri?.let { uri ->
                         educationViewModel.startAppEntry(isExternalImport = true)
-                        previewViewModel.previewPass(uri)
-                        navController.navigate(Routes.PREVIEW) {
-                            popUpTo(Routes.GRID) { inclusive = false }
-                            launchSingleTop = true
+                        if (WalletArchive.isWalletArchiveUri(this@MainActivity, uri)) {
+                            gridViewModel.importWalletArchive(uri)
+                            navController.navigate(Routes.GRID) {
+                                popUpTo(Routes.GRID) { inclusive = false }
+                                launchSingleTop = true
+                            }
+                        } else {
+                            previewViewModel.previewPass(uri)
+                            navController.navigate(Routes.PREVIEW) {
+                                popUpTo(Routes.GRID) { inclusive = false }
+                                launchSingleTop = true
+                            }
                         }
                         newIntentUri = null
                     }
