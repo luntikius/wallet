@@ -28,8 +28,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.data.builder.CustomPassBuilder
 import com.luntikius.wallet.designsystem.components.button.WalletFilledButton
 import com.luntikius.wallet.designsystem.components.button.WalletOutlinedButton
@@ -65,12 +67,12 @@ fun CustomPassBuilderScreen(
     Scaffold(
         topBar = {
             WalletTopAppBar(
-                title = { Text("Create Card") },
+                title = { Text(stringResource(R.string.create_card)) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
                         Icon(
                             painter = painterResource(id = com.luntikius.wallet.designsystem.R.drawable.cross),
-                            contentDescription = "Cancel",
+                            contentDescription = stringResource(R.string.cancel),
                         )
                     }
                 },
@@ -118,7 +120,7 @@ fun CustomPassBuilderScreen(
 
             // Icon picker
             Text(
-                text = "Icon",
+                text = stringResource(R.string.icon),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = MaterialTheme.spacing.mediumLarge),
@@ -134,7 +136,7 @@ fun CustomPassBuilderScreen(
 
             // Color picker
             Text(
-                text = "Color",
+                text = stringResource(R.string.color),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = MaterialTheme.spacing.mediumLarge),
@@ -159,7 +161,7 @@ fun CustomPassBuilderScreen(
                     onClick = onCancel,
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
                 WalletFilledButton(
                     onClick = {
@@ -191,7 +193,7 @@ fun CustomPassBuilderScreen(
                     modifier = Modifier.weight(1f),
                     enabled = cardName.isNotBlank(),
                 ) {
-                    Text("Add to Wallet")
+                    Text(stringResource(R.string.add_to_wallet))
                 }
             }
         }

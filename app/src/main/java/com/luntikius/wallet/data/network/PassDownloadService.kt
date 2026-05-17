@@ -3,6 +3,8 @@ package com.luntikius.wallet.data.network
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.luntikius.wallet.data.model.WalletError
+import com.luntikius.wallet.data.model.walletErrorOr
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -28,7 +30,7 @@ class PassDownloadService(
         data class Success(val fileUri: Uri) : DownloadResult()
 
         /** Network error occurred */
-        data class Error(val message: String) : DownloadResult()
+        data class Error(val error: WalletError) : DownloadResult()
     }
 
     /**
@@ -47,13 +49,13 @@ class PassDownloadService(
 
             if (!response.isSuccessful) {
                 return@withContext DownloadResult.Error(
-                    "Download failed: HTTP ${response.code}",
+                    WalletError.DownloadFailed("HTTP ${response.code}"),
                 )
             }
 
             val responseBody = response.body
             if (responseBody == null) {
-                return@withContext DownloadResult.Error("Empty response body")
+                return@withContext DownloadResult.Error(WalletError.EmptyResponseBody)
             }
 
             // Save to temporary file
@@ -70,13 +72,13 @@ class PassDownloadService(
             DownloadResult.Success(Uri.fromFile(tempFile))
         } catch (e: SocketTimeoutException) {
             Log.e("PassDownload", "Download timed out", e)
-            DownloadResult.Error("Download timed out")
+            DownloadResult.Error(WalletError.RequestTimedOut)
         } catch (e: IOException) {
             Log.e("PassDownload", "Network error", e)
-            DownloadResult.Error("Network error: ${e.message ?: "Unknown"}")
+            DownloadResult.Error(WalletError.NoInternetConnection)
         } catch (e: Exception) {
             Log.e("PassDownload", "Download failed", e)
-            DownloadResult.Error("Download failed: ${e.message ?: "Unknown error"}")
+            DownloadResult.Error(e.walletErrorOr(WalletError.DownloadFailed("Unknown error")))
         }
     }
 }

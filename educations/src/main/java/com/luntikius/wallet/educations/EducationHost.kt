@@ -41,8 +41,10 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R as StringsR
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -269,7 +271,7 @@ private fun EducationButtons(
     ) {
         if (activeEducation.canGoBack) {
             OutlinedButton(onClick = onBack) {
-                Text(text = "Back")
+                Text(text = stringResource(StringsR.string.education_back))
             }
         }
 
@@ -278,9 +280,9 @@ private fun EducationButtons(
         ) {
             Text(
                 text = when {
-                    activeEducation.education.steps.size == 1 -> "Got it"
-                    activeEducation.isLastStep -> "Done"
-                    else -> "Next"
+                    activeEducation.education.steps.size == 1 -> stringResource(StringsR.string.education_got_it)
+                    activeEducation.isLastStep -> stringResource(StringsR.string.education_done)
+                    else -> stringResource(StringsR.string.education_next)
                 },
             )
         }

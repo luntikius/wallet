@@ -100,6 +100,7 @@ android {
 
 dependencies {
     implementation(project(":camera"))
+    implementation(project(":core-strings"))
     implementation(project(":design-system"))
     implementation(project(":educations"))
     implementation(project(":wear-sync"))

@@ -5,6 +5,8 @@ import android.net.Uri
 import android.util.Log
 import com.luntikius.wallet.data.json.WalletJson
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.WalletError
+import com.luntikius.wallet.data.model.walletErrorOr
 import com.luntikius.wallet.data.parser.pkpass.PKPassJson
 import com.luntikius.wallet.data.parser.pkpass.PKPassParser
 import java.io.File
@@ -36,7 +38,7 @@ class PKPassUpdateService(private val context: Context, private val pkPassParser
         data object Unauthorized : UpdateResult()
 
         /** Network error occurred */
-        data class NetworkError(val message: String) : UpdateResult()
+        data class NetworkError(val error: WalletError) : UpdateResult()
 
         /** Pass does not have web service configured */
         data object NoWebService : UpdateResult()
@@ -111,14 +113,14 @@ class PKPassUpdateService(private val context: Context, private val pkPassParser
 
                                 UpdateResult.Updated(updatedPassJson)
                             } else {
-                                UpdateResult.NetworkError("Failed to parse updated pass")
+                                UpdateResult.NetworkError(WalletError.FailedToParseUpdatedPass)
                             }
                         } finally {
                             // Clean up temp file
                             tempFile.delete()
                         }
                     } else {
-                        UpdateResult.NetworkError("Empty response body")
+                        UpdateResult.NetworkError(WalletError.EmptyResponseBody)
                     }
                 }
                 304 -> {
@@ -135,18 +137,20 @@ class PKPassUpdateService(private val context: Context, private val pkPassParser
                 }
                 else -> {
                     // Other error codes
-                    UpdateResult.NetworkError("Server returned ${response.code()}: ${response.message()}")
+                    UpdateResult.NetworkError(
+                        WalletError.ServerReturned("${response.code()}: ${response.message()}"),
+                    )
                 }
             }
         } catch (e: SocketTimeoutException) {
             Log.e("PKPassUpdate", "RequestTimedOut", e)
-            UpdateResult.NetworkError("Request timed out")
+            UpdateResult.NetworkError(WalletError.RequestTimedOut)
         } catch (e: IOException) {
             Log.e("PKPassUpdate", "NoInternet", e)
-            UpdateResult.NetworkError("No internet connection")
+            UpdateResult.NetworkError(WalletError.NoInternetConnection)
         } catch (e: Exception) {
             Log.e("PKPassUpdate", "Unknown error", e)
-            UpdateResult.NetworkError("Update failed: ${e.message ?: "Unknown error"}")
+            UpdateResult.NetworkError(WalletError.UpdateFailed(e.walletErrorOr(WalletError.Unknown)))
         }
     }
 }

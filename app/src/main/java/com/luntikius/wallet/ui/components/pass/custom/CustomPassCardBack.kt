@@ -10,7 +10,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.ui.components.common.EmptyStateMessage
 import com.luntikius.wallet.ui.components.common.PassDeleteDialog
@@ -46,7 +48,7 @@ fun CustomPassCardBack(pass: Pass, viewModel: PassGridViewModel, onDismiss: () -
 
         // 2. INFO BLOCKS: Scrollable content
         EmptyStateMessage(
-            message = "No additional information",
+            message = stringResource(R.string.no_additional_information),
             tint = textColor,
             modifier = Modifier.fillMaxSize(),
         )

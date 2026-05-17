@@ -1,9 +1,13 @@
 package com.luntikius.wallet.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luntikius.wallet.data.model.ShareStatus
+import com.luntikius.wallet.data.model.WalletError
+import com.luntikius.wallet.data.model.walletErrorOr
 import com.luntikius.wallet.data.repository.WalletArchiveRepository
+import com.luntikius.wallet.settings.AppLanguageMode
 import com.luntikius.wallet.settings.AppThemeMode
 import com.luntikius.wallet.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +18,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
     private val walletArchiveRepository: WalletArchiveRepository,
+    private val context: Context,
 ) : ViewModel() {
 
     companion object {
@@ -21,6 +26,7 @@ class SettingsViewModel(
     }
 
     val themeMode: StateFlow<AppThemeMode> = settingsRepository.themeMode
+    val languageMode: StateFlow<AppLanguageMode> = settingsRepository.languageMode
     val showEducations: StateFlow<Boolean> = settingsRepository.showEducations
 
     private val _shareStatus = MutableStateFlow<ShareStatus>(ShareStatus.Idle)
@@ -28,6 +34,10 @@ class SettingsViewModel(
 
     fun setThemeMode(themeMode: AppThemeMode) {
         settingsRepository.setThemeMode(themeMode)
+    }
+
+    fun setLanguageMode(languageMode: AppLanguageMode) {
+        settingsRepository.setLanguageMode(languageMode)
     }
 
     fun setShowEducations(enabled: Boolean) {
@@ -43,7 +53,9 @@ class SettingsViewModel(
                 ShareStatus.Success(result.getOrThrow(), WALLET_ARCHIVE_SHARE_ID)
             } else {
                 ShareStatus.Error(
-                    result.exceptionOrNull()?.message ?: "Failed to export wallet",
+                    result.exceptionOrNull()
+                        .walletErrorOr(WalletError.FailedToExportWallet)
+                        .toMessage(context),
                     WALLET_ARCHIVE_SHARE_ID,
                 )
             }

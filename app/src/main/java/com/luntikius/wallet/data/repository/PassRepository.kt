@@ -12,6 +12,8 @@ import com.luntikius.wallet.data.local.PassDao
 import com.luntikius.wallet.data.model.CustomPassJson
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassFormat
+import com.luntikius.wallet.data.model.WalletError
+import com.luntikius.wallet.data.model.asException
 import com.luntikius.wallet.data.network.PKPassUpdateService
 import com.luntikius.wallet.data.network.PassDownloadService
 import com.luntikius.wallet.data.parser.ParserRegistry
@@ -145,13 +147,13 @@ class PassRepositoryImpl(
             val mimeType = context.contentResolver.getType(uri)
             val parser = parserRegistry.resolveParser(uri, mimeType)
                 ?: return@withContext Result.failure(
-                    Exception("Unsupported pass format"),
+                    WalletError.UnsupportedPassFormat.asException(),
                 )
 
             // Parse the pass file
             val result = parser.parse(uri)
                 ?: return@withContext Result.failure(
-                    Exception("Failed to parse pass file"),
+                    WalletError.FailedToParsePassFile.asException(),
                 )
 
             // Assign displayOrder to put new pass at end
@@ -200,7 +202,7 @@ class PassRepositoryImpl(
             try {
                 // Get pass from database
                 val pass = passDao.getPassById(passId)
-                    ?: return@withContext Result.failure(Exception("Pass not found"))
+                    ?: return@withContext Result.failure(WalletError.PassNotFound.asException())
 
                 // Only PKPASS format supports refresh
                 if (pass.format != PassFormat.PKPASS) {
@@ -285,13 +287,13 @@ class PassRepositoryImpl(
             val mimeType = context.contentResolver.getType(uri)
             val parser = parserRegistry.resolveParser(uri, mimeType)
                 ?: return@withContext Result.failure(
-                    Exception("Unsupported pass format"),
+                    WalletError.UnsupportedPassFormat.asException(),
                 )
 
             // Parse the pass file to temporary location
             val result = parser.parseToTemp(uri)
                 ?: return@withContext Result.failure(
-                    Exception("Failed to parse pass file"),
+                    WalletError.FailedToParsePassFile.asException(),
                 )
 
             Result.success(result.pass)
@@ -313,7 +315,7 @@ class PassRepositoryImpl(
                 tempDir.deleteRecursively()
             } else {
                 return@withContext Result.failure(
-                    Exception("Temporary assets not found"),
+                    WalletError.TemporaryAssetsNotFound.asException(),
                 )
             }
 
@@ -366,7 +368,7 @@ class PassRepositoryImpl(
                 }
 
                 is PassDownloadService.DownloadResult.Error -> {
-                    Result.failure(Exception(downloadResult.message))
+                    Result.failure(downloadResult.error.asException())
                 }
             }
         } catch (e: Exception) {
@@ -393,15 +395,15 @@ class PassRepositoryImpl(
     override suspend fun exportPassForSharing(passId: String): Result<ExportResult> = withContext(Dispatchers.IO) {
         try {
             val pass = passDao.getPassById(passId)
-                ?: return@withContext Result.failure(Exception("Pass not found"))
+                ?: return@withContext Result.failure(WalletError.PassNotFound.asException())
 
             val exporter = exporterRegistry.resolveExporter(pass)
                 ?: return@withContext Result.failure(
-                    Exception("No exporter available for ${pass.format}"),
+                    WalletError.NoExporterAvailable(pass.format.name).asException(),
                 )
 
             val result = exporter.export(pass)
-                ?: return@withContext Result.failure(Exception("Export failed"))
+                ?: return@withContext Result.failure(WalletError.ExportFailed.asException())
 
             Result.success(result)
         } catch (e: Exception) {
@@ -414,7 +416,7 @@ class PassRepositoryImpl(
             val passes = passDao.getAllPassesList()
                 .filter { pass -> pass.format == PassFormat.PKPASS || pass.format == PassFormat.CUSTOM }
             if (passes.isEmpty()) {
-                return@withContext Result.failure(Exception("No passes available to export"))
+                return@withContext Result.failure(WalletError.NoPassesAvailableToExport.asException())
             }
 
             Result.success(
@@ -437,7 +439,7 @@ class PassRepositoryImpl(
 
                 val readResult = context.contentResolver.openInputStream(uri).use { input ->
                     if (input == null) {
-                        return@withContext Result.failure(Exception("Unable to open wallet archive"))
+                        return@withContext Result.failure(WalletError.UnableToOpenArchive.asException())
                     }
                     WalletArchive.read(input)
                 }
@@ -454,14 +456,14 @@ class PassRepositoryImpl(
                         val pass = when (metadata.format) {
                             PassFormat.PKPASS -> {
                                 val pkPassBytes = payload.pkPassBytes
-                                    ?: throw IllegalArgumentException("PKPass payload is missing")
+                                    ?: throw WalletError.MissingPkpassPayload.asException()
                                 importPkPassFromArchive(metadata, pkPassBytes, tempDir)
                             }
                             PassFormat.CUSTOM -> {
                                 WalletJson.json.decodeFromString<CustomPassJson>(metadata.rawData)
                                 with(WalletArchive) { metadata.toCustomPass() }
                             }
-                            PassFormat.GOOGLE_WALLET -> throw IllegalArgumentException("Unsupported pass format")
+                            PassFormat.GOOGLE_WALLET -> throw WalletError.UnsupportedPassFormat.asException()
                         }
 
                         existingPass?.let { existing ->
@@ -480,7 +482,7 @@ class PassRepositoryImpl(
                 }
 
                 if (importedCount == 0) {
-                    return@withContext Result.failure(Exception("No passes could be imported"))
+                    return@withContext Result.failure(WalletError.NoPassesImported.asException())
                 }
 
                 normalizeDisplayOrderAfterArchiveImport(importedIds)
@@ -508,11 +510,11 @@ class PassRepositoryImpl(
         archivePassFile.writeBytes(pkPassBytes)
 
         val parsedPass = pkPassParser.parseToTemp(Uri.fromFile(archivePassFile))?.pass
-            ?: throw IllegalArgumentException("Failed to parse PKPass payload")
+            ?: throw WalletError.FailedToParsePkpassPayload.asException()
 
         if (parsedPass.id != metadata.id) {
             cleanupPreviewAssets(parsedPass)
-            throw IllegalArgumentException("PKPass payload ID does not match archive metadata")
+            throw WalletError.PkpassPayloadIdMismatch.asException()
         }
 
         val tempAssetsDir = File(parsedPass.assetsDirectory)

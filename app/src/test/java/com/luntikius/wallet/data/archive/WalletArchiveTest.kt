@@ -2,13 +2,14 @@ package com.luntikius.wallet.data.archive
 
 import com.luntikius.wallet.data.builder.CustomPassBuilder
 import com.luntikius.wallet.data.model.PassFormat
+import com.luntikius.wallet.data.model.WalletError
+import com.luntikius.wallet.data.model.WalletErrorException
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -63,13 +64,13 @@ class WalletArchiveTest {
         val outputFile = File(temporaryFolder.root, "empty.zip")
         ZipOutputStream(FileOutputStream(outputFile)).close()
 
-        val error = assertThrows(IllegalArgumentException::class.java) {
+        val error = assertThrows(WalletErrorException::class.java) {
             outputFile.inputStream().use { input ->
                 WalletArchive.read(input)
             }
         }
 
-        assertNotNull(error.message)
+        assertEquals(WalletError.MissingManifest, error.error)
     }
 
     @Test
@@ -81,13 +82,13 @@ class WalletArchiveTest {
             zipOut.closeEntry()
         }
 
-        val error = assertThrows(IllegalArgumentException::class.java) {
+        val error = assertThrows(WalletErrorException::class.java) {
             outputFile.inputStream().use { input ->
                 WalletArchive.read(input)
             }
         }
 
-        assertTrue(error.message?.contains("Unsafe wallet archive entry") == true)
+        assertEquals(WalletError.UnsafeEntry("../manifest.json"), error.error)
     }
 
     @Test

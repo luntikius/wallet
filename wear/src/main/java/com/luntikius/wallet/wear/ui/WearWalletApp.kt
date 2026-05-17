@@ -45,12 +45,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.wear.data.CachedWearPass
 import com.luntikius.wallet.wear.data.WearPassRepository
 import com.luntikius.wallet.wearsync.WearPassFieldSection
@@ -197,14 +199,14 @@ private fun EmptyPassState() {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "No passes",
+                text = stringResource(R.string.no_passes),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "Add or manage passes on your phone",
+                text = stringResource(R.string.add_or_manage_passes_on_phone),
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.72f),
                 textAlign = TextAlign.Center,

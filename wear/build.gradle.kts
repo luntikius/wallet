@@ -77,6 +77,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core-strings"))
     implementation(project(":wear-sync"))
 
     implementation(libs.androidx.core.ktx)

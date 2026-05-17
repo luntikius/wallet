@@ -33,17 +33,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.luntikius.wallet.BuildConfig
+import com.luntikius.wallet.corestrings.R as AppR
 import com.luntikius.wallet.data.archive.WalletArchive
 import com.luntikius.wallet.data.exporter.ExportResult
 import com.luntikius.wallet.data.model.ShareStatus
-import com.luntikius.wallet.designsystem.R
+import com.luntikius.wallet.designsystem.R as DesignR
 import com.luntikius.wallet.designsystem.components.feedback.SnackbarStatus
 import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
 import com.luntikius.wallet.designsystem.components.feedback.WalletSnackbar
 import com.luntikius.wallet.designsystem.components.navigation.WalletTopAppBar
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
+import com.luntikius.wallet.settings.AppLanguageMode
 import com.luntikius.wallet.settings.AppThemeMode
 import com.luntikius.wallet.ui.components.settings.SettingsActionRow
+import com.luntikius.wallet.ui.components.settings.SettingsDropdownRow
 import com.luntikius.wallet.ui.components.settings.SettingsSectionTitle
 import com.luntikius.wallet.ui.components.settings.SettingsSelectorRow
 import com.luntikius.wallet.ui.components.settings.SettingsToggleRow
@@ -59,12 +62,13 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: SettingsViewModel = koinViewModel()) {
     val themeMode by viewModel.themeMode.collectAsState()
+    val languageMode by viewModel.languageMode.collectAsState()
     val showEducations by viewModel.showEducations.collectAsState()
     val shareStatus by viewModel.shareStatus.collectAsState()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
-    val appInfo = "${stringResource(id = com.luntikius.wallet.R.string.app_name)} ${BuildConfig.VERSION_NAME}"
+    val appInfo = "${stringResource(id = AppR.string.app_name)} ${BuildConfig.VERSION_NAME}"
     var pendingExportAction by remember { mutableStateOf<WalletBackupExportAction?>(null) }
     var pendingSaveResult by remember { mutableStateOf<ExportResult?>(null) }
     var saveSnackbarMessage by remember { mutableStateOf<String?>(null) }
@@ -82,7 +86,11 @@ fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel:
         coroutineScope.launch {
             val saved = saveExportResult(context, exportResult, uri)
             saveSnackbarStatus = if (saved) SnackbarStatus.SUCCESS else SnackbarStatus.ERROR
-            saveSnackbarMessage = if (saved) "Wallet backup saved" else "Failed to save wallet backup"
+            saveSnackbarMessage = if (saved) {
+                context.getString(AppR.string.wallet_backup_saved)
+            } else {
+                context.getString(AppR.string.failed_to_save_wallet_backup)
+            }
             pendingSaveResult = null
             delay(3000)
             saveSnackbarMessage = null
@@ -115,12 +123,12 @@ fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel:
     Scaffold(
         topBar = {
             WalletTopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(AppR.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            painter = painterResource(id = R.drawable.arrow_back),
-                            contentDescription = "Back",
+                            painter = painterResource(id = DesignR.drawable.arrow_back),
+                            contentDescription = stringResource(AppR.string.back),
                         )
                     }
                 },
@@ -139,42 +147,51 @@ fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel:
                     .fillMaxSize()
                     .verticalScroll(scrollState),
             ) {
-                SettingsSectionTitle(title = "Appearance")
+                SettingsSectionTitle(title = stringResource(AppR.string.appearance))
                 SettingsSelectorRow(
-                    title = "Theme",
-                    description = "Choose how Wallet looks",
+                    title = stringResource(AppR.string.theme),
+                    description = stringResource(AppR.string.theme_description),
                     options = AppThemeMode.entries,
                     selectedOption = themeMode,
-                    optionLabel = AppThemeMode::label,
+                    optionLabel = { mode -> context.getString(mode.labelResId) },
                     onOptionSelected = viewModel::setThemeMode,
-                    icon = R.drawable.theme,
+                    icon = DesignR.drawable.theme,
+                )
+                SettingsDropdownRow(
+                    title = stringResource(AppR.string.language),
+                    description = stringResource(AppR.string.language_description),
+                    options = AppLanguageMode.entries,
+                    selectedOption = languageMode,
+                    optionLabel = { mode -> context.getString(mode.labelResId) },
+                    onOptionSelected = viewModel::setLanguageMode,
+                    icon = DesignR.drawable.language,
                 )
 
-                SettingsSectionTitle(title = "Backup")
+                SettingsSectionTitle(title = stringResource(AppR.string.backup))
                 SettingsActionRow(
-                    title = "Share Wallet Backup",
-                    description = "Export all passes as a ZIP file",
+                    title = stringResource(AppR.string.share_wallet_backup),
+                    description = stringResource(AppR.string.share_wallet_backup_description),
                     onClick = {
                         pendingExportAction = WalletBackupExportAction.SHARE
                         viewModel.prepareShareWalletArchive()
                     },
-                    icon = R.drawable.share,
+                    icon = DesignR.drawable.share,
                 )
                 SettingsActionRow(
-                    title = "Save Wallet Backup",
-                    description = "Save backup ZIP to this device",
+                    title = stringResource(AppR.string.save_wallet_backup),
+                    description = stringResource(AppR.string.save_wallet_backup_description),
                     onClick = {
                         pendingExportAction = WalletBackupExportAction.SAVE
                         viewModel.prepareShareWalletArchive()
                     },
-                    icon = R.drawable.file_export,
+                    icon = DesignR.drawable.file_export,
                 )
 
                 if (BuildConfig.DEBUG) {
-                    SettingsSectionTitle(title = "Dev")
+                    SettingsSectionTitle(title = stringResource(AppR.string.dev))
                     SettingsToggleRow(
-                        title = "Show educations",
-                        description = "Force onboarding and coaching prompts",
+                        title = stringResource(AppR.string.show_educations),
+                        description = stringResource(AppR.string.show_educations_description),
                         checked = showEducations,
                         onCheckedChange = viewModel::setShowEducations,
                     )

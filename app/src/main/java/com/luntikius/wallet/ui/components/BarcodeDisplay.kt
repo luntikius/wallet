@@ -21,8 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.designsystem.foundation.typography.textStyles
@@ -65,7 +67,7 @@ fun BarcodeDisplay(
             ) {
                 Image(
                     bitmap = bitmap.asImageBitmap(),
-                    contentDescription = "Barcode",
+                    contentDescription = stringResource(R.string.barcode),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(MaterialTheme.spacing.medium),
@@ -82,7 +84,7 @@ fun BarcodeDisplay(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "Barcode unavailable",
+                    text = stringResource(R.string.barcode_unavailable),
                     style = MaterialTheme.textStyles.captionSecondary,
                     color = textColor,
                 )

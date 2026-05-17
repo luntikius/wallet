@@ -28,7 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassFormat
 import com.luntikius.wallet.data.model.ShareStatus
@@ -135,15 +137,15 @@ fun PassCardBack(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Automatic Refresh",
+                                text = stringResource(R.string.automatic_refresh),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
                                 text = if (supportsAutoRefresh) {
-                                    "Automatically check for updates daily"
+                                    stringResource(R.string.auto_refresh_daily)
                                 } else {
-                                    "Not available for this pass"
+                                    stringResource(R.string.auto_refresh_unavailable)
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -201,7 +203,7 @@ fun PassCardBack(
             } else {
                 item {
                     EmptyStateMessage(
-                        message = "No additional information",
+                        message = stringResource(R.string.no_additional_information),
                         tint = textColor,
                         modifier = Modifier
                             .height(200.dp)

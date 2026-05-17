@@ -29,12 +29,14 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.wear.data.CachedWearPass
 import com.luntikius.wallet.wearsync.WearPassField
 import com.luntikius.wallet.wearsync.WearPassFieldSection
@@ -105,7 +107,7 @@ internal fun PassQrCard(
         ) {
             if (barcode == null) {
                 Text(
-                    text = "No code",
+                    text = stringResource(R.string.no_code),
                     style = MaterialTheme.typography.titleMedium,
                     color = DetailCardText,
                 )
@@ -120,14 +122,14 @@ internal fun PassQrCard(
 
                 if (barcodeBitmap == null) {
                     Text(
-                        text = "Code unavailable",
+                        text = stringResource(R.string.code_unavailable),
                         style = MaterialTheme.typography.titleMedium,
                         color = DetailCardText,
                     )
                 } else {
                     Image(
                         bitmap = barcodeBitmap.asImageBitmap(),
-                        contentDescription = "Pass code",
+                        contentDescription = stringResource(R.string.pass_code),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit,
                     )
@@ -326,7 +328,7 @@ internal fun EmptyInformationCard(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = "No additional information",
+            text = stringResource(R.string.no_additional_information),
             style = MaterialTheme.typography.bodyMedium,
             color = DetailCardMutedText,
         )
@@ -348,7 +350,7 @@ private fun PassLogo(pass: CachedWearPass, tint: Color, modifier: Modifier = Mod
         if (bitmap != null) {
             Image(
                 bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Pass logo",
+                contentDescription = stringResource(R.string.pass_logo),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
             )

@@ -1,5 +1,6 @@
 package com.luntikius.wallet.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import com.luntikius.wallet.education.EducationProgressRepository
 import com.luntikius.wallet.education.PassGridEducationIds
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class EducationViewModel(
     private val progressRepository: EducationProgressRepository,
     private val settingsRepository: SettingsRepository,
+    private val context: Context,
 ) : ViewModel() {
 
     private val sessionDismissedEducationIds = mutableSetOf<String>()
@@ -41,8 +43,8 @@ class EducationViewModel(
         if (isInitialLoading || isExternalEntry || _activeEducation.value != null) return
 
         val education = when {
-            passCount == 0 -> createPassGridEmptyEducation()
-            passCount > 0 -> createPassGridFirstCardEducation()
+            passCount == 0 -> createPassGridEmptyEducation(context)
+            passCount > 0 -> createPassGridFirstCardEducation(context)
             else -> null
         } ?: return
 

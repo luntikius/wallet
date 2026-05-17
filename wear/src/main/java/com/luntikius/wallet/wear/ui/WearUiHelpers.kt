@@ -1,6 +1,7 @@
 package com.luntikius.wallet.wear.ui
 
 import android.graphics.BitmapFactory
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -18,11 +19,13 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
-import com.luntikius.wallet.wear.R
+import com.luntikius.wallet.corestrings.R as StringsR
+import com.luntikius.wallet.wear.R as DrawableR
 import com.luntikius.wallet.wear.data.CachedWearPass
 import com.luntikius.wallet.wearsync.WearPassFieldSection
 
@@ -48,14 +51,14 @@ internal fun PassIcon(pass: CachedWearPass, tint: Color, background: Color, size
         if (bitmap != null) {
             Image(
                 bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Pass icon",
+                contentDescription = stringResource(StringsR.string.pass_icon),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
         } else if (customIconRes != null) {
             Image(
                 painter = painterResource(id = customIconRes),
-                contentDescription = "Pass icon",
+                contentDescription = stringResource(StringsR.string.pass_icon),
                 modifier = Modifier.size(size * 0.58f),
                 colorFilter = ColorFilter.tint(tint),
                 contentScale = ContentScale.Fit,
@@ -74,24 +77,25 @@ internal fun PassIcon(pass: CachedWearPass, tint: Color, background: Color, size
 private const val CUSTOM_PASS_FORMAT = "CUSTOM"
 
 private fun customPassIconResource(name: String): Int = when (name) {
-    "Like" -> R.drawable.like
-    "Cart" -> R.drawable.cart
-    "Gift" -> R.drawable.present
-    "Food" -> R.drawable.food
-    "Shop" -> R.drawable.shop
-    "Flower" -> R.drawable.flower
-    "Package" -> R.drawable.package_icon
-    else -> R.drawable.star
+    "Like" -> DrawableR.drawable.like
+    "Cart" -> DrawableR.drawable.cart
+    "Gift" -> DrawableR.drawable.present
+    "Food" -> DrawableR.drawable.food
+    "Shop" -> DrawableR.drawable.shop
+    "Flower" -> DrawableR.drawable.flower
+    "Package" -> DrawableR.drawable.package_icon
+    else -> DrawableR.drawable.star
 }
 
-internal val WearPassFieldSection.label: String
+@get:StringRes
+internal val WearPassFieldSection.labelResId: Int
     get() = when (this) {
-        WearPassFieldSection.HEADER -> "Header"
-        WearPassFieldSection.PRIMARY -> "Primary"
-        WearPassFieldSection.SECONDARY -> "Details"
-        WearPassFieldSection.AUXILIARY -> "More"
-        WearPassFieldSection.BACK -> "Information"
-        WearPassFieldSection.METADATA -> "Metadata"
+        WearPassFieldSection.HEADER -> StringsR.string.section_header
+        WearPassFieldSection.PRIMARY -> StringsR.string.section_primary
+        WearPassFieldSection.SECONDARY -> StringsR.string.section_details
+        WearPassFieldSection.AUXILIARY -> StringsR.string.section_more
+        WearPassFieldSection.BACK -> StringsR.string.section_information
+        WearPassFieldSection.METADATA -> StringsR.string.section_metadata
     }
 
 internal fun parseWearColor(value: String?, fallback: Color): Color = runCatching {

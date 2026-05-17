@@ -1,5 +1,6 @@
 package com.luntikius.wallet.wear
 
+import android.content.Context
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.PutDataMapRequest
@@ -18,7 +19,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-class PhoneWearSyncCoordinator(private val dataClient: DataClient, private val passRepository: PassRepository) {
+class PhoneWearSyncCoordinator(
+    private val context: Context,
+    private val dataClient: DataClient,
+    private val passRepository: PassRepository,
+) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var started = false
 
@@ -39,7 +44,7 @@ class PhoneWearSyncCoordinator(private val dataClient: DataClient, private val p
 
     private suspend fun publishPasses(passes: List<Pass>) = withContext(Dispatchers.IO) {
         val snapshotsByPass = passes.mapNotNull { pass ->
-            pass.toWearPassSnapshot()?.let { snapshot -> pass to snapshot }
+            pass.toWearPassSnapshot(context)?.let { snapshot -> pass to snapshot }
         }
 
         val index = WearPassIndex(

@@ -19,6 +19,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +32,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.designsystem.components.menu.WalletDropdownMenu
+import com.luntikius.wallet.designsystem.components.menu.WalletMenuItem
+import com.luntikius.wallet.designsystem.foundation.color.ColorTokens
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 
 @Composable
@@ -157,6 +164,80 @@ fun <T> SettingsSelectorRow(
                                 ),
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun <T> SettingsDropdownRow(
+    title: String,
+    options: List<T>,
+    selectedOption: T,
+    optionLabel: (T) -> String,
+    onOptionSelected: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    description: String? = null,
+    icon: Int? = null,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = MaterialTheme.spacing.mediumLarge, vertical = MaterialTheme.spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SettingsLeadingIcon(icon = icon)
+            SettingsTextBlock(
+                title = title,
+                description = description,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .clickable { expanded = true },
+                shape = MaterialTheme.shapes.small,
+                color = ColorTokens.surfaceDefault,
+                contentColor = ColorTokens.contentPrimary,
+                border = BorderStroke(1.dp, ColorTokens.border),
+            ) {
+                Box(
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 56.dp)
+                        .padding(horizontal = MaterialTheme.spacing.medium),
+                ) {
+                    Text(
+                        text = optionLabel(selectedOption),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            }
+
+            WalletDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                options.forEach { option ->
+                    WalletMenuItem(
+                        text = { Text(optionLabel(option)) },
+                        onClick = {
+                            expanded = false
+                            onOptionSelected(option)
+                        },
+                    )
                 }
             }
         }

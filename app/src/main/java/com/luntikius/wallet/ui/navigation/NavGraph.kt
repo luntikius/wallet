@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -15,6 +16,7 @@ import androidx.navigation.navArgument
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.luntikius.wallet.camera.CameraScanScreen
 import com.luntikius.wallet.camera.ScanResult
+import com.luntikius.wallet.corestrings.R as AppR
 import com.luntikius.wallet.designsystem.components.branding.AppLogo
 import com.luntikius.wallet.educations.OnboardingScreen
 import com.luntikius.wallet.ui.screens.CustomPassBuilderScreen
@@ -101,9 +103,9 @@ fun PassNavGraph(
             composable(Routes.ONBOARDING) {
                 OnboardingScreen(
                     bullets = listOf(
-                        "Store Apple Wallet passes",
-                        "Create custom barcode passes",
-                        "Refresh and reorder passes",
+                        stringResource(AppR.string.onboarding_store_wallet_passes),
+                        stringResource(AppR.string.onboarding_create_custom_passes),
+                        stringResource(AppR.string.onboarding_refresh_reorder),
                     ),
                     titleContent = {
                         AppLogo(color = MaterialTheme.colorScheme.onSurface)

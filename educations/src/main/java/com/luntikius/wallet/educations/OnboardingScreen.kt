@@ -17,7 +17,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R as StringsR
 
 @Composable
 fun OnboardingScreen(
@@ -26,7 +28,6 @@ fun OnboardingScreen(
     modifier: Modifier = Modifier,
     title: String = "",
     titleContent: (@Composable () -> Unit)? = null,
-    continueText: String = "Continue",
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -66,7 +67,7 @@ fun OnboardingScreen(
             Button(
                 onClick = onContinue,
             ) {
-                Text(text = continueText)
+                Text(text = stringResource(StringsR.string.education_continue))
             }
         }
     }
@@ -88,7 +89,7 @@ private fun OnboardingBullet(text: String) {
             text = text,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
+            modifier = Modifier.weight(1f),
         )
     }
 }

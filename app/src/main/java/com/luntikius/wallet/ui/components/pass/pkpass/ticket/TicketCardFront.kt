@@ -23,9 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.parser.pkpass.PKField
@@ -144,7 +146,7 @@ private fun TicketStripImage(stripPath: String?) {
             bitmap?.let {
                 Image(
                     bitmap = it.asImageBitmap(),
-                    contentDescription = "Strip image",
+                    contentDescription = stringResource(R.string.strip_image),
                     modifier = Modifier
                         .fillMaxWidth()
                         .wrapContentHeight(),
@@ -174,7 +176,7 @@ private fun TicketHeaderRow(
             bitmap?.let {
                 Image(
                     bitmap = it.asImageBitmap(),
-                    contentDescription = "Logo",
+                    contentDescription = stringResource(R.string.logo),
                     modifier = Modifier
                         .height(40.dp)
                         .widthIn(max = 120.dp),
