@@ -113,6 +113,7 @@ jobs:
           track: ${{ env.PHONE_INTERNAL_TRACK }}
           status: completed
           inAppUpdatePriority: 2
+          changesNotSentForReview: true
 
       - name: Upload Wear AAB to Google Play internal testing
         uses: r0adkll/upload-google-play@v1
@@ -123,6 +124,7 @@ jobs:
           track: ${{ env.WEAR_INTERNAL_TRACK }}
           status: completed
           inAppUpdatePriority: 2
+          changesNotSentForReview: true
 
       - name: Commit version bump to main
         run: |
