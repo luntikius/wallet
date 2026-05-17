@@ -126,7 +126,9 @@ jobs:
           inAppUpdatePriority: 2
           changesNotSentForReview: true
 
-      - name: Commit version bump to main
+      - name: Open version bump pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -149,7 +151,34 @@ jobs:
 
           git add gradle.properties
           git commit -m "Bump version to ${{ steps.version.outputs.NEW_VERSION }} (phone code ${{ steps.version.outputs.NEW_VERSION_CODE }}, Wear code ${{ steps.version.outputs.NEW_WEAR_VERSION_CODE }}) [skip ci]"
-          git push origin HEAD:main
+
+          VERSION_BUMP_BRANCH="automation/version-bump-${{ steps.version.outputs.NEW_VERSION }}-${{ github.run_id }}"
+          git push origin "HEAD:refs/heads/$VERSION_BUMP_BRANCH"
+
+          EXISTING_PR="$(
+            gh pr list \
+              --base main \
+              --head "${{ github.repository_owner }}:$VERSION_BUMP_BRANCH" \
+              --state open \
+              --json number \
+              --jq '.[0].number // empty'
+          )"
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Version bump pull request already exists: #$EXISTING_PR"
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head "$VERSION_BUMP_BRANCH" \
+            --title "Bump version to ${{ steps.version.outputs.NEW_VERSION }}" \
+            --body "Updates gradle.properties after publishing v${{ steps.version.outputs.NEW_VERSION }} to Google Play internal testing.
+
+- Phone version code: ${{ steps.version.outputs.NEW_VERSION_CODE }}
+- Wear version code: ${{ steps.version.outputs.NEW_WEAR_VERSION_CODE }}
+
+Created by the release workflow because main requires pull requests."
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
