@@ -19,8 +19,14 @@ if [ "$VERSION_BUMP" != "none" ]; then
   # Read current version
   CURRENT_VERSION=$(grep "^VERSION_NAME=" gradle.properties | cut -d'=' -f2)
   CURRENT_CODE=$(grep "^VERSION_CODE=" gradle.properties | cut -d'=' -f2)
+  CURRENT_WEAR_CODE=$(grep "^WEAR_VERSION_CODE=" gradle.properties | cut -d'=' -f2)
 
-  echo "Current version: $CURRENT_VERSION (code $CURRENT_CODE)"
+  if [ -z "$CURRENT_WEAR_CODE" ]; then
+    CURRENT_WEAR_CODE=$((CURRENT_CODE + 1000))
+    echo "WEAR_VERSION_CODE not found; using derived current Wear code $CURRENT_WEAR_CODE"
+  fi
+
+  echo "Current version: $CURRENT_VERSION (phone code $CURRENT_CODE, Wear code $CURRENT_WEAR_CODE)"
 
   # Parse version into components
   IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
@@ -52,33 +58,38 @@ if [ "$VERSION_BUMP" != "none" ]; then
   # Calculate new version
   NEW_VERSION="$MAJOR.$MINOR.$PATCH"
   NEW_CODE=$((CURRENT_CODE + 1))
+  NEW_WEAR_CODE=$((CURRENT_WEAR_CODE + 1))
 
   # Update gradle.properties
   # Use sed with backup for compatibility across platforms
   if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS requires empty string after -i
     sed -i '' "s/^VERSION_CODE=.*/VERSION_CODE=$NEW_CODE/" gradle.properties
+    sed -i '' "s/^WEAR_VERSION_CODE=.*/WEAR_VERSION_CODE=$NEW_WEAR_CODE/" gradle.properties
     sed -i '' "s/^VERSION_NAME=.*/VERSION_NAME=$NEW_VERSION/" gradle.properties
   else
     # Linux
     sed -i "s/^VERSION_CODE=.*/VERSION_CODE=$NEW_CODE/" gradle.properties
+    sed -i "s/^WEAR_VERSION_CODE=.*/WEAR_VERSION_CODE=$NEW_WEAR_CODE/" gradle.properties
     sed -i "s/^VERSION_NAME=.*/VERSION_NAME=$NEW_VERSION/" gradle.properties
   fi
 
-  echo "Version bumped to $NEW_VERSION (code $NEW_CODE)"
+  echo "Version bumped to $NEW_VERSION (phone code $NEW_CODE, Wear code $NEW_WEAR_CODE)"
 
   # Export to GITHUB_ENV for use in subsequent GitHub Actions steps
   if [ -n "$GITHUB_ENV" ]; then
     echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
     echo "NEW_VERSION_CODE=$NEW_CODE" >> "$GITHUB_ENV"
-    echo "Exported NEW_VERSION and NEW_VERSION_CODE to GITHUB_ENV"
+    echo "NEW_WEAR_VERSION_CODE=$NEW_WEAR_CODE" >> "$GITHUB_ENV"
+    echo "Exported NEW_VERSION, NEW_VERSION_CODE, and NEW_WEAR_VERSION_CODE to GITHUB_ENV"
   fi
 
   # Also export to GITHUB_OUTPUT if available (for step outputs)
   if [ -n "$GITHUB_OUTPUT" ]; then
     echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_OUTPUT"
     echo "NEW_VERSION_CODE=$NEW_CODE" >> "$GITHUB_OUTPUT"
-    echo "Exported NEW_VERSION and NEW_VERSION_CODE to GITHUB_OUTPUT"
+    echo "NEW_WEAR_VERSION_CODE=$NEW_WEAR_CODE" >> "$GITHUB_OUTPUT"
+    echo "Exported NEW_VERSION, NEW_VERSION_CODE, and NEW_WEAR_VERSION_CODE to GITHUB_OUTPUT"
   fi
 else
   echo "Skipping version bump (VERSION_BUMP=none)"
@@ -86,15 +97,22 @@ else
   # Even when skipping, export current version
   CURRENT_VERSION=$(grep "^VERSION_NAME=" gradle.properties | cut -d'=' -f2)
   CURRENT_CODE=$(grep "^VERSION_CODE=" gradle.properties | cut -d'=' -f2)
+  CURRENT_WEAR_CODE=$(grep "^WEAR_VERSION_CODE=" gradle.properties | cut -d'=' -f2)
+
+  if [ -z "$CURRENT_WEAR_CODE" ]; then
+    CURRENT_WEAR_CODE=$((CURRENT_CODE + 1000))
+  fi
 
   if [ -n "$GITHUB_ENV" ]; then
     echo "NEW_VERSION=$CURRENT_VERSION" >> "$GITHUB_ENV"
     echo "NEW_VERSION_CODE=$CURRENT_CODE" >> "$GITHUB_ENV"
+    echo "NEW_WEAR_VERSION_CODE=$CURRENT_WEAR_CODE" >> "$GITHUB_ENV"
   fi
 
   if [ -n "$GITHUB_OUTPUT" ]; then
     echo "NEW_VERSION=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
     echo "NEW_VERSION_CODE=$CURRENT_CODE" >> "$GITHUB_OUTPUT"
+    echo "NEW_WEAR_VERSION_CODE=$CURRENT_WEAR_CODE" >> "$GITHUB_OUTPUT"
   fi
 fi
 
