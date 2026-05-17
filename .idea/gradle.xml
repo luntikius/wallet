@@ -12,8 +12,11 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/camera" />
+            <option value="$PROJECT_DIR$/core-strings" />
             <option value="$PROJECT_DIR$/design-system" />
             <option value="$PROJECT_DIR$/educations" />
+            <option value="$PROJECT_DIR$/wear" />
+            <option value="$PROJECT_DIR$/wear-sync" />
           </set>
         </option>
       </GradleProjectSettings>

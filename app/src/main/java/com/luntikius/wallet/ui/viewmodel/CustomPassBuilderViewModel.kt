@@ -1,14 +1,18 @@
 package com.luntikius.wallet.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.WalletError
+import com.luntikius.wallet.data.model.walletErrorOr
 import com.luntikius.wallet.data.repository.PassRepository
 import kotlinx.coroutines.launch
 
 class CustomPassBuilderViewModel(
     private val passRepository: PassRepository,
     private val importStatusHolder: ImportStatusHolder,
+    private val context: Context,
 ) : ViewModel() {
 
     fun createCustomPass(pass: Pass) {
@@ -19,7 +23,11 @@ class CustomPassBuilderViewModel(
                 if (result.isSuccess) {
                     ImportStatus.Success
                 } else {
-                    ImportStatus.Error(result.exceptionOrNull()?.message ?: "Unknown error")
+                    ImportStatus.Error(
+                        result.exceptionOrNull()
+                            .walletErrorOr(WalletError.Unknown)
+                            .toMessage(context),
+                    )
                 },
             )
 

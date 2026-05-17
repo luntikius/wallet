@@ -1,5 +1,7 @@
 package com.luntikius.wallet.wear
 
+import android.content.Context
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassData
@@ -21,38 +23,44 @@ import com.luntikius.wallet.wearsync.WearPassSnapshot
 import java.io.File
 import java.util.Locale
 
-fun Pass.toWearPassSnapshot(): WearPassSnapshot? = runCatching {
-    when (val passData = getPassData()) {
-        is PassData.PKPass -> toPkPassSnapshot(passData.pkPassJson)
-        is PassData.Custom -> WearPassSnapshot(
-            id = id,
-            format = format.name,
-            title = organizationName,
-            subtitle = description,
-            category = category.name,
-            backgroundColor = backgroundColor,
-            foregroundColor = foregroundColor,
-            labelColor = labelColor,
-            displayOrder = displayOrder,
-            barcode = WearPassBarcode(
-                value = passData.customPassJson.barcodeValue,
-                format = BarcodeFormatType.fromName(passData.customPassJson.barcodeFormat).toWearFormat(),
-            ),
-            customIconName = passData.customPassJson.iconName,
-            fields = listOf(
-                WearPassField(
-                    key = "format",
-                    label = "Format",
-                    value = passData.customPassJson.barcodeFormat,
-                    section = WearPassFieldSection.METADATA,
-                ),
-            ),
-            assets = wearAssetRefs(),
-        )
-    }
-}.getOrNull()
+fun Pass.toWearPassSnapshot(context: Context): WearPassSnapshot? = toWearPassSnapshot(
+    formatLabel = context.getString(R.string.format),
+    locale = context.resources.configuration.locales[0] ?: Locale.getDefault(),
+)
 
-private fun Pass.toPkPassSnapshot(pkPassJson: PKPassJson): WearPassSnapshot {
+internal fun Pass.toWearPassSnapshot(formatLabel: String, locale: Locale = Locale.getDefault()): WearPassSnapshot? =
+    runCatching {
+        when (val passData = getPassData()) {
+            is PassData.PKPass -> toPkPassSnapshot(passData.pkPassJson, locale)
+            is PassData.Custom -> WearPassSnapshot(
+                id = id,
+                format = format.name,
+                title = organizationName,
+                subtitle = description,
+                category = category.name,
+                backgroundColor = backgroundColor,
+                foregroundColor = foregroundColor,
+                labelColor = labelColor,
+                displayOrder = displayOrder,
+                barcode = WearPassBarcode(
+                    value = passData.customPassJson.barcodeValue,
+                    format = BarcodeFormatType.fromName(passData.customPassJson.barcodeFormat).toWearFormat(),
+                ),
+                customIconName = passData.customPassJson.iconName,
+                fields = listOf(
+                    WearPassField(
+                        key = "format",
+                        label = formatLabel,
+                        value = passData.customPassJson.barcodeFormat,
+                        section = WearPassFieldSection.METADATA,
+                    ),
+                ),
+                assets = wearAssetRefs(),
+            )
+        }
+    }.getOrNull()
+
+private fun Pass.toPkPassSnapshot(pkPassJson: PKPassJson, locale: Locale): WearPassSnapshot {
     val structure = pkPassJson.passStructure()
     val barcode = (pkPassJson.barcodes?.firstOrNull() ?: pkPassJson.barcode)?.toWearBarcode()
 
@@ -67,44 +75,40 @@ private fun Pass.toPkPassSnapshot(pkPassJson: PKPassJson): WearPassSnapshot {
         labelColor = labelColor,
         displayOrder = displayOrder,
         barcode = barcode,
-        fields = structure?.wearFields(pkPassJson.localizations).orEmpty(),
+        fields = structure?.wearFields(pkPassJson.localizations, locale).orEmpty(),
         assets = wearAssetRefs(),
     )
 }
 
 private fun PKPassJson.passStructure(): PKPassStructure? = boardingPass ?: eventTicket ?: coupon ?: storeCard ?: generic
 
-private fun PKPassStructure.wearFields(localizations: PKPassLocalizations?): List<WearPassField> = buildList {
-    addFields(headerFields, WearPassFieldSection.HEADER, localizations)
-    addFields(primaryFields, WearPassFieldSection.PRIMARY, localizations)
-    addFields(secondaryFields, WearPassFieldSection.SECONDARY, localizations)
-    addFields(auxiliaryFields, WearPassFieldSection.AUXILIARY, localizations)
-    addFields(backFields, WearPassFieldSection.BACK, localizations)
-}
+private fun PKPassStructure.wearFields(localizations: PKPassLocalizations?, locale: Locale): List<WearPassField> =
+    buildList {
+        addFields(headerFields, WearPassFieldSection.HEADER, localizations, locale)
+        addFields(primaryFields, WearPassFieldSection.PRIMARY, localizations, locale)
+        addFields(secondaryFields, WearPassFieldSection.SECONDARY, localizations, locale)
+        addFields(auxiliaryFields, WearPassFieldSection.AUXILIARY, localizations, locale)
+        addFields(backFields, WearPassFieldSection.BACK, localizations, locale)
+    }
 
 private fun MutableList<WearPassField>.addFields(
     fields: List<PKField>?,
     section: WearPassFieldSection,
     localizations: PKPassLocalizations?,
+    locale: Locale,
 ) {
     fields.orEmpty().forEach { field ->
         val value = field.value?.takeIf { it.isNotBlank() } ?: return@forEach
         add(
             WearPassField(
                 key = field.key,
-                label = field.label.localized(localizations),
-                value = value.localized(localizations),
+                label = LocalizationResolver.resolveLocalizedValue(field.label, localizations, locale),
+                value = LocalizationResolver.resolveLocalizedValue(value, localizations, locale),
                 section = section,
             ),
         )
     }
 }
-
-private fun String?.localized(localizations: PKPassLocalizations?): String = LocalizationResolver.resolveLocalizedValue(
-    value = this,
-    localizations = localizations,
-    locale = Locale.getDefault(),
-)
 
 private fun PKBarcode.toWearBarcode(): WearPassBarcode? {
     val wearFormat = when (format) {

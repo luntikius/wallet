@@ -3,7 +3,6 @@ package com.luntikius.wallet.ui.components.common
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -22,11 +21,7 @@ import kotlin.math.max
  * @param dotColor Color of the dots (default: onSurface from theme)
  */
 @Composable
-fun DottedDivider(
-    modifier: Modifier = Modifier,
-    dotRadius: Float = 8f,
-    dotColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun DottedDivider(modifier: Modifier = Modifier, dotRadius: Float = 8f, dotColor: Color = Color.Black) {
     Canvas(
         modifier = modifier
             .fillMaxWidth()

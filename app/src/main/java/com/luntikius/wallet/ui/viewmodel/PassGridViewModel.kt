@@ -1,11 +1,14 @@
 package com.luntikius.wallet.ui.viewmodel
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.ShareStatus
+import com.luntikius.wallet.data.model.WalletError
+import com.luntikius.wallet.data.model.walletErrorOr
 import com.luntikius.wallet.data.network.PKPassUpdateService
 import com.luntikius.wallet.data.repository.PassRepository
 import com.luntikius.wallet.data.repository.WalletArchiveRepository
@@ -21,6 +24,7 @@ class PassGridViewModel(
     private val passRepository: PassRepository,
     private val walletArchiveRepository: WalletArchiveRepository,
     private val importStatusHolder: ImportStatusHolder,
+    private val context: Context,
 ) : ViewModel() {
 
     val importStatus: StateFlow<ImportStatus> = importStatusHolder.importStatus
@@ -59,17 +63,19 @@ class PassGridViewModel(
                     is PKPassUpdateService.UpdateResult.Updated -> RefreshStatus.Success(1)
                     is PKPassUpdateService.UpdateResult.NotModified -> RefreshStatus.Success(0)
                     is PKPassUpdateService.UpdateResult.Deleted ->
-                        RefreshStatus.Error("Pass was deleted", passId)
+                        RefreshStatus.Error(WalletError.PassWasDeleted.toMessage(context), passId)
                     is PKPassUpdateService.UpdateResult.Unauthorized ->
-                        RefreshStatus.Error("Update authorization failed", passId)
+                        RefreshStatus.Error(WalletError.UpdateAuthorizationFailed.toMessage(context), passId)
                     is PKPassUpdateService.UpdateResult.NetworkError ->
-                        RefreshStatus.Error(updateResult.message, passId)
+                        RefreshStatus.Error(updateResult.error.toMessage(context), passId)
                     is PKPassUpdateService.UpdateResult.NoWebService ->
-                        RefreshStatus.Error("This pass does not support updates", passId)
+                        RefreshStatus.Error(WalletError.PassUpdatesUnsupported.toMessage(context), passId)
                 }
             } else {
                 _refreshStatus.value = RefreshStatus.Error(
-                    result.exceptionOrNull()?.message ?: "Unknown error",
+                    result.exceptionOrNull()
+                        .walletErrorOr(WalletError.Unknown)
+                        .toMessage(context),
                     passId,
                 )
             }
@@ -90,13 +96,15 @@ class PassGridViewModel(
                 val errorResults = results.values.filterIsInstance<PKPassUpdateService.UpdateResult.NetworkError>()
 
                 _refreshStatus.value = if (errorResults.isNotEmpty()) {
-                    RefreshStatus.Error(errorResults.first().message, null)
+                    RefreshStatus.Error(errorResults.first().error.toMessage(context), null)
                 } else {
                     RefreshStatus.Success(updatedCount)
                 }
             } else {
                 _refreshStatus.value = RefreshStatus.Error(
-                    result.exceptionOrNull()?.message ?: "Unknown error",
+                    result.exceptionOrNull()
+                        .walletErrorOr(WalletError.Unknown)
+                        .toMessage(context),
                     null,
                 )
             }
@@ -135,7 +143,9 @@ class PassGridViewModel(
                 ShareStatus.Success(result.getOrThrow(), passId)
             } else {
                 ShareStatus.Error(
-                    result.exceptionOrNull()?.message ?: "Failed to share pass",
+                    result.exceptionOrNull()
+                        .walletErrorOr(WalletError.FailedToSharePass)
+                        .toMessage(context),
                     passId,
                 )
             }
@@ -148,9 +158,13 @@ class PassGridViewModel(
             val result = walletArchiveRepository.importWalletArchive(uri)
             importStatusHolder.setImportStatus(
                 if (result.isSuccess) {
-                    ImportStatus.Summary(result.getOrThrow().summaryMessage)
+                    ImportStatus.Summary(result.getOrThrow().localizedSummary(context))
                 } else {
-                    ImportStatus.Error(result.exceptionOrNull()?.message ?: "Failed to import wallet archive")
+                    ImportStatus.Error(
+                        result.exceptionOrNull()
+                            .walletErrorOr(WalletError.FailedToImportWalletArchive)
+                            .toMessage(context),
+                    )
                 },
             )
 

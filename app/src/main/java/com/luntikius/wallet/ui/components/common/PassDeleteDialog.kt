@@ -2,10 +2,12 @@ package com.luntikius.wallet.ui.components.common
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.luntikius.wallet.corestrings.R
+import com.luntikius.wallet.designsystem.foundation.color.ColorTokens
 import com.luntikius.wallet.designsystem.theme.WalletTheme
 
 /**
@@ -25,27 +27,34 @@ fun PassDeleteDialog(showDialog: Boolean, onDelete: () -> Unit, onDismiss: () ->
             AlertDialog(
                 onDismissRequest = onDismiss,
                 title = {
-                    Text(text = "Delete Pass")
+                    Text(text = stringResource(R.string.delete_pass_title))
                 },
                 text = {
-                    Text(text = "Are you sure you want to delete this pass? This action cannot be undone.")
+                    Text(text = stringResource(R.string.delete_pass_message))
                 },
                 confirmButton = {
                     TextButton(
                         onClick = onDelete,
                         colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error,
+                            contentColor = ColorTokens.error,
                         ),
                     ) {
-                        Text("Delete")
+                        Text(stringResource(R.string.delete))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                    TextButton(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = ColorTokens.brandPrimary,
+                        ),
+                    ) {
+                        Text(stringResource(R.string.cancel))
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                containerColor = ColorTokens.surfaceDefault,
+                titleContentColor = ColorTokens.contentPrimary,
+                textContentColor = ColorTokens.contentSecondary,
             )
         }
     }

@@ -3,13 +3,13 @@ package com.luntikius.wallet.designsystem.components.menu
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
+import com.luntikius.wallet.designsystem.foundation.color.ColorTokens
 
 /**
  * Dropdown menu for the Wallet design system.
@@ -46,6 +46,6 @@ fun WalletDropdownMenu(
         properties = properties,
         content = content,
         shape = RoundedCornerShape(12.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        containerColor = ColorTokens.surfaceDefault,
     )
 }

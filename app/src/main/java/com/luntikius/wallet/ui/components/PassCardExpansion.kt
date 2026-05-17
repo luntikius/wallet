@@ -50,13 +50,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R as AppR
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.getPassData
-import com.luntikius.wallet.designsystem.R
+import com.luntikius.wallet.designsystem.R as DesignR
 import com.luntikius.wallet.designsystem.foundation.animation.AnimationTokens
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.designsystem.theme.WalletTheme
@@ -599,14 +601,14 @@ private fun CardControls(
             ),
         ) {
             Icon(
-                painter = painterResource(R.drawable.refresh),
-                contentDescription = "Flip card",
+                painter = painterResource(DesignR.drawable.refresh),
+                contentDescription = stringResource(AppR.string.flip_card),
                 modifier = Modifier.size(16.dp),
                 tint = Color.White,
             )
             Spacer(modifier = Modifier.width(MaterialTheme.spacing.extraSmall))
             Text(
-                text = "Flip",
+                text = stringResource(AppR.string.flip),
                 style = MaterialTheme.typography.labelMedium,
                 color = Color.White,
             )
@@ -620,7 +622,7 @@ private fun CardControls(
             modifier = Modifier.fillMaxWidth(0.5f),
         ) {
             Text(
-                text = "Close",
+                text = stringResource(AppR.string.close),
                 style = MaterialTheme.typography.labelMedium,
                 color = Color.White,
             )

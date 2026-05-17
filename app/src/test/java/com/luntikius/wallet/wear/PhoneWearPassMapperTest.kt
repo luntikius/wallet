@@ -40,7 +40,7 @@ class PhoneWearPassMapperTest {
             ),
         )
 
-        val snapshot = pass(format = PassFormat.PKPASS, rawData = rawData).toWearPassSnapshot()
+        val snapshot = pass(format = PassFormat.PKPASS, rawData = rawData).toWearPassSnapshot(formatLabel = "Format")
 
         assertNotNull(snapshot)
         requireNotNull(snapshot)
@@ -63,7 +63,7 @@ class PhoneWearPassMapperTest {
             ),
         )
 
-        val snapshot = pass(format = PassFormat.CUSTOM, rawData = rawData).toWearPassSnapshot()
+        val snapshot = pass(format = PassFormat.CUSTOM, rawData = rawData).toWearPassSnapshot(formatLabel = "Format")
 
         assertNotNull(snapshot)
         requireNotNull(snapshot)

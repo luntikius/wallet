@@ -1,9 +1,12 @@
 package com.luntikius.wallet.ui.viewmodel
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luntikius.wallet.data.model.Pass
+import com.luntikius.wallet.data.model.WalletError
+import com.luntikius.wallet.data.model.walletErrorOr
 import com.luntikius.wallet.data.repository.PassRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +16,7 @@ import kotlinx.coroutines.launch
 class PassPreviewViewModel(
     private val passRepository: PassRepository,
     private val importStatusHolder: ImportStatusHolder,
+    private val context: Context,
 ) : ViewModel() {
 
     private val _previewPass = MutableStateFlow<Pass?>(null)
@@ -36,7 +40,9 @@ class PassPreviewViewModel(
             } else {
                 _previewPass.value = null
                 _previewStatus.value = PreviewStatus.Error(
-                    result.exceptionOrNull()?.message ?: "Failed to load pass",
+                    result.exceptionOrNull()
+                        .walletErrorOr(WalletError.FailedToLoadPass)
+                        .toMessage(context),
                 )
             }
         }
@@ -57,7 +63,9 @@ class PassPreviewViewModel(
                 importStatusHolder.setImportStatus(ImportStatus.Idle)
             } else {
                 _previewStatus.value = PreviewStatus.Error(
-                    result.exceptionOrNull()?.message ?: "Failed to add pass",
+                    result.exceptionOrNull()
+                        .walletErrorOr(WalletError.FailedToAddPass)
+                        .toMessage(context),
                 )
             }
         }
@@ -88,7 +96,9 @@ class PassPreviewViewModel(
             } else {
                 _previewPass.value = null
                 _previewStatus.value = PreviewStatus.Error(
-                    result.exceptionOrNull()?.message ?: "Failed to download pass",
+                    result.exceptionOrNull()
+                        .walletErrorOr(WalletError.FailedToDownloadPass)
+                        .toMessage(context),
                 )
             }
         }

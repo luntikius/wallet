@@ -18,8 +18,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.luntikius.wallet.designsystem.R
+import com.luntikius.wallet.corestrings.R as AppR
+import com.luntikius.wallet.designsystem.R as DesignR
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import java.io.File
 
@@ -60,7 +62,7 @@ fun PassCardBackHeader(
                 bitmap?.let {
                     Image(
                         bitmap = it.asImageBitmap(),
-                        contentDescription = "Logo",
+                        contentDescription = stringResource(AppR.string.logo),
                         modifier = Modifier
                             .height(40.dp)
                             .widthIn(max = 120.dp),
@@ -78,8 +80,8 @@ fun PassCardBackHeader(
                 onClick = action,
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.share),
-                    contentDescription = "Share",
+                    painter = painterResource(DesignR.drawable.share),
+                    contentDescription = stringResource(AppR.string.share),
                     tint = textColor,
                 )
             }
@@ -90,8 +92,8 @@ fun PassCardBackHeader(
             onClick = onDeleteClick,
         ) {
             Icon(
-                painter = painterResource(R.drawable.delete),
-                contentDescription = "Delete",
+                painter = painterResource(DesignR.drawable.delete),
+                contentDescription = stringResource(AppR.string.delete),
                 tint = textColor,
             )
         }

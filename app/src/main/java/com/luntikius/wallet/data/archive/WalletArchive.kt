@@ -8,6 +8,8 @@ import com.luntikius.wallet.data.json.WalletJson
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassCategory
 import com.luntikius.wallet.data.model.PassFormat
+import com.luntikius.wallet.data.model.WalletError
+import com.luntikius.wallet.data.model.asException
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -80,8 +82,8 @@ object WalletArchive {
             while (entry != null) {
                 val entryName = entry.name
                 val normalizedEntryName = entryName.trimEnd('/')
-                require(isSafeEntryName(normalizedEntryName)) {
-                    "Unsafe wallet archive entry: $entryName"
+                if (!isSafeEntryName(normalizedEntryName)) {
+                    failWith(WalletError.UnsafeEntry(entryName))
                 }
                 if (!entry.isDirectory) {
                     entries[entryName] = zipIn.readBytes()
@@ -93,30 +95,30 @@ object WalletArchive {
 
         val manifestBytes = entries.requiredEntry(
             key = MANIFEST_ENTRY,
-            message = "Wallet archive manifest is missing",
+            error = WalletError.MissingManifest,
         )
         val manifest = WalletJson.json.decodeFromString<WalletArchiveManifest>(
             manifestBytes.toString(Charsets.UTF_8),
         )
 
-        require(manifest.version == VERSION) {
-            "Unsupported wallet archive version: ${manifest.version}"
+        if (manifest.version != VERSION) {
+            failWith(WalletError.UnsupportedVersion(manifest.version))
         }
-        require(manifest.passes.isNotEmpty()) {
-            "Wallet archive does not contain any passes"
+        if (manifest.passes.isEmpty()) {
+            failWith(WalletError.EmptyArchive)
         }
 
         val archivePasses = manifest.passes.map { manifestPass ->
             val passDir = "passes/${manifestPass.id}/"
             val metadataBytes = entries.requiredEntry(
                 key = "${passDir}metadata.json",
-                message = "Pass metadata is missing for ${manifestPass.id}",
+                error = WalletError.MissingMetadata(manifestPass.id),
             )
             val metadata = WalletJson.json.decodeFromString<WalletArchivePassMetadata>(
                 metadataBytes.toString(Charsets.UTF_8),
             )
-            require(metadata.id == manifestPass.id && metadata.format == manifestPass.format) {
-                "Pass metadata does not match archive manifest for ${manifestPass.id}"
+            if (metadata.id != manifestPass.id || metadata.format != manifestPass.format) {
+                failWith(WalletError.MetadataMismatch(manifestPass.id))
             }
 
             WalletArchivePassPayload(
@@ -142,8 +144,10 @@ object WalletArchive {
         !entryName.contains("\\") &&
         entryName.split('/').none { segment -> segment == ".." || segment.isBlank() }
 
-    private fun Map<String, ByteArray>.requiredEntry(key: String, message: String): ByteArray =
-        requireNotNull(this[key]) { message }
+    private fun Map<String, ByteArray>.requiredEntry(key: String, error: WalletError): ByteArray =
+        this[key] ?: throw error.asException()
+
+    private fun failWith(error: WalletError): Nothing = throw error.asException()
 
     private fun Pass.toMetadata(): WalletArchivePassMetadata = WalletArchivePassMetadata(
         id = id,

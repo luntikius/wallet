@@ -25,8 +25,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.data.model.PassCategory
 import com.luntikius.wallet.data.model.PassData
 import com.luntikius.wallet.data.model.getPassData
@@ -97,7 +99,7 @@ fun PassPreviewScreen(
                             verticalAlignment = Alignment.Bottom,
                         ) {
                             Text(
-                                text = "Add to ",
+                                text = stringResource(R.string.add_to),
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
@@ -148,7 +150,7 @@ fun PassPreviewScreen(
                                     .height(48.dp),
                             ) {
                                 Text(
-                                    text = "Cancel",
+                                    text = stringResource(R.string.cancel),
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                             }
@@ -161,7 +163,7 @@ fun PassPreviewScreen(
                                     .height(48.dp),
                             ) {
                                 Text(
-                                    text = "Add",
+                                    text = stringResource(R.string.add),
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                             }
@@ -180,7 +182,7 @@ fun PassPreviewScreen(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = "Failed to load pass",
+                        text = stringResource(R.string.failed_to_load_pass),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
@@ -201,7 +203,7 @@ fun PassPreviewScreen(
                         onClick = onCancel,
                     ) {
                         Text(
-                            text = "Close",
+                            text = stringResource(R.string.close),
                             style = MaterialTheme.typography.labelLarge,
                         )
                     }

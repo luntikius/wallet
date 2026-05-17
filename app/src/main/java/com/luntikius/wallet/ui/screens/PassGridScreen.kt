@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,20 +42,23 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.luntikius.wallet.corestrings.R as AppR
 import com.luntikius.wallet.data.archive.WalletArchive
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.model.PassCategory
 import com.luntikius.wallet.data.model.RefreshStatus
-import com.luntikius.wallet.designsystem.R
+import com.luntikius.wallet.designsystem.R as DesignR
 import com.luntikius.wallet.designsystem.components.branding.AppLogo
 import com.luntikius.wallet.designsystem.components.button.WalletIconButton
 import com.luntikius.wallet.designsystem.components.feedback.SnackbarStatus
 import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
 import com.luntikius.wallet.designsystem.components.feedback.WalletSnackbar
 import com.luntikius.wallet.designsystem.components.menu.WalletDropdownMenu
+import com.luntikius.wallet.designsystem.components.menu.WalletMenuItem
 import com.luntikius.wallet.designsystem.components.navigation.WalletTopAppBar
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 import com.luntikius.wallet.education.PassGridEducationTarget
@@ -207,8 +209,8 @@ fun PassGridScreen(
                                     onClick = onSettingsClick,
                                 ) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.settings),
-                                        contentDescription = "Settings",
+                                        painter = painterResource(id = DesignR.drawable.settings),
+                                        contentDescription = stringResource(AppR.string.settings),
                                     )
                                 }
                                 AddPassActions(
@@ -386,35 +388,35 @@ private fun AddPassActions(
             modifier = Modifier.educationTarget(PassGridEducationTarget.ADD_BUTTON),
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.plus),
-                contentDescription = "Add Pass",
+                painter = painterResource(id = DesignR.drawable.plus),
+                contentDescription = stringResource(AppR.string.add_pass),
             )
         }
         WalletDropdownMenu(
             expanded = showAddMenu,
             onDismissRequest = { onShowAddMenuChange(false) },
         ) {
-            DropdownMenuItem(
+            WalletMenuItem(
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.file),
+                        painter = painterResource(id = DesignR.drawable.file),
                         contentDescription = null,
                     )
                 },
-                text = { Text("Add from Files") },
+                text = { Text(stringResource(AppR.string.add_from_files)) },
                 onClick = {
                     onShowAddMenuChange(false)
                     onPickFile()
                 },
             )
-            DropdownMenuItem(
+            WalletMenuItem(
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.camera),
+                        painter = painterResource(id = DesignR.drawable.camera),
                         contentDescription = null,
                     )
                 },
-                text = { Text("Add from Camera") },
+                text = { Text(stringResource(AppR.string.add_from_camera)) },
                 onClick = {
                     onShowAddMenuChange(false)
                     onRequestCamera()
@@ -437,13 +439,13 @@ private fun EmptyPassGridState(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "No passes yet",
+            text = stringResource(AppR.string.no_passes_yet),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
         Text(
-            text = "Tap + to add a pass",
+            text = stringResource(AppR.string.tap_to_add_pass),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

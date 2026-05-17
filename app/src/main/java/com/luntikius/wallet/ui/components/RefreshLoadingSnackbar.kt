@@ -14,7 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.designsystem.components.feedback.WalletCircularProgressIndicator
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
@@ -31,12 +33,13 @@ fun RefreshLoadingSnackbar(refreshStatus: RefreshStatus, modifier: Modifier = Mo
         exit = fadeOut(),
         modifier = modifier,
     ) {
+        val context = LocalContext.current
         val (backgroundColor, textColor, message, showProgress) = when (refreshStatus) {
             is RefreshStatus.Loading -> {
                 val msg = if (refreshStatus.passId == null) {
-                    "Refreshing all passes..."
+                    context.getString(R.string.refreshing_all_passes)
                 } else {
-                    "Refreshing pass..."
+                    context.getString(R.string.refreshing_pass)
                 }
                 Tuple4(
                     MaterialTheme.colorScheme.primaryContainer,
@@ -47,9 +50,9 @@ fun RefreshLoadingSnackbar(refreshStatus: RefreshStatus, modifier: Modifier = Mo
             }
             is RefreshStatus.Success -> {
                 val msg = if (refreshStatus.updatedCount > 0) {
-                    "${refreshStatus.updatedCount} pass(es) updated"
+                    context.getString(R.string.passes_updated, refreshStatus.updatedCount)
                 } else {
-                    "All passes are up to date"
+                    context.getString(R.string.passes_up_to_date)
                 }
                 Tuple4(
                     MaterialTheme.colorScheme.tertiaryContainer,

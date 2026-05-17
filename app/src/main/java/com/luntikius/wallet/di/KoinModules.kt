@@ -36,6 +36,7 @@ val dataModule = module {
     single { Wearable.getDataClient(androidContext()) }
     single {
         PhoneWearSyncCoordinator(
+            context = androidContext(),
             dataClient = get(),
             passRepository = get(),
         )
@@ -49,11 +50,11 @@ val domainModule = module {
 }
 
 val uiModule = module {
-    viewModel { PassGridViewModel(get(), get(), get()) }
-    viewModel { PassPreviewViewModel(get(), get()) }
-    viewModel { CustomPassBuilderViewModel(get(), get()) }
-    viewModel { EducationViewModel(get(), get()) }
-    viewModel { SettingsViewModel(get(), get()) }
+    viewModel { PassGridViewModel(get(), get(), get(), androidContext()) }
+    viewModel { PassPreviewViewModel(get(), get(), androidContext()) }
+    viewModel { CustomPassBuilderViewModel(get(), get(), androidContext()) }
+    viewModel { EducationViewModel(get(), get(), androidContext()) }
+    viewModel { SettingsViewModel(get(), get(), androidContext()) }
 }
 
 val appModules = listOf(dataModule, domainModule, uiModule)

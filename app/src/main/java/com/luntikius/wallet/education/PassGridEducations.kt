@@ -1,5 +1,7 @@
 package com.luntikius.wallet.education
 
+import android.content.Context
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.educations.Education
 import com.luntikius.wallet.educations.EducationIllustration
 import com.luntikius.wallet.educations.EducationStep
@@ -15,33 +17,33 @@ object PassGridEducationTarget {
     const val FIRST_PASS_CARD = "pass_grid_first_pass_card"
 }
 
-fun createPassGridEmptyEducation(): Education = Education(
+fun createPassGridEmptyEducation(context: Context): Education = Education(
     id = PassGridEducationIds.EMPTY,
     steps = listOf(
         EducationStep(
             id = "add_pass",
             targetKey = PassGridEducationTarget.ADD_BUTTON,
-            text = "Add a pass with the camera or from a file. You can also export a pass from another app.",
+            text = context.getString(R.string.education_add_pass),
         ),
     ),
 )
 
-fun createPassGridFirstCardEducation(): Education = Education(
+fun createPassGridFirstCardEducation(context: Context): Education = Education(
     id = PassGridEducationIds.FIRST_CARD,
     steps = listOf(
         EducationStep(
             id = "first_card_actions",
             targetKey = PassGridEducationTarget.FIRST_PASS_CARD,
-            text = "Use your pass card from the grid.",
+            text = context.getString(R.string.education_use_card),
             bullets = listOf(
-                "Tap a card to view details.",
-                "Drag and drop cards to reorder them.",
-                "Drag a card to the bottom of the screen to delete it.",
+                context.getString(R.string.education_tap_card),
+                context.getString(R.string.education_drag_reorder),
+                context.getString(R.string.education_drag_delete),
             ),
         ),
         EducationStep(
             id = "pull_to_refresh",
-            text = "Pull the screen down to refresh your passes.",
+            text = context.getString(R.string.education_pull_refresh),
             placement = EducationStepPlacement.Center,
             illustration = EducationIllustration.PullToRefresh,
         ),

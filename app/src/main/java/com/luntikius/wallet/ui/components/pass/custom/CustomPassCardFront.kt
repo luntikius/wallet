@@ -21,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.data.model.BarcodeFormatType
 import com.luntikius.wallet.data.model.CustomPassJson
 import com.luntikius.wallet.data.model.Pass
@@ -116,7 +118,7 @@ fun CustomPassCard(
                     onValueChange = onCardNameChange,
                     placeholder = {
                         Text(
-                            text = "Enter Card Name",
+                            text = stringResource(R.string.enter_card_name),
                             style = textStyle.copy(color = textColor.copy(alpha = 0.5f)),
                         )
                     },

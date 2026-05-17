@@ -26,8 +26,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.luntikius.wallet.designsystem.R
+import com.luntikius.wallet.corestrings.R as AppR
+import com.luntikius.wallet.designsystem.R as DesignR
 import com.luntikius.wallet.designsystem.foundation.color.ColorTokens
 import com.luntikius.wallet.designsystem.foundation.spacing.spacing
 
@@ -81,14 +83,14 @@ fun DeleteZone(
                     modifier = Modifier.padding(horizontal = MaterialTheme.spacing.extraLarge),
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.delete),
-                        contentDescription = "Delete",
+                        painter = painterResource(DesignR.drawable.delete),
+                        contentDescription = stringResource(AppR.string.delete),
                         tint = contentColor,
                         modifier = Modifier.size(24.dp),
                     )
                     Spacer(modifier = Modifier.width(MaterialTheme.spacing.medium))
                     Text(
-                        text = "Drag here to delete",
+                        text = stringResource(AppR.string.drag_here_to_delete),
                         style = MaterialTheme.typography.bodyLarge,
                         color = contentColor,
                     )
