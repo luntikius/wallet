@@ -150,7 +150,7 @@ jobs:
           fi
 
           git add gradle.properties
-          git commit -m "Bump version to ${{ steps.version.outputs.NEW_VERSION }} (phone code ${{ steps.version.outputs.NEW_VERSION_CODE }}, Wear code ${{ steps.version.outputs.NEW_WEAR_VERSION_CODE }}) [skip ci]"
+          git commit -m "Bump version to ${{ steps.version.outputs.NEW_VERSION }} (phone code ${{ steps.version.outputs.NEW_VERSION_CODE }}, Wear code ${{ steps.version.outputs.NEW_WEAR_VERSION_CODE }})"
 
           VERSION_BUMP_BRANCH="automation/version-bump-${{ steps.version.outputs.NEW_VERSION }}-${{ github.run_id }}"
           git push origin "HEAD:refs/heads/$VERSION_BUMP_BRANCH"
@@ -169,16 +169,21 @@ jobs:
             exit 0
           fi
 
+          PR_BODY="$(cat <<'PR_BODY'
+          Updates gradle.properties after publishing v${{ steps.version.outputs.NEW_VERSION }} to Google Play internal testing.
+
+          - Phone version code: ${{ steps.version.outputs.NEW_VERSION_CODE }}
+          - Wear version code: ${{ steps.version.outputs.NEW_WEAR_VERSION_CODE }}
+
+          Created by the release workflow because main requires pull requests.
+          PR_BODY
+          )"
+
           gh pr create \
             --base main \
             --head "$VERSION_BUMP_BRANCH" \
             --title "Bump version to ${{ steps.version.outputs.NEW_VERSION }}" \
-            --body "Updates gradle.properties after publishing v${{ steps.version.outputs.NEW_VERSION }} to Google Play internal testing.
-
-- Phone version code: ${{ steps.version.outputs.NEW_VERSION_CODE }}
-- Wear version code: ${{ steps.version.outputs.NEW_WEAR_VERSION_CODE }}
-
-Created by the release workflow because main requires pull requests."
+            --body "$PR_BODY"
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
