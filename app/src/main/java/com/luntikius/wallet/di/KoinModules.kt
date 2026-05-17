@@ -1,19 +1,20 @@
 package com.luntikius.wallet.di
 
 import com.google.android.gms.wearable.Wearable
-import com.luntikius.wallet.BuildConfig
 import com.luntikius.wallet.data.local.PassDatabase
 import com.luntikius.wallet.data.parser.ParserRegistry
 import com.luntikius.wallet.data.repository.PassRepository
 import com.luntikius.wallet.data.repository.PassRepositoryImpl
-import com.luntikius.wallet.education.EducationConfig
 import com.luntikius.wallet.education.EducationProgressRepository
 import com.luntikius.wallet.education.SharedPreferencesEducationProgressRepository
+import com.luntikius.wallet.settings.SettingsRepository
+import com.luntikius.wallet.settings.SharedPreferencesSettingsRepository
 import com.luntikius.wallet.ui.viewmodel.CustomPassBuilderViewModel
 import com.luntikius.wallet.ui.viewmodel.EducationViewModel
 import com.luntikius.wallet.ui.viewmodel.ImportStatusHolder
 import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
+import com.luntikius.wallet.ui.viewmodel.SettingsViewModel
 import com.luntikius.wallet.wear.PhoneWearSyncCoordinator
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -40,8 +41,8 @@ val dataModule = module {
 
 val domainModule = module {
     single { ImportStatusHolder() }
-    single { EducationConfig(forceShowEducations = BuildConfig.FORCE_SHOW_EDUCATIONS) }
     single<EducationProgressRepository> { SharedPreferencesEducationProgressRepository(androidContext()) }
+    single<SettingsRepository> { SharedPreferencesSettingsRepository(androidContext()) }
 }
 
 val uiModule = module {
@@ -49,6 +50,7 @@ val uiModule = module {
     viewModel { PassPreviewViewModel(get(), get()) }
     viewModel { CustomPassBuilderViewModel(get(), get()) }
     viewModel { EducationViewModel(get(), get()) }
+    viewModel { SettingsViewModel(get(), get()) }
 }
 
 val appModules = listOf(dataModule, domainModule, uiModule)

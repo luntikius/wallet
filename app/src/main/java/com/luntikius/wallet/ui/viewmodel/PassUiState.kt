@@ -4,6 +4,7 @@ sealed class ImportStatus {
     data object Idle : ImportStatus()
     data object Loading : ImportStatus()
     data object Success : ImportStatus()
+    data class Summary(val message: String) : ImportStatus()
     data class Error(val message: String) : ImportStatus()
 }
 

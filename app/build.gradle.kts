@@ -23,7 +23,6 @@ android {
         versionName = project.findProperty("VERSION_NAME") as String? ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("boolean", "FORCE_SHOW_EDUCATIONS", "false")
     }
 
     signingConfigs {

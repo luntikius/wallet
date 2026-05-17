@@ -1,7 +1,9 @@
 package com.luntikius.wallet.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,6 +21,7 @@ import com.luntikius.wallet.ui.screens.CustomPassBuilderScreen
 import com.luntikius.wallet.ui.screens.InitialScreen
 import com.luntikius.wallet.ui.screens.PassGridScreen
 import com.luntikius.wallet.ui.screens.PassPreviewScreen
+import com.luntikius.wallet.ui.screens.SettingsScreen
 import com.luntikius.wallet.ui.viewmodel.EducationViewModel
 import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
@@ -32,6 +35,7 @@ object Routes {
     const val GRID = "grid"
     const val PREVIEW = "preview"
     const val CAMERA_SCAN = "camera_scan"
+    const val SETTINGS = "settings"
     const val CUSTOM_PASS_BUILDER = "custom_pass_builder/{barcodeValue}/{barcodeFormat}"
 
     fun customPassBuilder(barcodeValue: String, barcodeFormat: String) =
@@ -66,6 +70,9 @@ fun PassNavGraph(
                     },
                     onAppEntryStarted = {
                         educationViewModel.startAppEntry(isExternalImport = intentUri != null)
+                    },
+                    onImportArchive = { uri ->
+                        gridViewModel.importWalletArchive(uri)
                     },
                     onNavigateToOnboarding = {
                         navController.navigate(Routes.ONBOARDING) {
@@ -116,6 +123,31 @@ fun PassNavGraph(
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this,
                     onPreviewPass = { uri -> previewViewModel.previewPass(uri) },
+                    onSettingsClick = {
+                        navController.navigate(Routes.SETTINGS)
+                    },
+                )
+            }
+
+            composable(
+                route = Routes.SETTINGS,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(NAV_SLIDE_ANIMATION_DURATION_MS),
+                    )
+                },
+                popExitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(NAV_SLIDE_ANIMATION_DURATION_MS),
+                    )
+                },
+            ) {
+                SettingsScreen(
+                    onBack = {
+                        navController.popBackStack()
+                    },
                 )
             }
 
@@ -217,3 +249,5 @@ private fun getBarcodeFormatName(format: Int): String = when (format) {
     Barcode.FORMAT_AZTEC -> "AZTEC"
     else -> "UNKNOWN"
 }
+
+private const val NAV_SLIDE_ANIMATION_DURATION_MS = 300
