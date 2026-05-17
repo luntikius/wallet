@@ -3,7 +3,7 @@ package com.luntikius.wallet.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luntikius.wallet.data.model.ShareStatus
-import com.luntikius.wallet.data.repository.PassRepository
+import com.luntikius.wallet.data.repository.WalletArchiveRepository
 import com.luntikius.wallet.settings.AppThemeMode
 import com.luntikius.wallet.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
-    private val passRepository: PassRepository,
+    private val walletArchiveRepository: WalletArchiveRepository,
 ) : ViewModel() {
 
     companion object {
@@ -37,7 +37,7 @@ class SettingsViewModel(
     fun prepareShareWalletArchive() {
         viewModelScope.launch {
             _shareStatus.value = ShareStatus.Loading(WALLET_ARCHIVE_SHARE_ID)
-            val result = passRepository.exportAllPassesForSharing()
+            val result = walletArchiveRepository.exportAllPassesForSharing()
 
             _shareStatus.value = if (result.isSuccess) {
                 ShareStatus.Success(result.getOrThrow(), WALLET_ARCHIVE_SHARE_ID)

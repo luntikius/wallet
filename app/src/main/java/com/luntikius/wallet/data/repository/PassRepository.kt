@@ -106,7 +106,9 @@ interface PassRepository {
      * Uses ExporterRegistry to find appropriate exporter for the pass format.
      */
     suspend fun exportPassForSharing(passId: String): Result<com.luntikius.wallet.data.exporter.ExportResult>
+}
 
+interface WalletArchiveRepository {
     /**
      * Export all supported passes as a wallet backup ZIP.
      */
@@ -125,7 +127,8 @@ class PassRepositoryImpl(
     private val passDao: PassDao,
     private val parserRegistry: ParserRegistry,
     private val context: Context,
-) : PassRepository {
+) : PassRepository,
+    WalletArchiveRepository {
 
     private val pkPassParser = PKPassParser(context)
     private val updateService = PKPassUpdateService(context, pkPassParser)

@@ -80,8 +80,8 @@ object WalletArchive {
             while (entry != null) {
                 val entryName = entry.name
                 val normalizedEntryName = entryName.trimEnd('/')
-                if (!isSafeEntryName(normalizedEntryName)) {
-                    throw IllegalArgumentException("Unsafe wallet archive entry: $entryName")
+                require(isSafeEntryName(normalizedEntryName)) {
+                    "Unsafe wallet archive entry: $entryName"
                 }
                 if (!entry.isDirectory) {
                     entries[entryName] = zipIn.readBytes()
@@ -91,8 +91,10 @@ object WalletArchive {
             }
         }
 
-        val manifestBytes = entries[MANIFEST_ENTRY]
-            ?: throw IllegalArgumentException("Wallet archive manifest is missing")
+        val manifestBytes = entries.requiredEntry(
+            key = MANIFEST_ENTRY,
+            message = "Wallet archive manifest is missing",
+        )
         val manifest = WalletJson.json.decodeFromString<WalletArchiveManifest>(
             manifestBytes.toString(Charsets.UTF_8),
         )
@@ -106,8 +108,10 @@ object WalletArchive {
 
         val archivePasses = manifest.passes.map { manifestPass ->
             val passDir = "passes/${manifestPass.id}/"
-            val metadataBytes = entries["${passDir}metadata.json"]
-                ?: throw IllegalArgumentException("Pass metadata is missing for ${manifestPass.id}")
+            val metadataBytes = entries.requiredEntry(
+                key = "${passDir}metadata.json",
+                message = "Pass metadata is missing for ${manifestPass.id}",
+            )
             val metadata = WalletJson.json.decodeFromString<WalletArchivePassMetadata>(
                 metadataBytes.toString(Charsets.UTF_8),
             )
@@ -137,6 +141,9 @@ object WalletArchive {
         !entryName.startsWith("\\") &&
         !entryName.contains("\\") &&
         entryName.split('/').none { segment -> segment == ".." || segment.isBlank() }
+
+    private fun Map<String, ByteArray>.requiredEntry(key: String, message: String): ByteArray =
+        requireNotNull(this[key]) { message }
 
     private fun Pass.toMetadata(): WalletArchivePassMetadata = WalletArchivePassMetadata(
         id = id,

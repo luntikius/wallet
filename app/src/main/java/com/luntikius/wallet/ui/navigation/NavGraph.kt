@@ -19,6 +19,7 @@ import com.luntikius.wallet.designsystem.components.branding.AppLogo
 import com.luntikius.wallet.educations.OnboardingScreen
 import com.luntikius.wallet.ui.screens.CustomPassBuilderScreen
 import com.luntikius.wallet.ui.screens.InitialScreen
+import com.luntikius.wallet.ui.screens.InitialScreenActions
 import com.luntikius.wallet.ui.screens.PassGridScreen
 import com.luntikius.wallet.ui.screens.PassPreviewScreen
 import com.luntikius.wallet.ui.screens.SettingsScreen
@@ -65,33 +66,35 @@ fun PassNavGraph(
                 InitialScreen(
                     viewModel = previewViewModel,
                     intentUri = intentUri,
-                    shouldShowOnboarding = {
-                        educationViewModel.shouldShowOnboarding(isExternalImport = intentUri != null)
-                    },
-                    onAppEntryStarted = {
-                        educationViewModel.startAppEntry(isExternalImport = intentUri != null)
-                    },
-                    onImportArchive = { uri ->
-                        gridViewModel.importWalletArchive(uri)
-                    },
-                    onNavigateToOnboarding = {
-                        navController.navigate(Routes.ONBOARDING) {
-                            popUpTo(Routes.INITIAL) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                    onNavigateToGrid = {
-                        navController.navigate(Routes.GRID) {
-                            popUpTo(Routes.INITIAL) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                    onNavigateToPreview = {
-                        navController.navigate(Routes.PREVIEW) {
-                            popUpTo(Routes.INITIAL) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
+                    actions = InitialScreenActions(
+                        shouldShowOnboarding = {
+                            educationViewModel.shouldShowOnboarding(isExternalImport = intentUri != null)
+                        },
+                        onAppEntryStarted = {
+                            educationViewModel.startAppEntry(isExternalImport = intentUri != null)
+                        },
+                        onImportArchive = { uri ->
+                            gridViewModel.importWalletArchive(uri)
+                        },
+                        onNavigateToOnboarding = {
+                            navController.navigate(Routes.ONBOARDING) {
+                                popUpTo(Routes.INITIAL) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        onNavigateToGrid = {
+                            navController.navigate(Routes.GRID) {
+                                popUpTo(Routes.INITIAL) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        onNavigateToPreview = {
+                            navController.navigate(Routes.PREVIEW) {
+                                popUpTo(Routes.INITIAL) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                    ),
                 )
             }
 
