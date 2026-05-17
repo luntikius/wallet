@@ -10,7 +10,6 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,16 +38,7 @@ class PKPassExporter(private val context: Context) : PassExporter {
 
             // Create ZIP archive
             ZipOutputStream(FileOutputStream(outputFile)).use { zipOut ->
-                // Add pass.json
-                addPassJson(zipOut, pass.rawData)
-
-                // Add image files if assets directory exists
-                pass.assetsDirectory?.let { assetsDir ->
-                    val assetsFolder = File(assetsDir)
-                    if (assetsFolder.exists() && assetsFolder.isDirectory) {
-                        addImages(zipOut, assetsFolder)
-                    }
-                }
+                PKPassZipWriter.write(pass, zipOut)
             }
 
             ExportResult(
@@ -75,33 +65,6 @@ class PKPassExporter(private val context: Context) : PassExporter {
         val organizationName = sanitizeFileName(pass.organizationName ?: "pass")
         val fileName = "${organizationName}_$timestamp.pkpass"
         return File(cacheDir, fileName)
-    }
-
-    /**
-     * Add pass.json to the ZIP archive.
-     */
-    private fun addPassJson(zipOut: ZipOutputStream, rawData: String) {
-        val entry = ZipEntry("pass.json")
-        zipOut.putNextEntry(entry)
-        zipOut.write(rawData.toByteArray(Charsets.UTF_8))
-        zipOut.closeEntry()
-    }
-
-    /**
-     * Add all image files from the assets directory to the ZIP archive.
-     * Preserves original filenames including @2x/@3x suffixes.
-     */
-    private fun addImages(zipOut: ZipOutputStream, assetsFolder: File) {
-        assetsFolder.listFiles()?.forEach { file ->
-            if (file.isFile && file.extension.lowercase() == "png") {
-                val entry = ZipEntry(file.name)
-                zipOut.putNextEntry(entry)
-                file.inputStream().use { input ->
-                    input.copyTo(zipOut)
-                }
-                zipOut.closeEntry()
-            }
-        }
     }
 
     /**
