@@ -27,12 +27,7 @@ import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
 fun InitialScreen(
     viewModel: PassPreviewViewModel,
     intentUri: Uri?,
-    shouldShowOnboarding: () -> Boolean,
-    onAppEntryStarted: () -> Unit,
-    onImportArchive: (Uri) -> Unit,
-    onNavigateToOnboarding: () -> Unit,
-    onNavigateToGrid: () -> Unit,
-    onNavigateToPreview: () -> Unit,
+    actions: InitialScreenActions,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -50,21 +45,30 @@ fun InitialScreen(
     }
 
     LaunchedEffect(Unit) {
-        onAppEntryStarted()
+        actions.onAppEntryStarted()
         if (intentUri != null) {
             if (WalletArchive.isWalletArchiveUri(context, intentUri)) {
-                onImportArchive(intentUri)
-                onNavigateToGrid()
+                actions.onImportArchive(intentUri)
+                actions.onNavigateToGrid()
             } else {
                 // Launch with intent - start preview loading and navigate
                 viewModel.previewPass(intentUri)
-                onNavigateToPreview()
+                actions.onNavigateToPreview()
             }
-        } else if (shouldShowOnboarding()) {
-            onNavigateToOnboarding()
+        } else if (actions.shouldShowOnboarding()) {
+            actions.onNavigateToOnboarding()
         } else {
             // Normal launch - go straight to grid
-            onNavigateToGrid()
+            actions.onNavigateToGrid()
         }
     }
 }
+
+data class InitialScreenActions(
+    val shouldShowOnboarding: () -> Boolean,
+    val onAppEntryStarted: () -> Unit,
+    val onImportArchive: (Uri) -> Unit,
+    val onNavigateToOnboarding: () -> Unit,
+    val onNavigateToGrid: () -> Unit,
+    val onNavigateToPreview: () -> Unit,
+)

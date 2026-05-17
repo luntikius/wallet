@@ -5,6 +5,7 @@ import com.luntikius.wallet.data.local.PassDatabase
 import com.luntikius.wallet.data.parser.ParserRegistry
 import com.luntikius.wallet.data.repository.PassRepository
 import com.luntikius.wallet.data.repository.PassRepositoryImpl
+import com.luntikius.wallet.data.repository.WalletArchiveRepository
 import com.luntikius.wallet.education.EducationProgressRepository
 import com.luntikius.wallet.education.SharedPreferencesEducationProgressRepository
 import com.luntikius.wallet.settings.SettingsRepository
@@ -23,13 +24,15 @@ import org.koin.dsl.module
 val dataModule = module {
     single { PassDatabase.getInstance(androidContext()) }
     single { ParserRegistry(androidContext()) }
-    single<PassRepository> {
+    single {
         PassRepositoryImpl(
             passDao = get<PassDatabase>().passDao(),
             parserRegistry = get(),
             context = androidContext(),
         )
     }
+    single<PassRepository> { get<PassRepositoryImpl>() }
+    single<WalletArchiveRepository> { get<PassRepositoryImpl>() }
     single { Wearable.getDataClient(androidContext()) }
     single {
         PhoneWearSyncCoordinator(
@@ -46,7 +49,7 @@ val domainModule = module {
 }
 
 val uiModule = module {
-    viewModel { PassGridViewModel(get(), get()) }
+    viewModel { PassGridViewModel(get(), get(), get()) }
     viewModel { PassPreviewViewModel(get(), get()) }
     viewModel { CustomPassBuilderViewModel(get(), get()) }
     viewModel { EducationViewModel(get(), get()) }

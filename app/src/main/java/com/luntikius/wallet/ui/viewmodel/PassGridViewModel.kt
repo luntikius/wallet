@@ -8,6 +8,7 @@ import com.luntikius.wallet.data.model.RefreshStatus
 import com.luntikius.wallet.data.model.ShareStatus
 import com.luntikius.wallet.data.network.PKPassUpdateService
 import com.luntikius.wallet.data.repository.PassRepository
+import com.luntikius.wallet.data.repository.WalletArchiveRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 
 class PassGridViewModel(
     private val passRepository: PassRepository,
+    private val walletArchiveRepository: WalletArchiveRepository,
     private val importStatusHolder: ImportStatusHolder,
 ) : ViewModel() {
 
@@ -143,7 +145,7 @@ class PassGridViewModel(
     fun importWalletArchive(uri: Uri) {
         viewModelScope.launch {
             importStatusHolder.setImportStatus(ImportStatus.Loading)
-            val result = passRepository.importWalletArchive(uri)
+            val result = walletArchiveRepository.importWalletArchive(uri)
             importStatusHolder.setImportStatus(
                 if (result.isSuccess) {
                     ImportStatus.Summary(result.getOrThrow().summaryMessage)

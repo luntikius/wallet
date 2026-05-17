@@ -42,7 +42,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -70,11 +72,13 @@ fun WearWalletApp(repository: WearPassRepository) {
         val passes by repository.observePasses().collectAsState(initial = emptyList())
         var selectedPassId by rememberSaveable { mutableStateOf<String?>(null) }
         val passListState = rememberLazyListState()
+        val haptic = LocalHapticFeedback.current
         val selectedPass = selectedPassId?.let { passId ->
             passes.firstOrNull { it.snapshot.id == passId }
         }
 
         BackHandler(enabled = selectedPass != null) {
+            haptic.performHapticFeedback(HapticFeedbackType.GestureEnd)
             selectedPassId = null
         }
 
@@ -98,12 +102,20 @@ fun WearWalletApp(repository: WearPassRepository) {
                 label = "wear-screen-transition",
             ) { pass ->
                 if (pass != null) {
-                    PassDetailScreen(pass = pass)
+                    PassDetailScreen(
+                        pass = pass,
+                        onPageChanged = {
+                            haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        },
+                    )
                 } else {
                     PassListScreen(
                         passes = passes,
                         listState = passListState,
-                        onPassClick = { selected -> selectedPassId = selected.snapshot.id },
+                        onPassClick = { selected ->
+                            haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                            selectedPassId = selected.snapshot.id
+                        },
                     )
                 }
             }
@@ -131,7 +143,12 @@ private fun PassListScreen(
         LazyColumn(
             state = listState,
             flingBehavior = snapFlingBehavior,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .lazyListRotaryScrollable(
+                    listState = listState,
+                    flingBehavior = snapFlingBehavior,
+                ),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = verticalPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -237,7 +254,7 @@ private fun PassListItem(pass: CachedWearPass, onClick: () -> Unit, modifier: Mo
 }
 
 @Composable
-private fun PassDetailScreen(pass: CachedWearPass) {
+private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -267,11 +284,21 @@ private fun PassDetailScreen(pass: CachedWearPass) {
 
         KeepScreenBrightness(isEnabled = isInitialPosition, brightness = 0.8f)
         SnapListItemsToCenter(listState = listState)
+        CenteredPageChangeEffect(
+            listState = listState,
+            enabled = detailPageCount > 1,
+            onPageChanged = onPageChanged,
+        )
 
         LazyColumn(
             state = listState,
             flingBehavior = snapFlingBehavior,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .lazyListRotaryScrollable(
+                    listState = listState,
+                    flingBehavior = snapFlingBehavior,
+                ),
             contentPadding = PaddingValues(),
         ) {
             item(key = "qr") {

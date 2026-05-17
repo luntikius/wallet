@@ -89,61 +89,58 @@ internal fun PassQrCard(
     ) {
         val diameter = minOf(maxWidth, maxHeight)
         val horizontalPadding = diameter * 0.06f
-        val topPadding = diameter * 0.07f
-        val bottomPadding = diameter * 0.04f
+        val verticalPadding = diameter * 0.07f
+        val scrollHintBottomPadding = diameter * 0.04f
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
                     start = horizontalPadding,
-                    top = topPadding,
+                    top = verticalPadding,
                     end = horizontalPadding,
-                    bottom = bottomPadding,
+                    bottom = verticalPadding,
                 ),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (barcode == null) {
+            if (barcode == null) {
+                Text(
+                    text = "No code",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = DetailCardText,
+                )
+            } else {
+                val barcodeBitmap = remember(barcode.value, barcode.format) {
+                    generateWearBarcodeBitmap(
+                        value = barcode.value,
+                        format = barcode.format,
+                        rotateForWear = false,
+                    )
+                }
+
+                if (barcodeBitmap == null) {
                     Text(
-                        text = "No code",
+                        text = "Code unavailable",
                         style = MaterialTheme.typography.titleMedium,
                         color = DetailCardText,
                     )
                 } else {
-                    val barcodeBitmap = remember(barcode.value, barcode.format) {
-                        generateWearBarcodeBitmap(
-                            value = barcode.value,
-                            format = barcode.format,
-                            rotateForWear = false,
-                        )
-                    }
-
-                    if (barcodeBitmap == null) {
-                        Text(
-                            text = "Code unavailable",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = DetailCardText,
-                        )
-                    } else {
-                        Image(
-                            bitmap = barcodeBitmap.asImageBitmap(),
-                            contentDescription = "Pass code",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
+                    Image(
+                        bitmap = barcodeBitmap.asImageBitmap(),
+                        contentDescription = "Pass code",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                    )
                 }
             }
+        }
 
-            if (showScrollHint) {
-                Spacer(modifier = Modifier.height(4.dp))
-
+        if (showScrollHint) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = scrollHintBottomPadding),
+            ) {
                 ScrollAffordance(
                     unfoldProgress = scrollHintProgress,
                     color = Color.Black,
