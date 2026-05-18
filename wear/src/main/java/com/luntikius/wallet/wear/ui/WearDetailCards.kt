@@ -3,6 +3,7 @@ package com.luntikius.wallet.wear.ui
 import android.graphics.BitmapFactory
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -153,7 +153,12 @@ internal fun PassQrCard(
 }
 
 @Composable
-internal fun PassHeaderCard(pass: CachedWearPass, fields: List<WearPassField>, modifier: Modifier = Modifier) {
+internal fun PassHeaderCard(
+    pass: CachedWearPass,
+    fields: List<WearPassField>,
+    scrollState: ScrollState,
+    modifier: Modifier = Modifier,
+) {
     val cardColor = remember(pass.snapshot.backgroundColor) {
         parseWearColor(pass.snapshot.backgroundColor, Color(0xFF0077B6))
     }
@@ -181,7 +186,7 @@ internal fun PassHeaderCard(pass: CachedWearPass, fields: List<WearPassField>, m
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
         ) {
             Column(
                 modifier = Modifier
