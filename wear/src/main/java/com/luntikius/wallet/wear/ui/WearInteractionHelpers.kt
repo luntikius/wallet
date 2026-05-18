@@ -101,7 +101,8 @@ internal fun AutoHidingScrollPositionIndicator(
             width = size.width - inset * 2,
             height = size.height - inset * 2,
         )
-        val progress = listScrollProgress(listState = listState, itemCount = itemCount)
+        val progress = listScrollPosition(listState = listState, itemCount = itemCount)
+            .let { position -> (position / (itemCount - 1).coerceAtLeast(1)).coerceIn(0f, 1f) }
             .withNestedProgress(
                 itemCount = itemCount,
                 nestedScrollState = nestedScrollState,
@@ -165,10 +166,6 @@ internal fun listItemScale(listState: LazyListState, index: Int): Float {
     return 1f - (distanceFraction * 0.16f)
 }
 
-private fun listScrollProgress(listState: LazyListState, itemCount: Int): Float =
-    listScrollPosition(listState = listState, itemCount = itemCount)
-        .toProgress(itemCount = itemCount)
-
 private fun listScrollPosition(listState: LazyListState, itemCount: Int): Float {
     val layoutInfo = listState.layoutInfo
     val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2f
@@ -180,8 +177,6 @@ private fun listScrollPosition(listState: LazyListState, itemCount: Int): Float 
     val centerOffsetProgress = (-centerDistance / itemInfo.size).coerceIn(-0.5f, 0.5f)
     return (itemInfo.index + centerOffsetProgress).coerceIn(0f, (itemCount - 1).toFloat())
 }
-
-private fun Float.toProgress(itemCount: Int): Float = (this / (itemCount - 1).coerceAtLeast(1)).coerceIn(0f, 1f)
 
 private fun Float.withNestedProgress(
     itemCount: Int,

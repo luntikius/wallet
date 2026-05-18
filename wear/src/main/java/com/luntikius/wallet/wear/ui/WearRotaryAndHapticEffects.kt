@@ -152,13 +152,7 @@ private class NestedAwareRotaryScrollableBehavior(
         val scrollBehavior = nestedBehavior
         val scrollItemIndex = nestedScrollItemIndex
 
-        if (
-            scrollState != null &&
-            scrollBehavior != null &&
-            scrollItemIndex != null &&
-            listState.closestItemIndexToCenter() == scrollItemIndex &&
-            scrollState.canConsumeRotaryDelta(delta)
-        ) {
+        if (shouldRouteToNestedScroll(scrollState, scrollBehavior, scrollItemIndex, delta)) {
             with(scrollBehavior) {
                 performScroll(
                     timestampMillis = timestampMillis,
@@ -177,6 +171,17 @@ private class NestedAwareRotaryScrollableBehavior(
                 )
             }
         }
+    }
+
+    private fun shouldRouteToNestedScroll(
+        scrollState: ScrollState?,
+        scrollBehavior: RotaryScrollableBehavior?,
+        scrollItemIndex: Int?,
+        delta: Float,
+    ): Boolean {
+        if (scrollState == null || scrollBehavior == null || scrollItemIndex == null) return false
+        if (listState.closestItemIndexToCenter() != scrollItemIndex) return false
+        return scrollState.canConsumeRotaryDelta(delta)
     }
 }
 
