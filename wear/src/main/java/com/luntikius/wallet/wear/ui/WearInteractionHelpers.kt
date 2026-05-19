@@ -6,7 +6,7 @@ import android.content.ContextWrapper
 import android.view.WindowManager
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 
 private val ListScrollTrackColor = Color.White.copy(alpha = 0.22f)
 private val ListScrollThumbColor = Color.White.copy(alpha = 0.82f)
@@ -68,6 +67,8 @@ internal fun ScrollAffordance(unfoldProgress: Float, color: Color, modifier: Mod
 internal fun AutoHidingScrollPositionIndicator(
     listState: LazyListState,
     itemCount: Int,
+    nestedScrollState: ScrollState? = null,
+    nestedScrollItemIndex: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     if (itemCount <= 1) return
@@ -79,7 +80,7 @@ internal fun AutoHidingScrollPositionIndicator(
     )
 
     LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }
+        snapshotFlow { listState.isScrollInProgress || nestedScrollState?.isScrollInProgress == true }
             .distinctUntilChanged()
             .collect { isScrolling ->
                 if (isScrolling) {
@@ -100,7 +101,14 @@ internal fun AutoHidingScrollPositionIndicator(
             width = size.width - inset * 2,
             height = size.height - inset * 2,
         )
-        val progress = listScrollProgress(listState = listState, itemCount = itemCount)
+        val progress = listScrollPosition(listState = listState, itemCount = itemCount)
+            .let { position -> (position / (itemCount - 1).coerceAtLeast(1)).coerceIn(0f, 1f) }
+            .withNestedProgress(
+                itemCount = itemCount,
+                nestedScrollState = nestedScrollState,
+                nestedScrollItemIndex = nestedScrollItemIndex,
+                listState = listState,
+            )
         val trackStartAngle = -46f
         val trackSweepAngle = 92f
         val thumbSweepAngle = 18f
@@ -124,25 +132,6 @@ internal fun AutoHidingScrollPositionIndicator(
             size = arcSize,
             style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
         )
-    }
-}
-
-@Composable
-internal fun SnapListItemsToCenter(listState: LazyListState) {
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }
-            .distinctUntilChanged()
-            .filter { isScrolling -> !isScrolling }
-            .collect {
-                delay(80L)
-                repeat(SNAP_SETTLE_ATTEMPTS) {
-                    val distanceToCenter = listState.closestItemDistanceToCenter()
-                    if (abs(distanceToCenter) <= SNAP_DISTANCE_TOLERANCE_PX) return@repeat
-
-                    listState.animateScrollBy(distanceToCenter)
-                    delay(32L)
-                }
-            }
     }
 }
 
@@ -177,26 +166,34 @@ internal fun listItemScale(listState: LazyListState, index: Int): Float {
     return 1f - (distanceFraction * 0.16f)
 }
 
-private fun listScrollProgress(listState: LazyListState, itemCount: Int): Float {
+private fun listScrollPosition(listState: LazyListState, itemCount: Int): Float {
     val layoutInfo = listState.layoutInfo
     val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2f
     val itemInfo = layoutInfo.visibleItemsInfo.minByOrNull { item ->
         abs(item.offset + item.size / 2f - viewportCenter)
-    } ?: return (listState.firstVisibleItemIndex.toFloat() / (itemCount - 1).coerceAtLeast(1)).coerceIn(0f, 1f)
+    } ?: return listState.firstVisibleItemIndex.toFloat().coerceIn(0f, (itemCount - 1).toFloat())
 
     val centerDistance = itemInfo.offset + itemInfo.size / 2f - viewportCenter
     val centerOffsetProgress = (-centerDistance / itemInfo.size).coerceIn(-0.5f, 0.5f)
-    return ((itemInfo.index + centerOffsetProgress) / (itemCount - 1).coerceAtLeast(1)).coerceIn(0f, 1f)
+    return (itemInfo.index + centerOffsetProgress).coerceIn(0f, (itemCount - 1).toFloat())
 }
 
-private fun LazyListState.closestItemDistanceToCenter(): Float {
-    val layoutInfo = layoutInfo
-    val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2f
-    val itemInfo = layoutInfo.visibleItemsInfo.minByOrNull { item ->
-        abs(item.offset + item.size / 2f - viewportCenter)
-    } ?: return 0f
+private fun Float.withNestedProgress(
+    itemCount: Int,
+    nestedScrollState: ScrollState?,
+    nestedScrollItemIndex: Int?,
+    listState: LazyListState,
+): Float {
+    if (nestedScrollState == null || nestedScrollItemIndex == null || itemCount <= 1) return this
+    if (nestedScrollState.maxValue <= 0) return this
 
-    return itemInfo.offset + itemInfo.size / 2f - viewportCenter
+    val listPosition = listScrollPosition(listState = listState, itemCount = itemCount)
+    if (listPosition < nestedScrollItemIndex) {
+        return (listPosition / itemCount).coerceIn(0f, 1f)
+    }
+
+    val nestedProgress = nestedScrollState.value.toFloat() / nestedScrollState.maxValue
+    return ((nestedScrollItemIndex + nestedProgress) / itemCount).coerceIn(0f, 1f)
 }
 
 private fun Activity.setScreenBrightness(value: Float) {
@@ -215,6 +212,3 @@ private fun lerpOffset(start: Offset, end: Offset, fraction: Float): Offset = Of
     x = start.x + (end.x - start.x) * fraction,
     y = start.y + (end.y - start.y) * fraction,
 )
-
-private const val SNAP_SETTLE_ATTEMPTS = 2
-private const val SNAP_DISTANCE_TOLERANCE_PX = 1f

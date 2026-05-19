@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -140,17 +141,12 @@ private fun PassListScreen(
         val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
         val verticalPadding = ((maxHeight - PassListCardHeight) / 2).coerceAtLeast(18.dp)
 
-        SnapListItemsToCenter(listState = listState)
-
         LazyColumn(
             state = listState,
             flingBehavior = snapFlingBehavior,
             modifier = Modifier
                 .fillMaxSize()
-                .lazyListRotaryScrollable(
-                    listState = listState,
-                    flingBehavior = snapFlingBehavior,
-                ),
+                .lazyListRotaryScrollable(listState = listState),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = verticalPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -263,6 +259,7 @@ private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
             .background(DetailBackground),
     ) {
         val listState = rememberLazyListState()
+        val headerScrollState = rememberScrollState()
         val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
         val viewportHeight = maxHeight
         val showHeaderPage = pass.snapshot.format != CUSTOM_PASS_FORMAT
@@ -285,7 +282,6 @@ private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
         }
 
         KeepScreenBrightness(isEnabled = isInitialPosition, brightness = 0.8f)
-        SnapListItemsToCenter(listState = listState)
         CenteredPageChangeEffect(
             listState = listState,
             enabled = detailPageCount > 1,
@@ -299,7 +295,8 @@ private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
                 .fillMaxSize()
                 .lazyListRotaryScrollable(
                     listState = listState,
-                    flingBehavior = snapFlingBehavior,
+                    nestedScrollState = headerScrollState.takeIf { showHeaderPage },
+                    nestedScrollItemIndex = HEADER_PAGE_INDEX.takeIf { showHeaderPage },
                 ),
             contentPadding = PaddingValues(),
         ) {
@@ -328,6 +325,7 @@ private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
                         PassHeaderCard(
                             pass = pass,
                             fields = pass.snapshot.fields.filter { it.section in FrontCardFieldSections },
+                            scrollState = headerScrollState,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -338,7 +336,11 @@ private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
         AutoHidingScrollPositionIndicator(
             listState = listState,
             itemCount = detailPageCount,
+            nestedScrollState = headerScrollState.takeIf { showHeaderPage },
+            nestedScrollItemIndex = HEADER_PAGE_INDEX.takeIf { showHeaderPage },
             modifier = Modifier.fillMaxSize(),
         )
     }
 }
+
+private const val HEADER_PAGE_INDEX = 1
