@@ -2,7 +2,7 @@ package com.luntikius.wallet.wear.ui
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.lazy.LazyListItemInfo
+import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,7 +15,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.wear.compose.foundation.rotary.RotaryScrollableBehavior
 import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
-import androidx.wear.compose.foundation.rotary.RotarySnapLayoutInfoProvider
 import androidx.wear.compose.foundation.rotary.rotaryScrollable
 import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
@@ -24,13 +23,14 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 internal fun Modifier.lazyListRotaryScrollable(
     listState: LazyListState,
+    flingBehavior: FlingBehavior,
     nestedScrollState: ScrollState? = null,
     nestedScrollItemIndex: Int? = null,
 ): Modifier {
     val focusRequester = remember { FocusRequester() }
-    val listRotaryBehavior = RotaryScrollableDefaults.snapBehavior(
+    val listRotaryBehavior = RotaryScrollableDefaults.behavior(
         scrollableState = listState,
-        layoutInfoProvider = remember(listState) { LazyListRotarySnapLayoutInfoProvider(listState) },
+        flingBehavior = flingBehavior,
     )
     val nestedRotaryBehavior = nestedScrollState?.let { scrollState ->
         RotaryScrollableDefaults.behavior(
@@ -88,52 +88,6 @@ private fun LazyListState.closestItemIndexToCenter(): Int {
         ?.index
         ?: firstVisibleItemIndex
 }
-
-private class LazyListRotarySnapLayoutInfoProvider(private val listState: LazyListState) :
-    RotarySnapLayoutInfoProvider {
-    override val averageItemSize: Float
-        get() {
-            val visibleItems = listState.layoutInfo.visibleItemsInfo
-            if (visibleItems.isEmpty()) return 0f
-
-            val centerDistances = visibleItems
-                .sortedBy(LazyListItemInfo::index)
-                .zipWithNext { current, next ->
-                    abs(next.center - current.center)
-                }
-
-            return if (centerDistances.isNotEmpty()) {
-                centerDistances.average().toFloat()
-            } else {
-                visibleItems.first().size.toFloat()
-            }
-        }
-
-    override val currentItemIndex: Int
-        get() = listState.closestItemInfoToCenter()?.index ?: listState.firstVisibleItemIndex
-
-    override val currentItemOffset: Float
-        get() {
-            val itemInfo = listState.closestItemInfoToCenter() ?: return 0f
-            return listState.viewportCenter - itemInfo.center
-        }
-
-    override val totalItemCount: Int
-        get() = listState.layoutInfo.totalItemsCount
-}
-
-private fun LazyListState.closestItemInfoToCenter(): LazyListItemInfo? {
-    val viewportCenter = viewportCenter
-    return layoutInfo.visibleItemsInfo.minByOrNull { item ->
-        abs(item.center - viewportCenter)
-    }
-}
-
-private val LazyListState.viewportCenter: Float
-    get() = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2f
-
-private val LazyListItemInfo.center: Float
-    get() = offset + size / 2f
 
 private class NestedAwareRotaryScrollableBehavior(
     private val listState: LazyListState,

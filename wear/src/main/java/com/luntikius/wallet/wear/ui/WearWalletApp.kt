@@ -146,7 +146,10 @@ private fun PassListScreen(
             flingBehavior = snapFlingBehavior,
             modifier = Modifier
                 .fillMaxSize()
-                .lazyListRotaryScrollable(listState = listState),
+                .lazyListRotaryScrollable(
+                    listState = listState,
+                    flingBehavior = snapFlingBehavior,
+                ),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = verticalPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -295,6 +298,7 @@ private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
                 .fillMaxSize()
                 .lazyListRotaryScrollable(
                     listState = listState,
+                    flingBehavior = snapFlingBehavior,
                     nestedScrollState = headerScrollState.takeIf { showHeaderPage },
                     nestedScrollItemIndex = HEADER_PAGE_INDEX.takeIf { showHeaderPage },
                 ),
