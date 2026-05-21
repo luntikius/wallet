@@ -56,6 +56,9 @@ fun PassNavGraph(
     previewViewModel: PassPreviewViewModel,
     educationViewModel: EducationViewModel,
     intentUri: android.net.Uri?,
+    openPassId: String?,
+    maximizeBrightnessOnPassOpen: Boolean,
+    onOpenPassHandled: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SharedTransitionLayout {
@@ -128,6 +131,9 @@ fun PassNavGraph(
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this,
                     onPreviewPass = { uri -> previewViewModel.previewPass(uri) },
+                    openPassId = openPassId,
+                    maximizeBrightnessOnPassOpen = maximizeBrightnessOnPassOpen,
+                    onOpenPassHandled = onOpenPassHandled,
                     onSettingsClick = {
                         navController.navigate(Routes.SETTINGS)
                     },

@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -136,6 +137,84 @@ internal fun AutoHidingScrollPositionIndicator(
 }
 
 @Composable
+internal fun AutoHidingPagerScrollPositionIndicator(
+    pagerState: PagerState,
+    itemCount: Int,
+    nestedScrollState: ScrollState? = null,
+    nestedScrollItemIndex: Int? = null,
+    modifier: Modifier = Modifier,
+) {
+    if (itemCount <= 1) return
+
+    var isVisible by remember { mutableStateOf(false) }
+    val alpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        label = "wear-pager-scroll-indicator-alpha",
+    )
+
+    LaunchedEffect(pagerState, nestedScrollState) {
+        snapshotFlow { pagerState.isScrollInProgress || nestedScrollState?.isScrollInProgress == true }
+            .distinctUntilChanged()
+            .collect { isScrolling ->
+                if (isScrolling) {
+                    isVisible = true
+                } else {
+                    delay(900L)
+                    isVisible = false
+                }
+            }
+    }
+
+    LaunchedEffect(nestedScrollState?.value) {
+        if (nestedScrollState == null) return@LaunchedEffect
+
+        isVisible = true
+        delay(900L)
+        isVisible = false
+    }
+
+    if (alpha <= 0.01f) return
+
+    Canvas(modifier = modifier) {
+        val strokeWidth = 3.dp.toPx()
+        val inset = strokeWidth / 2 + 3.dp.toPx()
+        val arcSize = Size(
+            width = size.width - inset * 2,
+            height = size.height - inset * 2,
+        )
+        val progress = pagerScrollProgress(
+            pagerState = pagerState,
+            itemCount = itemCount,
+            nestedScrollState = nestedScrollState,
+            nestedScrollItemIndex = nestedScrollItemIndex,
+        )
+        val trackStartAngle = -46f
+        val trackSweepAngle = 92f
+        val thumbSweepAngle = 18f
+        val thumbStartAngle = trackStartAngle + (trackSweepAngle - thumbSweepAngle) * progress
+
+        drawArc(
+            color = ListScrollTrackColor.copy(alpha = ListScrollTrackColor.alpha * alpha),
+            startAngle = trackStartAngle,
+            sweepAngle = trackSweepAngle,
+            useCenter = false,
+            topLeft = Offset(inset, inset),
+            size = arcSize,
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+        )
+        drawArc(
+            color = ListScrollThumbColor.copy(alpha = ListScrollThumbColor.alpha * alpha),
+            startAngle = thumbStartAngle,
+            sweepAngle = thumbSweepAngle,
+            useCenter = false,
+            topLeft = Offset(inset, inset),
+            size = arcSize,
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+        )
+    }
+}
+
+@Composable
 internal fun KeepScreenBrightness(isEnabled: Boolean, brightness: Float) {
     val activity = LocalContext.current.findActivity()
     val originalBrightness = remember(activity) {
@@ -211,6 +290,27 @@ private fun Float.withNestedProgress(
     val listPosition = listScrollPosition(listState = listState, itemCount = itemCount)
     if (listPosition < nestedScrollItemIndex) {
         return (listPosition / itemCount).coerceIn(0f, 1f)
+    }
+
+    val nestedProgress = nestedScrollState.value.toFloat() / nestedScrollState.maxValue
+    return ((nestedScrollItemIndex + nestedProgress) / itemCount).coerceIn(0f, 1f)
+}
+
+private fun pagerScrollProgress(
+    pagerState: PagerState,
+    itemCount: Int,
+    nestedScrollState: ScrollState?,
+    nestedScrollItemIndex: Int?,
+): Float {
+    if (itemCount <= 1) return 0f
+
+    val pagePosition = pagerState.pagePosition()
+    if (nestedScrollState == null || nestedScrollItemIndex == null || nestedScrollState.maxValue <= 0) {
+        return (pagePosition / (itemCount - 1).coerceAtLeast(1)).coerceIn(0f, 1f)
+    }
+
+    if (pagePosition < nestedScrollItemIndex) {
+        return (pagePosition / itemCount).coerceIn(0f, 1f)
     }
 
     val nestedProgress = nestedScrollState.value.toFloat() / nestedScrollState.maxValue

@@ -28,6 +28,7 @@ class SettingsViewModel(
     val themeMode: StateFlow<AppThemeMode> = settingsRepository.themeMode
     val languageMode: StateFlow<AppLanguageMode> = settingsRepository.languageMode
     val showEducations: StateFlow<Boolean> = settingsRepository.showEducations
+    val maximizeBrightnessOnPassOpen: StateFlow<Boolean> = settingsRepository.maximizeBrightnessOnPassOpen
 
     private val _shareStatus = MutableStateFlow<ShareStatus>(ShareStatus.Idle)
     val shareStatus: StateFlow<ShareStatus> = _shareStatus.asStateFlow()
@@ -42,6 +43,10 @@ class SettingsViewModel(
 
     fun setShowEducations(enabled: Boolean) {
         settingsRepository.setShowEducations(enabled)
+    }
+
+    fun setMaximizeBrightnessOnPassOpen(enabled: Boolean) {
+        settingsRepository.setMaximizeBrightnessOnPassOpen(enabled)
     }
 
     fun prepareShareWalletArchive() {

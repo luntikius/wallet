@@ -64,6 +64,7 @@ fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel:
     val themeMode by viewModel.themeMode.collectAsState()
     val languageMode by viewModel.languageMode.collectAsState()
     val showEducations by viewModel.showEducations.collectAsState()
+    val maximizeBrightnessOnPassOpen by viewModel.maximizeBrightnessOnPassOpen.collectAsState()
     val shareStatus by viewModel.shareStatus.collectAsState()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -165,6 +166,13 @@ fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel:
                     optionLabel = { mode -> context.getString(mode.labelResId) },
                     onOptionSelected = viewModel::setLanguageMode,
                     icon = DesignR.drawable.language,
+                )
+                SettingsToggleRow(
+                    title = stringResource(AppR.string.maximize_brightness_on_pass_open),
+                    description = stringResource(AppR.string.maximize_brightness_on_pass_open_description),
+                    checked = maximizeBrightnessOnPassOpen,
+                    onCheckedChange = viewModel::setMaximizeBrightnessOnPassOpen,
+                    icon = DesignR.drawable.brightness,
                 )
 
                 SettingsSectionTitle(title = stringResource(AppR.string.backup))

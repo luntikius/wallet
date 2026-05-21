@@ -1,5 +1,9 @@
 package com.luntikius.wallet.wearsync
 
+import android.net.Uri
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -10,6 +14,7 @@ object WearSyncPaths {
     const val PASSES_INDEX = "/wallet/passes/index"
     const val PASS_PREFIX = "/wallet/pass/"
     const val REQUEST_SYNC = "/wallet/request-sync"
+    const val OPEN_PASS_ON_PHONE = "/wallet/open-pass-on-phone"
 
     fun pass(passId: String): String = "$PASS_PREFIX$passId"
 
@@ -19,12 +24,38 @@ object WearSyncPaths {
         ?.takeIf { it.isNotBlank() }
 }
 
+object DotWalletPassDeepLink {
+    private const val SCHEME = "dot-wallet"
+    private const val HOST_PASS = "pass"
+    private const val PREFIX = "$SCHEME://$HOST_PASS/"
+
+    fun buildOpenPassUri(passId: String): Uri = Uri.parse(buildOpenPassUriString(passId))
+
+    fun buildOpenPassUriString(passId: String): String {
+        val encodedPassId = URLEncoder.encode(passId, StandardCharsets.UTF_8.name())
+            .replace("+", "%20")
+        return "$PREFIX$encodedPassId"
+    }
+
+    fun passIdFromUri(uri: Uri?): String? = passIdFromUriString(uri?.toString())
+
+    fun passIdFromUriString(uri: String?): String? = uri
+        ?.takeIf { it.startsWith(PREFIX) }
+        ?.removePrefix(PREFIX)
+        ?.takeIf { it.isNotBlank() }
+        ?.let { encodedPassId ->
+            runCatching { URLDecoder.decode(encodedPassId, StandardCharsets.UTF_8.name()) }.getOrNull()
+        }
+        ?.takeIf { it.isNotBlank() }
+}
+
 object WearSyncDataKeys {
     const val INDEX_JSON = "index_json"
     const val SNAPSHOT_JSON = "snapshot_json"
     const val UPDATED_AT = "updated_at"
     const val ICON_ASSET = "icon_asset"
     const val LOGO_ASSET = "logo_asset"
+    const val PASS_ID = "pass_id"
 }
 
 object WearSyncJson {

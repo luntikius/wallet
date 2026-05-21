@@ -1,5 +1,9 @@
 package com.luntikius.wallet.ui.components
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -34,6 +38,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -103,6 +109,7 @@ fun PassCardExpansion(
     passId: String,
     tilePosition: IntRect?,
     viewModel: PassGridViewModel,
+    maximizeBrightnessOnFrontSide: Boolean,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     onTileVisibilityChange: (visible: Boolean) -> Unit = {},
@@ -134,6 +141,8 @@ fun PassCardExpansion(
             ),
             label = "card flip",
         )
+        val isFrontSideVisible = isFrontSideVisible(rotation)
+        PassBrightnessEffect(enabled = maximizeBrightnessOnFrontSide && isFrontSideVisible && pass != null)
 
         val density = LocalDensity.current
         val configuration = LocalConfiguration.current
@@ -445,6 +454,41 @@ fun PassCardExpansion(
     }
 }
 
+@Composable
+private fun PassBrightnessEffect(enabled: Boolean) {
+    val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
+
+    DisposableEffect(activity, enabled) {
+        if (activity == null || !enabled) {
+            return@DisposableEffect onDispose {}
+        }
+
+        val window = activity.window
+        val previousBrightness = window.attributes.screenBrightness
+        window.attributes = window.attributes.apply {
+            screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+        }
+
+        onDispose {
+            window.attributes = window.attributes.apply {
+                screenBrightness = previousBrightness
+            }
+        }
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+private fun isFrontSideVisible(rotation: Float): Boolean {
+    val normalizedRotation = ((rotation % 360) + 360) % 360
+    return normalizedRotation < 90f || normalizedRotation >= 270f
+}
+
 /**
  * Renders the flippable card content with front and back sides.
  */
@@ -506,8 +550,7 @@ private fun FlippableCardContent(
                     .graphicsLayer { alpha = contentAlpha },
             ) {
                 // Determine which side to show based on rotation
-                val normalizedRotation = ((rotation % 360) + 360) % 360
-                val showFront = normalizedRotation < 90f || normalizedRotation >= 270f
+                val showFront = isFrontSideVisible(rotation)
 
                 if (showFront) {
                     // Front side

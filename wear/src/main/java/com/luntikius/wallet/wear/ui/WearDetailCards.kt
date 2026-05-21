@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -40,6 +41,7 @@ import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.wear.data.CachedWearPass
 import com.luntikius.wallet.wearsync.WearPassField
 import com.luntikius.wallet.wearsync.WearPassFieldSection
+import kotlin.math.abs
 
 private val DetailCardSurface = Color.White
 private val DetailCardText = Color(0xFF101010)
@@ -47,14 +49,17 @@ private val DetailCardMutedText = Color(0xFF5F6368)
 private val FullscreenCardShape = RoundedCornerShape(32.dp)
 
 @Composable
-internal fun ScalableWearCardItem(
-    listState: LazyListState,
-    index: Int,
+internal fun ScalableWearPagerItem(
+    pagerState: PagerState,
+    page: Int,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    val targetScale by remember(index, listState) {
-        derivedStateOf { listItemScale(listState = listState, index = index) }
+    val targetScale by remember(page, pagerState) {
+        derivedStateOf {
+            val distanceFraction = abs(pagerState.pageOffsetFrom(page)).coerceIn(0f, 1f)
+            1f - (distanceFraction * 0.16f)
+        }
     }
     val scale by animateFloatAsState(
         targetValue = targetScale,
@@ -157,6 +162,7 @@ internal fun PassHeaderCard(
     pass: CachedWearPass,
     fields: List<WearPassField>,
     scrollState: ScrollState,
+    onOpenPassOnPhone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val cardColor = remember(pass.snapshot.backgroundColor) {
@@ -186,7 +192,10 @@ internal fun PassHeaderCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState),
+                .verticalScroll(
+                    state = scrollState,
+                    enabled = false,
+                ),
         ) {
             Column(
                 modifier = Modifier
@@ -226,10 +235,33 @@ internal fun PassHeaderCard(
                     color = textColor,
                 )
 
+                OpenOnPhoneTextButton(
+                    textColor = textColor,
+                    onClick = onOpenPassOnPhone,
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
+}
+
+@Composable
+private fun OpenOnPhoneTextButton(textColor: Color, onClick: () -> Unit) {
+    Spacer(modifier = Modifier.height(16.dp))
+    Text(
+        text = stringResource(R.string.open_on_phone),
+        style = MaterialTheme.typography.labelMedium,
+        color = textColor,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(textColor.copy(alpha = 0.12f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    )
 }
 
 @Composable

@@ -73,6 +73,8 @@
     <string name="language_system">Системный</string>
     <string name="language_english">Английский</string>
     <string name="language_russian">Русский</string>
+    <string name="maximize_brightness_on_pass_open">Максимальная яркость при открытии карты</string>
+    <string name="maximize_brightness_on_pass_open_description">Автоматически повышать яркость экрана до максимума, когда карта открыта лицевой стороной</string>
     <string name="backup">Резервная копия</string>
     <string name="wallet_backup">Резервная копия Wallet</string>
     <string name="share_wallet_backup">Поделиться резервной копией Wallet</string>
@@ -118,6 +120,7 @@
     <string name="education_got_it">Понятно</string>
     <string name="no_passes">Нет карт</string>
     <string name="add_or_manage_passes_on_phone">Добавьте карты или управляйте ими на телефоне</string>
+    <string name="open_on_phone">Открыть на телефоне</string>
     <string name="no_code">Нет кода</string>
     <string name="code_unavailable">Код недоступен</string>
     <string name="pass_code">Код карты</string>

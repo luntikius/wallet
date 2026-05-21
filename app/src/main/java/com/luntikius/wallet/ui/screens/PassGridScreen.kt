@@ -90,6 +90,9 @@ fun PassGridScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onPreviewPass: (android.net.Uri) -> Unit,
+    openPassId: String?,
+    maximizeBrightnessOnPassOpen: Boolean,
+    onOpenPassHandled: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -110,6 +113,19 @@ fun PassGridScreen(
     // Sync local state with ViewModel
     LaunchedEffect(passes) {
         localPasses = passes
+    }
+
+    LaunchedEffect(openPassId, localPasses, isInitialLoading) {
+        val passId = openPassId ?: return@LaunchedEffect
+        if (isInitialLoading) return@LaunchedEffect
+
+        if (localPasses.any { pass -> pass.id == passId }) {
+            selectedPassId = passId
+            tilePositionCache = null
+            onOpenPassHandled()
+        } else if (localPasses.isNotEmpty()) {
+            onOpenPassHandled()
+        }
     }
 
     LaunchedEffect(isInitialLoading, localPasses.size, activeEducation) {
@@ -344,6 +360,7 @@ fun PassGridScreen(
                     passId = passId,
                     tilePosition = tilePositionCache,
                     viewModel = viewModel,
+                    maximizeBrightnessOnFrontSide = maximizeBrightnessOnPassOpen,
                     onTileVisibilityChange = { visible ->
                         // Animation controls tile visibility timing
                         hideTileId = if (visible) null else passId

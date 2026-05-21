@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
 import com.luntikius.wallet.wear.data.WearPassRepository
+import com.luntikius.wallet.wear.sync.WearPhonePassOpener
 import com.luntikius.wallet.wear.sync.WearPhoneSyncRequester
 import com.luntikius.wallet.wear.ui.WearWalletApp
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +15,7 @@ import org.koin.android.ext.android.inject
 class MainActivity : ComponentActivity() {
     private val repository: WearPassRepository by inject()
     private val syncRequester: WearPhoneSyncRequester by inject()
+    private val phonePassOpener: WearPhonePassOpener by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,7 +25,14 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            WearWalletApp(repository = repository)
+            WearWalletApp(
+                repository = repository,
+                onOpenPassOnPhone = { passId ->
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        phonePassOpener.openPassOnPhone(passId)
+                    }
+                },
+            )
         }
     }
 }

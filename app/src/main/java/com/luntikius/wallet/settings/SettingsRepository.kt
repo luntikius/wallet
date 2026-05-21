@@ -12,12 +12,15 @@ interface SettingsRepository {
     val themeMode: StateFlow<AppThemeMode>
     val languageMode: StateFlow<AppLanguageMode>
     val showEducations: StateFlow<Boolean>
+    val maximizeBrightnessOnPassOpen: StateFlow<Boolean>
 
     fun setThemeMode(themeMode: AppThemeMode)
 
     fun setLanguageMode(languageMode: AppLanguageMode)
 
     fun setShowEducations(enabled: Boolean)
+
+    fun setMaximizeBrightnessOnPassOpen(enabled: Boolean)
 }
 
 class SharedPreferencesSettingsRepository(context: Context) : SettingsRepository {
@@ -33,6 +36,10 @@ class SharedPreferencesSettingsRepository(context: Context) : SettingsRepository
     private val _showEducations = MutableStateFlow(preferences.getBoolean(KEY_SHOW_EDUCATIONS, false))
     override val showEducations: StateFlow<Boolean> = _showEducations.asStateFlow()
 
+    private val _maximizeBrightnessOnPassOpen =
+        MutableStateFlow(preferences.getBoolean(KEY_MAXIMIZE_BRIGHTNESS_ON_PASS_OPEN, false))
+    override val maximizeBrightnessOnPassOpen: StateFlow<Boolean> = _maximizeBrightnessOnPassOpen.asStateFlow()
+
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
             KEY_THEME_MODE -> _themeMode.value = readThemeMode()
@@ -42,6 +49,10 @@ class SharedPreferencesSettingsRepository(context: Context) : SettingsRepository
                 applyLanguageMode(languageMode)
             }
             KEY_SHOW_EDUCATIONS -> _showEducations.value = preferences.getBoolean(KEY_SHOW_EDUCATIONS, false)
+            KEY_MAXIMIZE_BRIGHTNESS_ON_PASS_OPEN -> {
+                _maximizeBrightnessOnPassOpen.value =
+                    preferences.getBoolean(KEY_MAXIMIZE_BRIGHTNESS_ON_PASS_OPEN, false)
+            }
         }
     }
 
@@ -72,6 +83,13 @@ class SharedPreferencesSettingsRepository(context: Context) : SettingsRepository
         _showEducations.value = enabled
     }
 
+    override fun setMaximizeBrightnessOnPassOpen(enabled: Boolean) {
+        preferences.edit()
+            .putBoolean(KEY_MAXIMIZE_BRIGHTNESS_ON_PASS_OPEN, enabled)
+            .apply()
+        _maximizeBrightnessOnPassOpen.value = enabled
+    }
+
     private fun readThemeMode(): AppThemeMode {
         val savedValue = preferences.getString(KEY_THEME_MODE, AppThemeMode.SYSTEM.name)
         return AppThemeMode.entries.firstOrNull { themeMode -> themeMode.name == savedValue } ?: AppThemeMode.SYSTEM
@@ -96,5 +114,6 @@ class SharedPreferencesSettingsRepository(context: Context) : SettingsRepository
         const val KEY_THEME_MODE = "theme_mode"
         const val KEY_LANGUAGE_MODE = "language_mode"
         const val KEY_SHOW_EDUCATIONS = "show_educations"
+        const val KEY_MAXIMIZE_BRIGHTNESS_ON_PASS_OPEN = "maximize_brightness_on_pass_open"
     }
 }
