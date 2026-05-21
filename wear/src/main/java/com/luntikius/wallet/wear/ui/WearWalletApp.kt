@@ -9,7 +9,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,19 +19,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.MaterialTheme
 import com.luntikius.wallet.wear.data.CachedWearPass
 import com.luntikius.wallet.wear.data.WearPassRepository
 
 @Composable
-fun WearWalletApp(
-    repository: WearPassRepository,
-    onOpenPassOnPhone: (String) -> Unit,
-) {
+fun WearWalletApp(repository: WearPassRepository, onOpenPassOnPhone: (String) -> Unit) {
     MaterialTheme {
         var passes by remember { mutableStateOf<List<CachedWearPass>?>(null) }
         var selectedPassId by rememberSaveable { mutableStateOf<String?>(null) }
-        val passListState = rememberLazyListState()
+        val passListState = rememberScalingLazyListState(initialCenterItemIndex = 0)
         val haptic = LocalHapticFeedback.current
         val loadedPasses = passes
         val selectedPass = selectedPassId?.let { passId ->
@@ -46,7 +43,11 @@ fun WearWalletApp(
         }
 
         LaunchedEffect(selectedPassId, loadedPasses) {
-            if (selectedPassId != null && loadedPasses != null && loadedPasses.none { it.snapshot.id == selectedPassId }) {
+            if (
+                selectedPassId != null &&
+                loadedPasses != null &&
+                loadedPasses.none { it.snapshot.id == selectedPassId }
+            ) {
                 selectedPassId = null
             }
         }
@@ -77,9 +78,6 @@ fun WearWalletApp(
                     WearPassScreen(
                         pass = pass,
                         onOpenPassOnPhone = onOpenPassOnPhone,
-                        onPageChanged = {
-                            haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                        },
                     )
                 } else {
                     val currentPasses = passes

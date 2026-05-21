@@ -1,131 +1,96 @@
 package com.luntikius.wallet.wear.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerSnapDistance
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.wear.compose.material3.ScreenScaffold
 import com.luntikius.wallet.wear.data.CachedWearPass
-import com.luntikius.wallet.wearsync.WearPassFieldSection
 
-private val FrontCardFieldSections = setOf(
-    WearPassFieldSection.HEADER,
-    WearPassFieldSection.PRIMARY,
-    WearPassFieldSection.SECONDARY,
-    WearPassFieldSection.AUXILIARY,
-)
-private const val CUSTOM_PASS_FORMAT = "CUSTOM"
 private const val QR_PAGE_INDEX = 0
 private const val HEADER_PAGE_INDEX = 1
+private const val PASS_PAGE_COUNT = 2
 
 @Composable
-internal fun WearPassScreen(
-    pass: CachedWearPass,
-    onOpenPassOnPhone: (String) -> Unit,
-    onPageChanged: () -> Unit,
-) {
-    BoxWithConstraints(
+internal fun WearPassScreen(pass: CachedWearPass, onOpenPassOnPhone: (String) -> Unit) {
+    val pagerState = rememberPagerState(initialPage = QR_PAGE_INDEX, pageCount = { PASS_PAGE_COUNT })
+    val headerScrollState = rememberScrollState()
+    val pagePosition = pagerState.pagePosition()
+    val isHeaderPage = pagerState.isPageSettledAt(HEADER_PAGE_INDEX)
+    val headerColor = remember(pass.snapshot.backgroundColor) {
+        parseWearColor(pass.snapshot.backgroundColor, Color(0xFF0077B6))
+    }
+    val headerIndicatorColor = remember(pass.snapshot.foregroundColor, headerColor) {
+        readableColor(
+            foreground = parseWearColor(pass.snapshot.foregroundColor, Color.White),
+            background = headerColor,
+        )
+    }
+
+    KeepScreenBrightness(isEnabled = pagerState.isPageSettledAt(QR_PAGE_INDEX), brightness = 0.8f)
+    KeepScreenOn(isEnabled = pagerState.isPageSettledAt(QR_PAGE_INDEX))
+
+    ScreenScaffold(
+        scrollState = headerScrollState,
+        timeText = null,
+        scrollIndicator = null,
         modifier = Modifier
             .fillMaxSize()
             .background(DetailBackground),
-    ) {
-        val headerScrollState = rememberScrollState()
-        val viewportHeight = maxHeight
-        val showHeaderPage = pass.snapshot.format != CUSTOM_PASS_FORMAT
-        val detailPageCount = if (showHeaderPage) 2 else 1
-        val pagerState = rememberPagerState(pageCount = { detailPageCount })
-        val pagerFlingBehavior = PagerDefaults.flingBehavior(
-            state = pagerState,
-            pagerSnapDistance = PagerSnapDistance.atMost(1),
-        )
-        val isQrPageCentered by remember(pagerState) {
-            derivedStateOf { pagerState.isPageSettledAt(QR_PAGE_INDEX) }
-        }
-        val headerTouchScrollConnection = rememberWearPassHeaderTouchScrollConnection(
-            pagerState = pagerState,
-            headerScrollState = headerScrollState,
-            showHeaderPage = showHeaderPage,
-            headerPageIndex = HEADER_PAGE_INDEX,
-        )
-        val scrollHintProgress by remember(pagerState, showHeaderPage) {
-            derivedStateOf {
-                if (showHeaderPage) {
-                    pagerState.pagePosition().coerceIn(0f, 1f)
-                } else {
-                    0f
-                }
-            }
-        }
-
-        KeepScreenBrightness(isEnabled = isQrPageCentered, brightness = 0.8f)
-        KeepScreenOn(isEnabled = isQrPageCentered)
-        CenteredPassPageChangeEffect(
-            pagerState = pagerState,
-            enabled = detailPageCount > 1,
-            onPageChanged = onPageChanged,
-        )
-
-        VerticalPager(
-            state = pagerState,
-            flingBehavior = pagerFlingBehavior,
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(headerTouchScrollConnection)
-                .wearPassRotaryScrollable(
-                    pagerState = pagerState,
-                    headerScrollState = headerScrollState,
-                    showHeaderPage = showHeaderPage,
-                    headerPageIndex = HEADER_PAGE_INDEX,
+        contentPadding = PaddingValues(),
+    ) { contentPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            VerticalPager(
+                state = pagerState,
+                flingBehavior = PagerDefaults.flingBehavior(
+                    state = pagerState,
+                    pagerSnapDistance = PagerSnapDistance.atMost(1),
                 ),
-            contentPadding = PaddingValues(),
-        ) { page ->
-            when (page) {
-                QR_PAGE_INDEX -> ScalableWearPagerItem(
-                    pagerState = pagerState,
-                    page = QR_PAGE_INDEX,
-                    modifier = Modifier.height(viewportHeight),
-                ) {
-                    PassQrCard(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(
+                        rememberWearPassHeaderTouchScrollConnection(
+                            pagerState = pagerState,
+                            headerScrollState = headerScrollState,
+                            headerPageIndex = HEADER_PAGE_INDEX,
+                        ),
+                    ),
+                contentPadding = contentPadding,
+            ) { page ->
+                when (page) {
+                    QR_PAGE_INDEX -> PassQrCard(
                         pass = pass,
-                        scrollHintProgress = scrollHintProgress,
-                        showScrollHint = showHeaderPage,
+                        scrollHintProgress = pagePosition,
+                        showScrollHint = true,
                         modifier = Modifier.fillMaxSize(),
                     )
-                }
 
-                HEADER_PAGE_INDEX -> ScalableWearPagerItem(
-                    pagerState = pagerState,
-                    page = HEADER_PAGE_INDEX,
-                    modifier = Modifier.height(viewportHeight),
-                ) {
-                    PassHeaderCard(
+                    HEADER_PAGE_INDEX -> PassHeaderCard(
                         pass = pass,
-                        fields = pass.snapshot.fields.filter { it.section in FrontCardFieldSections },
                         scrollState = headerScrollState,
+                        isRotaryEnabled = isHeaderPage,
                         onOpenPassOnPhone = { onOpenPassOnPhone(pass.snapshot.id) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
-        }
 
-        AutoHidingPagerScrollPositionIndicator(
-            pagerState = pagerState,
-            itemCount = detailPageCount,
-            nestedScrollState = headerScrollState.takeIf { showHeaderPage },
-            nestedScrollItemIndex = HEADER_PAGE_INDEX.takeIf { showHeaderPage },
-            modifier = Modifier.fillMaxSize(),
-        )
+            PassCurvedScrollIndicator(
+                pageProgress = pagePosition,
+                headerScrollState = headerScrollState,
+                headerColor = headerIndicatorColor,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
 }

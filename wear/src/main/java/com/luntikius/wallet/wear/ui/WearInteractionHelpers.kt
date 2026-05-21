@@ -4,39 +4,31 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.view.WindowManager
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.distinctUntilChanged
-
-private val ListScrollTrackColor = Color.White.copy(alpha = 0.22f)
-private val ListScrollThumbColor = Color.White.copy(alpha = 0.82f)
 
 @Composable
 internal fun ScrollAffordance(unfoldProgress: Float, color: Color, modifier: Modifier = Modifier) {
     Canvas(
-        modifier = modifier.size(width = 34.dp, height = 18.dp),
+        modifier = modifier
+            .size(width = 34.dp, height = 18.dp)
+            .alpha(0.5f),
     ) {
         val strokeWidth = 3.dp.toPx()
         val arrowLeft = Offset(size.width * 0.28f, size.height * 0.62f)
@@ -65,154 +57,44 @@ internal fun ScrollAffordance(unfoldProgress: Float, color: Color, modifier: Mod
 }
 
 @Composable
-internal fun AutoHidingScrollPositionIndicator(
-    listState: LazyListState,
-    itemCount: Int,
-    nestedScrollState: ScrollState? = null,
-    nestedScrollItemIndex: Int? = null,
-    modifier: Modifier = Modifier,
-) {
-    if (itemCount <= 1) return
-
-    var isVisible by remember { mutableStateOf(false) }
-    val alpha by animateFloatAsState(
-        targetValue = if (isVisible) 1f else 0f,
-        label = "wear-scroll-indicator-alpha",
-    )
-
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress || nestedScrollState?.isScrollInProgress == true }
-            .distinctUntilChanged()
-            .collect { isScrolling ->
-                if (isScrolling) {
-                    isVisible = true
-                } else {
-                    delay(900L)
-                    isVisible = false
-                }
-            }
-    }
-
-    if (alpha <= 0.01f) return
-
-    Canvas(modifier = modifier) {
-        val strokeWidth = 3.dp.toPx()
-        val inset = strokeWidth / 2 + 3.dp.toPx()
-        val arcSize = Size(
-            width = size.width - inset * 2,
-            height = size.height - inset * 2,
-        )
-        val progress = listScrollPosition(listState = listState, itemCount = itemCount)
-            .let { position -> (position / (itemCount - 1).coerceAtLeast(1)).coerceIn(0f, 1f) }
-            .withNestedProgress(
-                itemCount = itemCount,
-                nestedScrollState = nestedScrollState,
-                nestedScrollItemIndex = nestedScrollItemIndex,
-                listState = listState,
-            )
-        val trackStartAngle = -46f
-        val trackSweepAngle = 92f
-        val thumbSweepAngle = 18f
-        val thumbStartAngle = trackStartAngle + (trackSweepAngle - thumbSweepAngle) * progress
-
-        drawArc(
-            color = ListScrollTrackColor.copy(alpha = ListScrollTrackColor.alpha * alpha),
-            startAngle = trackStartAngle,
-            sweepAngle = trackSweepAngle,
-            useCenter = false,
-            topLeft = Offset(inset, inset),
-            size = arcSize,
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-        )
-        drawArc(
-            color = ListScrollThumbColor.copy(alpha = ListScrollThumbColor.alpha * alpha),
-            startAngle = thumbStartAngle,
-            sweepAngle = thumbSweepAngle,
-            useCenter = false,
-            topLeft = Offset(inset, inset),
-            size = arcSize,
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-        )
-    }
-}
-
-@Composable
-internal fun AutoHidingPagerScrollPositionIndicator(
+internal fun rememberWearPassHeaderTouchScrollConnection(
     pagerState: PagerState,
-    itemCount: Int,
-    nestedScrollState: ScrollState? = null,
-    nestedScrollItemIndex: Int? = null,
-    modifier: Modifier = Modifier,
-) {
-    if (itemCount <= 1) return
-
-    var isVisible by remember { mutableStateOf(false) }
-    val alpha by animateFloatAsState(
-        targetValue = if (isVisible) 1f else 0f,
-        label = "wear-pager-scroll-indicator-alpha",
-    )
-
-    LaunchedEffect(pagerState, nestedScrollState) {
-        snapshotFlow { pagerState.isScrollInProgress || nestedScrollState?.isScrollInProgress == true }
-            .distinctUntilChanged()
-            .collect { isScrolling ->
-                if (isScrolling) {
-                    isVisible = true
-                } else {
-                    delay(900L)
-                    isVisible = false
-                }
+    headerScrollState: ScrollState,
+    headerPageIndex: Int,
+): NestedScrollConnection = remember(pagerState, headerScrollState, headerPageIndex) {
+    object : NestedScrollConnection {
+        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+            if (source != NestedScrollSource.UserInput || !pagerState.isPageAlignedAt(headerPageIndex)) {
+                return Offset.Zero
             }
-    }
 
-    LaunchedEffect(nestedScrollState?.value) {
-        if (nestedScrollState == null) return@LaunchedEffect
-
-        isVisible = true
-        delay(900L)
-        isVisible = false
-    }
-
-    if (alpha <= 0.01f) return
-
-    Canvas(modifier = modifier) {
-        val strokeWidth = 3.dp.toPx()
-        val inset = strokeWidth / 2 + 3.dp.toPx()
-        val arcSize = Size(
-            width = size.width - inset * 2,
-            height = size.height - inset * 2,
-        )
-        val progress = pagerScrollProgress(
-            pagerState = pagerState,
-            itemCount = itemCount,
-            nestedScrollState = nestedScrollState,
-            nestedScrollItemIndex = nestedScrollItemIndex,
-        )
-        val trackStartAngle = -46f
-        val trackSweepAngle = 92f
-        val thumbSweepAngle = 18f
-        val thumbStartAngle = trackStartAngle + (trackSweepAngle - thumbSweepAngle) * progress
-
-        drawArc(
-            color = ListScrollTrackColor.copy(alpha = ListScrollTrackColor.alpha * alpha),
-            startAngle = trackStartAngle,
-            sweepAngle = trackSweepAngle,
-            useCenter = false,
-            topLeft = Offset(inset, inset),
-            size = arcSize,
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-        )
-        drawArc(
-            color = ListScrollThumbColor.copy(alpha = ListScrollThumbColor.alpha * alpha),
-            startAngle = thumbStartAngle,
-            sweepAngle = thumbSweepAngle,
-            useCenter = false,
-            topLeft = Offset(inset, inset),
-            size = arcSize,
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-        )
+            val consumed = headerScrollState.scrollByTouchDelta(available.y)
+            return if (consumed == 0f) Offset.Zero else Offset(x = 0f, y = -consumed)
+        }
     }
 }
+
+internal fun PagerState.isPageSettledAt(index: Int): Boolean = !isScrollInProgress && isPageAlignedAt(index)
+
+internal fun PagerState.pagePosition(): Float =
+    (currentPage + currentPageOffsetFraction).coerceIn(0f, (pageCount - 1).coerceAtLeast(0).toFloat())
+
+private fun PagerState.isPageAlignedAt(index: Int): Boolean =
+    currentPage == index && abs(currentPageOffsetFraction) <= SettledPageTolerance
+
+private fun ScrollState.scrollByTouchDelta(availableY: Float): Float {
+    val scrollDelta = -availableY
+    if (!canConsumeScrollDelta(scrollDelta)) return 0f
+    return dispatchRawDelta(scrollDelta)
+}
+
+private fun ScrollState.canConsumeScrollDelta(delta: Float): Boolean = when {
+    delta > 0f -> canScrollForward
+    delta < 0f -> canScrollBackward
+    else -> false
+}
+
+private const val SettledPageTolerance = 0.001f
 
 @Composable
 internal fun KeepScreenBrightness(isEnabled: Boolean, brightness: Float) {
@@ -251,70 +133,6 @@ internal fun KeepScreenOn(isEnabled: Boolean) {
             }
         }
     }
-}
-
-internal fun listItemScale(listState: LazyListState, index: Int): Float {
-    val layoutInfo = listState.layoutInfo
-    val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return 0.84f
-    val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2f
-    val itemCenter = itemInfo.offset + itemInfo.size / 2f
-    val viewportHalfHeight = (layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset) / 2f
-    if (viewportHalfHeight <= 0f) return 1f
-
-    val distanceFromCenter = abs(itemCenter - viewportCenter)
-    val distanceFraction = (distanceFromCenter / viewportHalfHeight).coerceIn(0f, 1f)
-    return 1f - (distanceFraction * 0.16f)
-}
-
-private fun listScrollPosition(listState: LazyListState, itemCount: Int): Float {
-    val layoutInfo = listState.layoutInfo
-    val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2f
-    val itemInfo = layoutInfo.visibleItemsInfo.minByOrNull { item ->
-        abs(item.offset + item.size / 2f - viewportCenter)
-    } ?: return listState.firstVisibleItemIndex.toFloat().coerceIn(0f, (itemCount - 1).toFloat())
-
-    val centerDistance = itemInfo.offset + itemInfo.size / 2f - viewportCenter
-    val centerOffsetProgress = (-centerDistance / itemInfo.size).coerceIn(-0.5f, 0.5f)
-    return (itemInfo.index + centerOffsetProgress).coerceIn(0f, (itemCount - 1).toFloat())
-}
-
-private fun Float.withNestedProgress(
-    itemCount: Int,
-    nestedScrollState: ScrollState?,
-    nestedScrollItemIndex: Int?,
-    listState: LazyListState,
-): Float {
-    if (nestedScrollState == null || nestedScrollItemIndex == null || itemCount <= 1) return this
-    if (nestedScrollState.maxValue <= 0) return this
-
-    val listPosition = listScrollPosition(listState = listState, itemCount = itemCount)
-    if (listPosition < nestedScrollItemIndex) {
-        return (listPosition / itemCount).coerceIn(0f, 1f)
-    }
-
-    val nestedProgress = nestedScrollState.value.toFloat() / nestedScrollState.maxValue
-    return ((nestedScrollItemIndex + nestedProgress) / itemCount).coerceIn(0f, 1f)
-}
-
-private fun pagerScrollProgress(
-    pagerState: PagerState,
-    itemCount: Int,
-    nestedScrollState: ScrollState?,
-    nestedScrollItemIndex: Int?,
-): Float {
-    if (itemCount <= 1) return 0f
-
-    val pagePosition = pagerState.pagePosition()
-    if (nestedScrollState == null || nestedScrollItemIndex == null || nestedScrollState.maxValue <= 0) {
-        return (pagePosition / (itemCount - 1).coerceAtLeast(1)).coerceIn(0f, 1f)
-    }
-
-    if (pagePosition < nestedScrollItemIndex) {
-        return (pagePosition / itemCount).coerceIn(0f, 1f)
-    }
-
-    val nestedProgress = nestedScrollState.value.toFloat() / nestedScrollState.maxValue
-    return ((nestedScrollItemIndex + nestedProgress) / itemCount).coerceIn(0f, 1f)
 }
 
 private fun Activity.setScreenBrightness(value: Float) {
