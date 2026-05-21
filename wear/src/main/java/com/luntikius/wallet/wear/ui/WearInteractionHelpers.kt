@@ -153,6 +153,27 @@ internal fun KeepScreenBrightness(isEnabled: Boolean, brightness: Float) {
     }
 }
 
+@Composable
+internal fun KeepScreenOn(isEnabled: Boolean) {
+    val activity = LocalContext.current.findActivity()
+
+    DisposableEffect(activity, isEnabled) {
+        val window = activity?.window
+        val keepScreenOnFlag = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+        val hadKeepScreenOn = (window?.attributes?.flags?.and(keepScreenOnFlag) ?: 0) != 0
+
+        if (isEnabled) {
+            window?.addFlags(keepScreenOnFlag)
+        }
+
+        onDispose {
+            if (isEnabled && !hadKeepScreenOn) {
+                window?.clearFlags(keepScreenOnFlag)
+            }
+        }
+    }
+}
+
 internal fun listItemScale(listState: LazyListState, index: Int): Float {
     val layoutInfo = listState.layoutInfo
     val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return 0.84f

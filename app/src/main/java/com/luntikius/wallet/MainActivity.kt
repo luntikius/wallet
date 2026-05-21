@@ -1,6 +1,8 @@
 package com.luntikius.wallet
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -88,6 +91,12 @@ class MainActivity : ComponentActivity() {
                 AppThemeMode.LIGHT -> false
                 AppThemeMode.DARK -> true
                 AppThemeMode.SYSTEM -> systemDarkTheme
+            }
+
+            SideEffect {
+                val backgroundColor = if (darkTheme) Color.BLACK else Color.WHITE
+                window.setBackgroundDrawable(ColorDrawable(backgroundColor))
+                window.decorView.setBackgroundColor(backgroundColor)
             }
 
             WalletTheme(darkTheme = darkTheme) {

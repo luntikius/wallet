@@ -4,8 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -31,7 +29,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -72,12 +70,25 @@ private const val CUSTOM_PASS_FORMAT = "CUSTOM"
 @Composable
 fun WearWalletApp(repository: WearPassRepository) {
     MaterialTheme {
-        val passes by repository.observePasses().collectAsState(initial = emptyList())
+        var passes by remember { mutableStateOf<List<CachedWearPass>?>(null) }
         var selectedPassId by rememberSaveable { mutableStateOf<String?>(null) }
         val passListState = rememberLazyListState()
         val haptic = LocalHapticFeedback.current
+        val loadedPasses = passes
         val selectedPass = selectedPassId?.let { passId ->
-            passes.firstOrNull { it.snapshot.id == passId }
+            loadedPasses?.firstOrNull { it.snapshot.id == passId }
+        }
+
+        LaunchedEffect(repository) {
+            repository.observePasses().collect { loaded ->
+                passes = loaded
+            }
+        }
+
+        LaunchedEffect(selectedPassId, loadedPasses) {
+            if (selectedPassId != null && loadedPasses != null && loadedPasses.none { it.snapshot.id == selectedPassId }) {
+                selectedPassId = null
+            }
         }
 
         BackHandler(enabled = selectedPass != null) {
@@ -94,10 +105,8 @@ fun WearWalletApp(repository: WearPassRepository) {
                 targetState = selectedPass,
                 transitionSpec = {
                     val direction = if (targetState != null) 1 else -1
-                    (
-                        slideInHorizontally { fullWidth -> direction * fullWidth } + fadeIn()
-                        ).togetherWith(
-                        slideOutHorizontally { fullWidth -> -direction * fullWidth / 3 } + fadeOut(),
+                    slideInHorizontally { fullWidth -> direction * fullWidth }.togetherWith(
+                        slideOutHorizontally { fullWidth -> -direction * fullWidth / 3 },
                     ).using(
                         SizeTransform(clip = false),
                     )
@@ -112,14 +121,17 @@ fun WearWalletApp(repository: WearPassRepository) {
                         },
                     )
                 } else {
-                    PassListScreen(
-                        passes = passes,
-                        listState = passListState,
-                        onPassClick = { selected ->
-                            haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
-                            selectedPassId = selected.snapshot.id
-                        },
-                    )
+                    val currentPasses = passes
+                    if (currentPasses != null) {
+                        PassListScreen(
+                            passes = currentPasses,
+                            listState = passListState,
+                            onPassClick = { selected ->
+                                haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                                selectedPassId = selected.snapshot.id
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -137,7 +149,11 @@ private fun PassListScreen(
         return
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(WearBackground),
+    ) {
         val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
         val verticalPadding = ((maxHeight - PassListCardHeight) / 2).coerceAtLeast(18.dp)
 
@@ -146,9 +162,9 @@ private fun PassListScreen(
             flingBehavior = snapFlingBehavior,
             modifier = Modifier
                 .fillMaxSize()
-                .lazyListRotaryScrollable(
+                .background(WearBackground)
+                .lazyListRotarySnapScrollable(
                     listState = listState,
-                    flingBehavior = snapFlingBehavior,
                 ),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = verticalPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -269,10 +285,8 @@ private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
         val detailPageCount = if (showHeaderPage) 2 else 1
         val density = LocalDensity.current
         val scrollHintDistancePx = with(density) { 72.dp.toPx() }
-        val isInitialPosition by remember(listState) {
-            derivedStateOf {
-                listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
-            }
+        val isQrPageCentered by remember(listState) {
+            derivedStateOf { listState.closestItemIndexToCenter() == QR_PAGE_INDEX }
         }
         val scrollHintProgress by remember(listState, scrollHintDistancePx) {
             derivedStateOf {
@@ -284,7 +298,8 @@ private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
             }
         }
 
-        KeepScreenBrightness(isEnabled = isInitialPosition, brightness = 0.8f)
+        KeepScreenBrightness(isEnabled = isQrPageCentered, brightness = 0.8f)
+        KeepScreenOn(isEnabled = isQrPageCentered)
         CenteredPageChangeEffect(
             listState = listState,
             enabled = detailPageCount > 1,
@@ -296,11 +311,12 @@ private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
             flingBehavior = snapFlingBehavior,
             modifier = Modifier
                 .fillMaxSize()
-                .lazyListRotaryScrollable(
+                .qrDetailRotaryScrollable(
                     listState = listState,
-                    flingBehavior = snapFlingBehavior,
-                    nestedScrollState = headerScrollState.takeIf { showHeaderPage },
-                    nestedScrollItemIndex = HEADER_PAGE_INDEX.takeIf { showHeaderPage },
+                    headerScrollState = headerScrollState,
+                    showHeaderPage = showHeaderPage,
+                    qrPageIndex = QR_PAGE_INDEX,
+                    headerPageIndex = HEADER_PAGE_INDEX,
                 ),
             contentPadding = PaddingValues(),
         ) {
@@ -347,4 +363,5 @@ private fun PassDetailScreen(pass: CachedWearPass, onPageChanged: () -> Unit) {
     }
 }
 
+private const val QR_PAGE_INDEX = 0
 private const val HEADER_PAGE_INDEX = 1

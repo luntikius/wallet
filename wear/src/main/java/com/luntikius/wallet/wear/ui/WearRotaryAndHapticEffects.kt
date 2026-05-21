@@ -2,12 +2,13 @@ package com.luntikius.wallet.wear.ui
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -17,43 +18,83 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
 import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
+import androidx.wear.compose.foundation.rotary.RotarySnapLayoutInfoProvider
 import androidx.wear.compose.foundation.rotary.rotaryScrollable
 import kotlin.math.abs
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun Modifier.lazyListRotaryScrollable(
+internal fun Modifier.lazyListRotarySnapScrollable(
     listState: LazyListState,
-    flingBehavior: FlingBehavior,
-    nestedScrollState: ScrollState? = null,
-    nestedScrollItemIndex: Int? = null,
 ): Modifier {
     val focusRequester = remember { FocusRequester() }
-    val coroutineScope = rememberCoroutineScope()
-    val listRotaryBehavior = RotaryScrollableDefaults.behavior(
+    val rotaryBehavior = RotaryScrollableDefaults.snapBehavior(
         scrollableState = listState,
-        flingBehavior = flingBehavior,
+        layoutInfoProvider = remember(listState) { LazyListRotarySnapLayoutInfoProvider(listState) },
     )
 
     LaunchedEffect(focusRequester) {
         focusRequester.requestFocus()
     }
 
-    return routeRotaryToNestedScroll(
-        listState = listState,
-        nestedScrollState = nestedScrollState,
-        nestedScrollItemIndex = nestedScrollItemIndex,
-        onNestedDelta = { delta ->
-            coroutineScope.launch {
-                nestedScrollState?.scrollBy(-delta)
-            }
-        },
+    return rotaryScrollable(
+        behavior = rotaryBehavior,
+        focusRequester = focusRequester,
     )
-        .rotaryScrollable(
-            behavior = listRotaryBehavior,
-            focusRequester = focusRequester,
-        )
+        .focusRequester(focusRequester)
+        .focusable()
+}
+
+@Composable
+internal fun Modifier.qrDetailRotaryScrollable(
+    listState: LazyListState,
+    headerScrollState: ScrollState,
+    showHeaderPage: Boolean,
+    qrPageIndex: Int,
+    headerPageIndex: Int,
+): Modifier {
+    val focusRequester = remember { FocusRequester() }
+    val coroutineScope = rememberCoroutineScope()
+    val rotaryJob = remember { mutableStateOf<Job?>(null) }
+
+    LaunchedEffect(focusRequester) {
+        focusRequester.requestFocus()
+    }
+
+    fun launchRotaryAction(block: suspend () -> Unit) {
+        if (rotaryJob.value?.isActive == true) return
+        rotaryJob.value = coroutineScope.launch { block() }
+    }
+
+    return onPreRotaryScrollEvent { event ->
+        if (!showHeaderPage) return@onPreRotaryScrollEvent false
+
+        val delta = event.verticalScrollPixels.takeIf { it != 0f } ?: event.horizontalScrollPixels
+        val direction = delta.toRotaryScrollDirection() ?: return@onPreRotaryScrollEvent false
+        val centeredPageIndex = listState.closestItemIndexToCenter()
+
+        when (direction) {
+            RotaryScrollDirection.Down -> {
+                if (centeredPageIndex < headerPageIndex) {
+                    launchRotaryAction { listState.animateScrollToItem(headerPageIndex) }
+                } else if (headerScrollState.canScrollForward) {
+                    launchRotaryAction { headerScrollState.scrollBy(-delta) }
+                }
+                true
+            }
+
+            RotaryScrollDirection.Up -> {
+                if (centeredPageIndex == headerPageIndex && headerScrollState.canScrollBackward) {
+                    launchRotaryAction { headerScrollState.scrollBy(-delta) }
+                } else if (centeredPageIndex > qrPageIndex) {
+                    launchRotaryAction { listState.animateScrollToItem(qrPageIndex) }
+                }
+                true
+            }
+        }
+    }
         .focusRequester(focusRequester)
         .focusable()
 }
@@ -78,37 +119,68 @@ internal fun CenteredPageChangeEffect(listState: LazyListState, enabled: Boolean
     }
 }
 
-private fun LazyListState.closestItemIndexToCenter(): Int {
+internal fun LazyListState.closestItemIndexToCenter(): Int {
     val layoutInfo = layoutInfo
     val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2f
     return layoutInfo.visibleItemsInfo
-        .minByOrNull { item -> abs(item.offset + item.size / 2f - viewportCenter) }
+        .minByOrNull { item -> abs(item.center - viewportCenter) }
         ?.index
         ?: firstVisibleItemIndex
 }
 
-private fun Modifier.routeRotaryToNestedScroll(
-    listState: LazyListState,
-    nestedScrollState: ScrollState?,
-    nestedScrollItemIndex: Int?,
-    onNestedDelta: (Float) -> Unit,
-): Modifier = onPreRotaryScrollEvent { event ->
-    val delta = event.verticalScrollPixels.takeIf { it != 0f } ?: event.horizontalScrollPixels
-    if (
-        nestedScrollState != null &&
-        nestedScrollItemIndex != null &&
-        listState.closestItemIndexToCenter() == nestedScrollItemIndex &&
-        nestedScrollState.canConsumeRotaryDelta(delta)
-    ) {
-        onNestedDelta(delta)
-        true
-    } else {
-        false
+private class LazyListRotarySnapLayoutInfoProvider(private val listState: LazyListState) :
+    RotarySnapLayoutInfoProvider {
+    override val averageItemSize: Float
+        get() {
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            if (visibleItems.isEmpty()) return 0f
+
+            val centerDistances = visibleItems
+                .sortedBy(LazyListItemInfo::index)
+                .zipWithNext { current, next ->
+                    abs(next.center - current.center)
+                }
+
+            return if (centerDistances.isNotEmpty()) {
+                centerDistances.average().toFloat()
+            } else {
+                visibleItems.first().size.toFloat()
+            }
+        }
+
+    override val currentItemIndex: Int
+        get() = listState.closestItemInfoToCenter()?.index ?: listState.firstVisibleItemIndex
+
+    override val currentItemOffset: Float
+        get() {
+            val itemInfo = listState.closestItemInfoToCenter() ?: return 0f
+            return itemInfo.center - listState.viewportCenter
+        }
+
+    override val totalItemCount: Int
+        get() = listState.layoutInfo.totalItemsCount
+}
+
+private fun LazyListState.closestItemInfoToCenter(): LazyListItemInfo? {
+    val viewportCenter = viewportCenter
+    return layoutInfo.visibleItemsInfo.minByOrNull { item ->
+        abs(item.center - viewportCenter)
     }
 }
 
-private fun ScrollState.canConsumeRotaryDelta(delta: Float): Boolean = when {
-    delta > 0f -> canScrollBackward
-    delta < 0f -> canScrollForward
-    else -> false
+private val LazyListState.viewportCenter: Float
+    get() = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2f
+
+private val LazyListItemInfo.center: Float
+    get() = offset + size / 2f
+
+private enum class RotaryScrollDirection {
+    Up,
+    Down,
+}
+
+private fun Float.toRotaryScrollDirection(): RotaryScrollDirection? = when {
+    this < 0f -> RotaryScrollDirection.Down
+    this > 0f -> RotaryScrollDirection.Up
+    else -> null
 }
