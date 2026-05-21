@@ -80,21 +80,20 @@ internal fun PagerState.pagePosition(): Float =
     (currentPage + currentPageOffsetFraction).coerceIn(0f, (pageCount - 1).coerceAtLeast(0).toFloat())
 
 private fun PagerState.isPageAlignedAt(index: Int): Boolean =
-    currentPage == index && abs(currentPageOffsetFraction) <= SettledPageTolerance
+    currentPage == index && abs(currentPageOffsetFraction) <= SETTLED_PAGE_TOLERANCE
 
 private fun ScrollState.scrollByTouchDelta(availableY: Float): Float {
     val scrollDelta = -availableY
-    if (!canConsumeScrollDelta(scrollDelta)) return 0f
+    val canConsumeDelta = when {
+        scrollDelta > 0f -> canScrollForward
+        scrollDelta < 0f -> canScrollBackward
+        else -> false
+    }
+    if (!canConsumeDelta) return 0f
     return dispatchRawDelta(scrollDelta)
 }
 
-private fun ScrollState.canConsumeScrollDelta(delta: Float): Boolean = when {
-    delta > 0f -> canScrollForward
-    delta < 0f -> canScrollBackward
-    else -> false
-}
-
-private const val SettledPageTolerance = 0.001f
+private const val SETTLED_PAGE_TOLERANCE = 0.001f
 
 @Composable
 internal fun KeepScreenBrightness(isEnabled: Boolean, brightness: Float) {
@@ -104,12 +103,20 @@ internal fun KeepScreenBrightness(isEnabled: Boolean, brightness: Float) {
     }
 
     LaunchedEffect(activity, isEnabled, brightness, originalBrightness) {
-        activity?.setScreenBrightness(if (isEnabled) brightness else originalBrightness)
+        activity?.window?.let { window ->
+            val layoutParams = window.attributes
+            layoutParams.screenBrightness = if (isEnabled) brightness else originalBrightness
+            window.attributes = layoutParams
+        }
     }
 
     DisposableEffect(activity, originalBrightness) {
         onDispose {
-            activity?.setScreenBrightness(originalBrightness)
+            activity?.window?.let { window ->
+                val layoutParams = window.attributes
+                layoutParams.screenBrightness = originalBrightness
+                window.attributes = layoutParams
+            }
         }
     }
 }
@@ -133,12 +140,6 @@ internal fun KeepScreenOn(isEnabled: Boolean) {
             }
         }
     }
-}
-
-private fun Activity.setScreenBrightness(value: Float) {
-    val layoutParams = window.attributes
-    layoutParams.screenBrightness = value
-    window.attributes = layoutParams
 }
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {

@@ -49,6 +49,7 @@ object Routes {
  * Main navigation graph with shared element transitions.
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
+@Suppress("LongParameterList")
 @Composable
 fun PassNavGraph(
     navController: NavHostController,

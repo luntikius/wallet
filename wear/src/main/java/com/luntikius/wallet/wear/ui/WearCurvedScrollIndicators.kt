@@ -24,12 +24,14 @@ import kotlin.math.sin
 import kotlinx.coroutines.delay
 
 private const val INDICATOR_HIDE_DELAY_MILLIS = 900L
-private const val QR_TOP_ANGLE = -7f
-private const val QR_BOTTOM_ANGLE = 8f
+private const val QR_TOP_ANGLE = -3.25f
+private const val QR_BOTTOM_ANGLE = 4.25f
 private const val HEADER_DOT_ANGLE = -40f
 private const val TRACK_START_ANGLE = -26f
 private const val TRACK_SWEEP_ANGLE = 58f
 private const val THUMB_SWEEP_ANGLE = 18f
+private const val ACTIVE_DOT_ALPHA = 0.78f
+private const val TRACK_ALPHA = 0.18f
 
 @Composable
 internal fun PassCurvedScrollIndicator(
@@ -136,17 +138,18 @@ private fun CurvedScrollIndicator(
             radius = radius,
             angleDegrees = lerpFloat(QR_TOP_ANGLE, HEADER_DOT_ANGLE, progress),
         )
+        val topDotAlpha = lerpFloat(ACTIVE_DOT_ALPHA, TRACK_ALPHA, progress) * visibilityProgress
 
         if (showTopDot) {
             drawCircle(
-                color = color.copy(alpha = 0.78f * visibilityProgress),
+                color = color.copy(alpha = topDotAlpha),
                 radius = dotRadius,
                 center = topPoint,
             )
         }
 
         drawArc(
-            color = color.copy(alpha = 0.18f * barProgress),
+            color = color.copy(alpha = TRACK_ALPHA * barProgress),
             startAngle = trackStartAngle,
             sweepAngle = trackSweepAngle,
             useCenter = false,

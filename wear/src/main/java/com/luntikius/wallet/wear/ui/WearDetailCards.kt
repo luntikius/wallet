@@ -5,6 +5,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -18,13 +20,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -33,14 +39,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.requestFocusOnHierarchyActive
-import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
-import androidx.wear.compose.foundation.rotary.rotaryScrollable
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.wear.data.CachedWearPass
 import com.luntikius.wallet.wearsync.WearPassField
 import com.luntikius.wallet.wearsync.WearPassFieldSection
+import kotlinx.coroutines.launch
 
 private val DetailCardSurface = Color.White
 private val DetailCardText = Color(0xFF101010)
@@ -179,7 +184,6 @@ internal fun PassHeaderCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 PassLogo(pass = pass, tint = textColor)
-                HeaderSubtitle(pass = pass, color = textColor)
 
                 HeaderFieldSectionOrder.forEachIndexed { index, section ->
                     FrontFieldsSection(
@@ -195,9 +199,19 @@ internal fun PassHeaderCard(
                     color = textColor,
                 )
 
-                OpenOnPhoneTextButton(
-                    textColor = textColor,
-                    onClick = onOpenPassOnPhone,
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.open_on_phone),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = textColor,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(textColor.copy(alpha = 0.12f))
+                        .clickable(onClick = onOpenPassOnPhone)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -211,34 +225,31 @@ private fun Modifier.headerRotaryScrollable(enabled: Boolean, scrollState: Scrol
     if (!enabled) return this
 
     val focusRequester = remember { FocusRequester() }
-    val rotaryBehavior = RotaryScrollableDefaults.behavior(
-        scrollableState = scrollState,
-        flingBehavior = null,
-    )
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(focusRequester) {
+        focusRequester.requestFocus()
+    }
 
     return requestFocusOnHierarchyActive()
-        .rotaryScrollable(
-            behavior = rotaryBehavior,
-            focusRequester = focusRequester,
-        )
-}
+        .onPreRotaryScrollEvent { event ->
+            val delta = event.verticalScrollPixels.takeIf { it != 0f } ?: event.horizontalScrollPixels
+            val canConsumeDelta = when {
+                delta > 0f -> scrollState.canScrollForward
+                delta < 0f -> scrollState.canScrollBackward
+                else -> false
+            }
+            if (!canConsumeDelta) {
+                return@onPreRotaryScrollEvent false
+            }
 
-@Composable
-private fun OpenOnPhoneTextButton(textColor: Color, onClick: () -> Unit) {
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-        text = stringResource(R.string.open_on_phone),
-        style = MaterialTheme.typography.labelMedium,
-        color = textColor,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(textColor.copy(alpha = 0.12f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-    )
+            coroutineScope.launch {
+                scrollState.scrollBy(delta)
+            }
+            true
+        }
+        .focusRequester(focusRequester)
+        .focusable()
 }
 
 @Composable
@@ -278,23 +289,6 @@ private fun FrontFieldsSection(fields: List<WearPassField>, labelColor: Color, v
             )
         }
     }
-}
-
-@Composable
-private fun HeaderSubtitle(pass: CachedWearPass, color: Color) {
-    val subtitle = pass.snapshot.subtitle.takeIf { it.isNotBlank() } ?: return
-
-    Spacer(modifier = Modifier.height(6.dp))
-    Text(
-        text = remember(subtitle) { subtitle.toWearPlainText() },
-        style = MaterialTheme.typography.labelMedium,
-        color = color.copy(alpha = 0.7f),
-        fontWeight = FontWeight.SemiBold,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth(),
-    )
 }
 
 @Composable

@@ -82,6 +82,7 @@ import sh.calvin.reorderable.rememberReorderableLazyGridState
  * Grid screen displaying all passes.
  */
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 fun PassGridScreen(
     viewModel: PassGridViewModel,
