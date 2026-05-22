@@ -12,13 +12,16 @@ import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.ScreenScaffold
 import com.luntikius.wallet.wear.data.CachedWearPass
@@ -33,6 +36,7 @@ private val PassPageSpacing = 24.dp
 internal fun WearPassScreen(pass: CachedWearPass, onOpenPassOnPhone: (String) -> Unit) {
     val pagerState = rememberPagerState(initialPage = QR_PAGE_INDEX, pageCount = { PASS_PAGE_COUNT })
     val headerScrollState = rememberScrollState()
+    val view = LocalView.current
     val pagePosition = pagerState.pagePosition()
     val isHeaderPage = pagerState.isPageSettledAt(HEADER_PAGE_INDEX)
     val headerColor = remember(pass.snapshot.backgroundColor) {
@@ -47,6 +51,16 @@ internal fun WearPassScreen(pass: CachedWearPass, onOpenPassOnPhone: (String) ->
 
     KeepScreenBrightness(isEnabled = pagerState.isPageSettledAt(QR_PAGE_INDEX), brightness = 0.8f)
     KeepScreenOn(isEnabled = pagerState.isPageSettledAt(QR_PAGE_INDEX))
+
+    LaunchedEffect(pagerState, view) {
+        var previousPage = pagerState.currentPage
+        snapshotFlow { pagerState.settledPassPage() }.collect { page ->
+            if (page != null && page != previousPage) {
+                previousPage = page
+                view.performWearScrollTickHaptic()
+            }
+        }
+    }
 
     ScreenScaffold(
         scrollState = headerScrollState,
@@ -136,3 +150,9 @@ private fun ScaledPagerPage(
 }
 
 private fun PagerState.pageOffsetFrom(page: Int): Float = (currentPage - page) + currentPageOffsetFraction
+
+private fun PagerState.settledPassPage(): Int? = when {
+    isPageSettledAt(QR_PAGE_INDEX) -> QR_PAGE_INDEX
+    isPageSettledAt(HEADER_PAGE_INDEX) -> HEADER_PAGE_INDEX
+    else -> null
+}

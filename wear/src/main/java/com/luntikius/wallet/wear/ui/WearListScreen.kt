@@ -51,7 +51,10 @@ internal fun WearListScreen(
     }
 
     val flingBehavior = ScalingLazyColumnDefaults.snapFlingBehavior(state = listState)
-    val rotaryBehavior = RotaryScrollableDefaults.snapBehavior(scrollableState = listState)
+    val rotaryBehavior = RotaryScrollableDefaults.snapBehavior(
+        scrollableState = listState,
+        hapticFeedbackEnabled = false,
+    )
 
     ScreenScaffold(
         scrollState = listState,
