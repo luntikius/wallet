@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -226,6 +227,7 @@ private fun Modifier.headerRotaryScrollable(enabled: Boolean, scrollState: Scrol
 
     val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
+    val view = LocalView.current
 
     LaunchedEffect(focusRequester) {
         focusRequester.requestFocus()
@@ -243,6 +245,7 @@ private fun Modifier.headerRotaryScrollable(enabled: Boolean, scrollState: Scrol
                 return@onPreRotaryScrollEvent false
             }
 
+            view.performWearScrollTickHaptic()
             coroutineScope.launch {
                 scrollState.scrollBy(delta)
             }

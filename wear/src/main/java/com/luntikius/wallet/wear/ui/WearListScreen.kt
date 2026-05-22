@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -50,6 +52,7 @@ internal fun WearListScreen(
         return
     }
 
+    val view = LocalView.current
     val flingBehavior = ScalingLazyColumnDefaults.snapFlingBehavior(state = listState)
     val rotaryBehavior = RotaryScrollableDefaults.snapBehavior(
         scrollableState = listState,
@@ -72,7 +75,19 @@ internal fun WearListScreen(
                 rotaryScrollableBehavior = rotaryBehavior,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(WearBackground),
+                    .background(WearBackground)
+                    .onPreRotaryScrollEvent { event ->
+                        val delta = event.verticalScrollPixels.takeIf { it != 0f } ?: event.horizontalScrollPixels
+                        val canScroll = when {
+                            delta > 0f -> listState.canScrollForward
+                            delta < 0f -> listState.canScrollBackward
+                            else -> false
+                        }
+                        if (canScroll) {
+                            view.performWearScrollTickHaptic()
+                        }
+                        false
+                    },
                 contentPadding = contentPadding,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 autoCentering = AutoCenteringParams(itemIndex = 0),
