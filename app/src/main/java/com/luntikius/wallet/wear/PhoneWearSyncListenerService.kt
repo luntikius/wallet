@@ -1,8 +1,12 @@
 package com.luntikius.wallet.wear
 
+import android.content.Intent
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
+import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
+import com.luntikius.wallet.MainActivity
+import com.luntikius.wallet.wearsync.DotWalletPassDeepLink
 import com.luntikius.wallet.wearsync.WearSyncPaths
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,5 +28,22 @@ class PhoneWearSyncListenerService : WearableListenerService() {
                 wearSyncCoordinator.publishNow()
             }
         }
+    }
+
+    override fun onMessageReceived(messageEvent: MessageEvent) {
+        if (messageEvent.path != WearSyncPaths.OPEN_PASS_ON_PHONE) return
+
+        val passId = messageEvent.data
+            .decodeToString()
+            .takeIf { it.isNotBlank() }
+            ?: return
+
+        startActivity(
+            Intent(this, MainActivity::class.java).apply {
+                action = Intent.ACTION_VIEW
+                data = DotWalletPassDeepLink.buildOpenPassUri(passId)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            },
+        )
     }
 }

@@ -1,10 +1,12 @@
 package com.luntikius.wallet.wear.ui
 
 import android.graphics.BitmapFactory
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,65 +17,48 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.requestFocusOnHierarchyActive
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.luntikius.wallet.corestrings.R
 import com.luntikius.wallet.wear.data.CachedWearPass
 import com.luntikius.wallet.wearsync.WearPassField
 import com.luntikius.wallet.wearsync.WearPassFieldSection
+import kotlinx.coroutines.launch
 
 private val DetailCardSurface = Color.White
 private val DetailCardText = Color(0xFF101010)
 private val DetailCardMutedText = Color(0xFF5F6368)
 private val FullscreenCardShape = RoundedCornerShape(32.dp)
-
-@Composable
-internal fun ScalableWearCardItem(
-    listState: LazyListState,
-    index: Int,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    val targetScale by remember(index, listState) {
-        derivedStateOf { listItemScale(listState = listState, index = index) }
-    }
-    val scale by animateFloatAsState(
-        targetValue = targetScale,
-        label = "wear-detail-card-scale",
-    )
-
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .scale(scale),
-        ) {
-            content()
-        }
-    }
-}
+private val HeaderFieldSectionOrder = listOf(
+    WearPassFieldSection.HEADER,
+    WearPassFieldSection.PRIMARY,
+    WearPassFieldSection.SECONDARY,
+    WearPassFieldSection.AUXILIARY,
+    WearPassFieldSection.METADATA,
+)
 
 @Composable
 internal fun PassQrCard(
@@ -155,8 +140,9 @@ internal fun PassQrCard(
 @Composable
 internal fun PassHeaderCard(
     pass: CachedWearPass,
-    fields: List<WearPassField>,
     scrollState: ScrollState,
+    isRotaryEnabled: Boolean,
+    onOpenPassOnPhone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val cardColor = remember(pass.snapshot.backgroundColor) {
@@ -171,6 +157,11 @@ internal fun PassHeaderCard(
     val labelColor = remember(pass.snapshot.labelColor, textColor) {
         parseWearColor(pass.snapshot.labelColor, textColor)
     }
+    val fieldsBySection = remember(pass.snapshot.fields) {
+        pass.snapshot.fields
+            .filter { it.section in HeaderFieldSectionOrder }
+            .groupBy(WearPassField::section)
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -178,48 +169,31 @@ internal fun PassHeaderCard(
             .background(cardColor),
     ) {
         val diameter = minOf(maxWidth, maxHeight)
-        val headerFields = remember(fields) { fields.filter { it.section == WearPassFieldSection.HEADER } }
-        val primaryFields = remember(fields) { fields.filter { it.section == WearPassFieldSection.PRIMARY } }
-        val secondaryFields = remember(fields) { fields.filter { it.section == WearPassFieldSection.SECONDARY } }
-        val auxiliaryFields = remember(fields) { fields.filter { it.section == WearPassFieldSection.AUXILIARY } }
 
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState),
+            modifier = Modifier.fillMaxSize(),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .headerRotaryScrollable(
+                        enabled = isRotaryEnabled,
+                        scrollState = scrollState,
+                    )
+                    .verticalScroll(scrollState)
                     .padding(horizontal = diameter * 0.12f, vertical = diameter * 0.13f),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 PassLogo(pass = pass, tint = textColor)
 
-                FrontFieldsSection(
-                    fields = headerFields,
-                    labelColor = labelColor,
-                    valueColor = textColor,
-                    topSpacing = 14.dp,
-                )
-                FrontFieldsSection(
-                    fields = primaryFields,
-                    labelColor = labelColor,
-                    valueColor = textColor,
-                    topSpacing = 12.dp,
-                )
-                FrontFieldsSection(
-                    fields = secondaryFields,
-                    labelColor = labelColor,
-                    valueColor = textColor,
-                    topSpacing = 12.dp,
-                )
-                FrontFieldsSection(
-                    fields = auxiliaryFields,
-                    labelColor = labelColor,
-                    valueColor = textColor,
-                    topSpacing = 12.dp,
-                )
+                HeaderFieldSectionOrder.forEachIndexed { index, section ->
+                    FrontFieldsSection(
+                        fields = fieldsBySection[section].orEmpty(),
+                        labelColor = labelColor,
+                        valueColor = textColor,
+                        topSpacing = if (index == 0) 14.dp else 12.dp,
+                    )
+                }
 
                 DigitalCodeText(
                     pass = pass,
@@ -227,9 +201,58 @@ internal fun PassHeaderCard(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.open_on_phone),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = textColor,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(textColor.copy(alpha = 0.12f))
+                        .clickable(onClick = onOpenPassOnPhone)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
+}
+
+@Composable
+private fun Modifier.headerRotaryScrollable(enabled: Boolean, scrollState: ScrollState): Modifier {
+    if (!enabled) return this
+
+    val focusRequester = remember { FocusRequester() }
+    val coroutineScope = rememberCoroutineScope()
+    val view = LocalView.current
+
+    LaunchedEffect(focusRequester) {
+        focusRequester.requestFocus()
+    }
+
+    return requestFocusOnHierarchyActive()
+        .onPreRotaryScrollEvent { event ->
+            val delta = event.verticalScrollPixels.takeIf { it != 0f } ?: event.horizontalScrollPixels
+            val canConsumeDelta = when {
+                delta > 0f -> scrollState.canScrollForward
+                delta < 0f -> scrollState.canScrollBackward
+                else -> false
+            }
+            if (!canConsumeDelta) {
+                return@onPreRotaryScrollEvent false
+            }
+
+            view.performWearScrollTickHaptic()
+            coroutineScope.launch {
+                scrollState.scrollBy(delta)
+            }
+            true
+        }
+        .focusRequester(focusRequester)
+        .focusable()
 }
 
 @Composable
@@ -252,12 +275,7 @@ private fun DigitalCodeText(pass: CachedWearPass, color: Color) {
 }
 
 @Composable
-private fun FrontFieldsSection(
-    fields: List<WearPassField>,
-    labelColor: Color,
-    valueColor: Color,
-    topSpacing: androidx.compose.ui.unit.Dp,
-) {
+private fun FrontFieldsSection(fields: List<WearPassField>, labelColor: Color, valueColor: Color, topSpacing: Dp) {
     if (fields.isEmpty()) return
 
     Spacer(modifier = Modifier.height(topSpacing))

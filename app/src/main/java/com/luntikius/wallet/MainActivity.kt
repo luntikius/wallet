@@ -1,6 +1,8 @@
 package com.luntikius.wallet
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +36,7 @@ import com.luntikius.wallet.ui.viewmodel.EducationViewModel
 import com.luntikius.wallet.ui.viewmodel.PassGridViewModel
 import com.luntikius.wallet.ui.viewmodel.PassPreviewViewModel
 import com.luntikius.wallet.ui.viewmodel.SettingsViewModel
+import com.luntikius.wallet.wearsync.DotWalletPassDeepLink
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.launch
@@ -47,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
     private var intentUri by mutableStateOf<Uri?>(null)
     private var newIntentUri by mutableStateOf<Uri?>(null)
+    private var openPassId by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,20 +79,33 @@ class MainActivity : ComponentActivity() {
         // Schedule background pass refresh
         schedulePassRefresh()
 
-        // Extract intent URI if present
-        intentUri = if (intent?.action == Intent.ACTION_VIEW) {
+        val initialOpenPassId = intent?.openPassDeepLinkId()
+        if (initialOpenPassId != null) {
+            clearActivityIntent()
+        }
+
+        // Extract import URI if present. Dot Wallet pass links are handled as one-shot navigation events.
+        intentUri = if (initialOpenPassId == null && intent?.action == Intent.ACTION_VIEW) {
             intent.data
         } else {
             null
         }
+        openPassId = initialOpenPassId
 
         setContent {
             val themeMode by settingsViewModel.themeMode.collectAsState()
+            val maximizeBrightnessOnPassOpen by settingsViewModel.maximizeBrightnessOnPassOpen.collectAsState()
             val systemDarkTheme = isSystemInDarkTheme()
             val darkTheme = when (themeMode) {
                 AppThemeMode.LIGHT -> false
                 AppThemeMode.DARK -> true
                 AppThemeMode.SYSTEM -> systemDarkTheme
+            }
+
+            SideEffect {
+                val backgroundColor = if (darkTheme) Color.BLACK else Color.WHITE
+                window.setBackgroundDrawable(ColorDrawable(backgroundColor))
+                window.decorView.setBackgroundColor(backgroundColor)
             }
 
             WalletTheme(darkTheme = darkTheme) {
@@ -99,8 +117,23 @@ class MainActivity : ComponentActivity() {
                     previewViewModel = previewViewModel,
                     educationViewModel = educationViewModel,
                     intentUri = intentUri,
+                    openPassId = openPassId,
+                    maximizeBrightnessOnPassOpen = maximizeBrightnessOnPassOpen,
+                    onOpenPassHandled = {
+                        openPassId = null
+                    },
                     modifier = Modifier.fillMaxSize(),
                 )
+
+                LaunchedEffect(openPassId) {
+                    if (openPassId != null) {
+                        educationViewModel.startAppEntry(isExternalImport = false)
+                        navController.navigate(Routes.GRID) {
+                            popUpTo(Routes.INITIAL) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
 
                 // Handle new intents while app is running
                 LaunchedEffect(newIntentUri) {
@@ -128,9 +161,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+
+        intent.openPassDeepLinkId()?.let { passId ->
+            openPassId = passId
+            clearActivityIntent()
+            return
+        }
+
         setIntent(intent)
 
-        // Handle new intent while app is running
+        // Handle new import intent while app is running
         if (intent.action == Intent.ACTION_VIEW) {
             newIntentUri = intent.data
         }
@@ -166,5 +206,13 @@ class MainActivity : ComponentActivity() {
                 ExistingPeriodicWorkPolicy.KEEP,
                 refreshRequest,
             )
+    }
+
+    private fun Intent.openPassDeepLinkId(): String? = takeIf { action == Intent.ACTION_VIEW }
+        ?.data
+        ?.let(DotWalletPassDeepLink::passIdFromUri)
+
+    private fun clearActivityIntent() {
+        setIntent(Intent(this, MainActivity::class.java))
     }
 }

@@ -4,5 +4,6 @@
     <style name="Theme.Wallet" parent="android:Theme.Material.Light.NoActionBar">
         <!-- Splash screen background color (Android 12+) -->
         <item name="android:windowSplashScreenBackground">#000000</item>
+        <item name="android:windowBackground">#000000</item>
     </style>
 </resources>

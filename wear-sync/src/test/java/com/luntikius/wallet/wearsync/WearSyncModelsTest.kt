@@ -45,4 +45,20 @@ class WearSyncModelsTest {
         assertEquals("abc", WearSyncPaths.passIdFromPath("/wallet/pass/abc"))
         assertEquals(null, WearSyncPaths.passIdFromPath("/wallet/passes/index"))
     }
+
+    @Test
+    fun dotWalletOpenPassDeepLinkRoundTripsPassId() {
+        val uri = DotWalletPassDeepLink.buildOpenPassUriString("pass id/with slash")
+
+        assertEquals("dot-wallet://pass/pass%20id%2Fwith%20slash", uri)
+        assertEquals("pass id/with slash", DotWalletPassDeepLink.passIdFromUriString(uri))
+    }
+
+    @Test
+    fun dotWalletOpenPassDeepLinkRejectsOtherUris() {
+        assertEquals(null, DotWalletPassDeepLink.passIdFromUriString("wallet://pass/abc"))
+        assertEquals(null, DotWalletPassDeepLink.passIdFromUriString("dot-wallet://passes/abc"))
+        assertEquals(null, DotWalletPassDeepLink.passIdFromUriString("dot-wallet://pass/"))
+        assertEquals(null, DotWalletPassDeepLink.passIdFromUriString("dot-wallet://pass/%"))
+    }
 }

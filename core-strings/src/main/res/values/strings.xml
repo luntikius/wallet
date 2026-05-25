@@ -73,6 +73,8 @@
     <string name="language_system">System</string>
     <string name="language_english">English</string>
     <string name="language_russian">Russian</string>
+    <string name="maximize_brightness_on_pass_open">Maximum brightness when opening passes</string>
+    <string name="maximize_brightness_on_pass_open_description">Automatically raise screen brightness to maximum while a pass is open on the front side</string>
     <string name="backup">Backup</string>
     <string name="wallet_backup">Wallet Backup</string>
     <string name="share_wallet_backup">Share Wallet Backup</string>
@@ -118,6 +120,7 @@
     <string name="education_got_it">Got it</string>
     <string name="no_passes">No passes</string>
     <string name="add_or_manage_passes_on_phone">Add or manage passes on your phone</string>
+    <string name="open_on_phone">Open on phone</string>
     <string name="no_code">No code</string>
     <string name="code_unavailable">Code unavailable</string>
     <string name="pass_code">Pass code</string>
