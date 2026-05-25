@@ -34,10 +34,12 @@ val dataModule = module {
     single<PassRepository> { get<PassRepositoryImpl>() }
     single<WalletArchiveRepository> { get<PassRepositoryImpl>() }
     single { Wearable.getDataClient(androidContext()) }
+    single { Wearable.getNodeClient(androidContext()) }
     single {
         PhoneWearSyncCoordinator(
             context = androidContext(),
             dataClient = get(),
+            nodeClient = get(),
             passRepository = get(),
         )
     }

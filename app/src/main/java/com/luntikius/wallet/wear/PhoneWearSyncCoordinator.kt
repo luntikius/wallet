@@ -1,8 +1,11 @@
 package com.luntikius.wallet.wear
 
 import android.content.Context
+import android.util.Log
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.NodeClient
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.luntikius.wallet.data.model.Pass
 import com.luntikius.wallet.data.repository.PassRepository
@@ -22,10 +25,12 @@ import kotlinx.coroutines.withContext
 class PhoneWearSyncCoordinator(
     private val context: Context,
     private val dataClient: DataClient,
+    private val nodeClient: NodeClient,
     private val passRepository: PassRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var started = false
+    private var wearApiUnavailable = false
 
     fun start() {
         if (started) return
@@ -33,13 +38,40 @@ class PhoneWearSyncCoordinator(
 
         scope.launch {
             passRepository.getAllPasses().collectLatest { passes ->
-                publishPasses(passes)
+                publishPassesSafely(passes)
             }
         }
     }
 
     suspend fun publishNow() {
-        publishPasses(passRepository.getAllPasses().first())
+        if (wearApiUnavailable) return
+
+        publishPassesSafely(passRepository.getAllPasses().first())
+    }
+
+    private suspend fun publishPassesSafely(passes: List<Pass>) {
+        if (wearApiUnavailable) return
+
+        runCatching {
+            if (!canPublishToWear()) return
+
+            publishPasses(passes)
+        }.onFailure { exception ->
+            if (exception.isWearableApiUnavailable()) {
+                wearApiUnavailable = true
+                Log.i(TAG, "Wearable API is unavailable; disabling phone-to-watch sync.", exception)
+            } else {
+                Log.w(TAG, "Failed to publish passes to Wear OS.", exception)
+            }
+        }
+    }
+
+    private suspend fun canPublishToWear(): Boolean {
+        GoogleApiAvailability.getInstance()
+            .checkApiAvailability(dataClient, nodeClient)
+            .await()
+
+        return nodeClient.getConnectedNodes().await().isNotEmpty()
     }
 
     private suspend fun publishPasses(passes: List<Pass>) = withContext(Dispatchers.IO) {
@@ -80,3 +112,5 @@ val com.luntikius.wallet.wearsync.WearPassAssetType.dataMapKey: String
         com.luntikius.wallet.wearsync.WearPassAssetType.ICON -> WearSyncDataKeys.ICON_ASSET
         com.luntikius.wallet.wearsync.WearPassAssetType.LOGO -> WearSyncDataKeys.LOGO_ASSET
     }
+
+private const val TAG = "PhoneWearSync"
