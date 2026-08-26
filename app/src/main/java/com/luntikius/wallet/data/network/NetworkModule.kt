@@ -16,6 +16,7 @@ object NetworkModule {
      */
     val okHttpClient: OkHttpClient by lazy {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
+            redactHeader("Authorization")
             level = HttpLoggingInterceptor.Level.BODY
         }
 

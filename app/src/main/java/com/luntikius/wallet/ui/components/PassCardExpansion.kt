@@ -193,6 +193,15 @@ fun PassCardExpansion(
             }
         }
 
+        // The expanded card keeps its own snapshot so animations remain stable. Refresh that
+        // snapshot after the repository has persisted a successful pass update.
+        LaunchedEffect(passId, refreshStatus) {
+            if (refreshStatus is RefreshStatus.Success) {
+                pass = viewModel.getPassById(passId)
+                passData = pass?.getPassData()
+            }
+        }
+
         // Two-phase expansion animation on first composition
         LaunchedEffect(finalCardWidthPx) {
             if (finalCardWidthPx > 0f) {

@@ -4,7 +4,7 @@ import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Header
-import retrofit2.http.Path
+import retrofit2.http.Url
 
 /**
  * Retrofit API service for PKPass update protocol.
@@ -15,7 +15,8 @@ interface PKPassApiService {
     /**
      * Gets pass update from server.
      *
-     * Endpoint: GET {webServiceURL}/v1/passes/{passTypeIdentifier}/{serialNumber}
+     * Endpoint: either the provider's complete update URL or
+     * GET {webServiceURL}/v1/passes/{passTypeIdentifier}/{serialNumber}
      * Header: Authorization: ApplePass {authenticationToken}
      *
      * Response codes:
@@ -24,15 +25,13 @@ interface PKPassApiService {
      * - 401: Unauthorized (invalid token)
      * - 404: Pass deleted/voided
      *
-     * @param passTypeIdentifier The pass type identifier (e.g., "pass.com.example.boarding")
-     * @param serialNumber The serial number of the pass
+     * @param updateUrl Resolved absolute URL for this pass update request
      * @param authToken The authentication token (format: "ApplePass {token}")
      * @return Response containing the updated pass file or appropriate status code
      */
-    @GET("v1/passes/{passTypeIdentifier}/{serialNumber}")
+    @GET
     suspend fun getPassUpdate(
-        @Path("passTypeIdentifier") passTypeIdentifier: String,
-        @Path("serialNumber") serialNumber: String,
+        @Url updateUrl: String,
         @Header("Authorization") authToken: String,
     ): Response<ResponseBody>
 }
