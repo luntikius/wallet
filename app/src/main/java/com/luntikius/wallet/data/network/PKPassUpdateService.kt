@@ -17,9 +17,15 @@ import retrofit2.Retrofit
 
 /**
  * Service for updating PKPass cards via Apple Wallet update protocol.
- * Handles dynamic Retrofit instance creation and API communication.
+ * Handles update URL resolution and API communication.
  */
 class PKPassUpdateService(private val context: Context, private val pkPassParser: PKPassParser) {
+
+    private val apiService: PKPassApiService = Retrofit.Builder()
+        .baseUrl("https://localhost/")
+        .client(NetworkModule.okHttpClient)
+        .build()
+        .create(PKPassApiService::class.java)
 
     /**
      * Result of a pass update operation.
@@ -65,26 +71,16 @@ class PKPassUpdateService(private val context: Context, private val pkPassParser
                 return UpdateResult.NoWebService
             }
 
-            // Ensure webServiceURL ends with / for proper URL construction
-            val baseUrl = if (webServiceURL.endsWith("/")) {
-                webServiceURL
-            } else {
-                "$webServiceURL/"
-            }
-
-            // Create dynamic Retrofit instance for this pass's web service
-            val retrofit = Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .client(NetworkModule.okHttpClient)
-                .build()
-
-            val apiService = retrofit.create(PKPassApiService::class.java)
+            val updateUrl = PKPassUpdateUrlResolver.resolve(
+                webServiceUrl = webServiceURL,
+                passTypeIdentifier = passTypeIdentifier,
+                serialNumber = serialNumber,
+            ) ?: throw IllegalArgumentException("Invalid PKPass web service URL")
 
             // Call API with Authorization header
             val authHeader = "ApplePass $authToken"
             val response = apiService.getPassUpdate(
-                passTypeIdentifier = passTypeIdentifier,
-                serialNumber = serialNumber,
+                updateUrl = updateUrl,
                 authToken = authHeader,
             )
 
